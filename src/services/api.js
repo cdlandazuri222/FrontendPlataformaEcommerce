@@ -27,7 +27,7 @@ export const authService = {
 
   verificarEmail: async (token) => {
     console.log('API Service - verificarEmail called with token:', token?.substring(0, 20) + '...');
-    const url = `/auth/verificar-email?token=${token}`;
+    const url = `/auth/verificar-email/${token}`;
     console.log('Full URL:', API_URL + url);
     const response = await api.get(url);
     console.log('API Response:', response.data);

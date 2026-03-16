@@ -18,18 +18,66 @@ function Registro() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
+  const validarCampo = (name, value) => {
+    if (!value) return '';
+    switch (name) {
+      case 'nombre':
+      case 'apellido':
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+          return 'Solo se permiten letras ';
+        return '';
+      case 'correo':
+        if (!value.includes('@'))
+          return 'El correo debe contener @';
+        return '';
+      case 'telefono':
+        if (!/^\d+$/.test(value))
+          return 'Solo se permiten números';
+        if (value.length > 10)
+          return 'Máximo 10 dígitos';
+        return '';
+      case 'numeroDocumento':
+        if (!/^\d+$/.test(value))
+          return 'Solo se permiten números';
+        if (value.length > 10)
+          return 'Máximo 10 dígitos';
+        return '';
+      case 'password': {
+        const checks = [];
+        if (value.length < 6 || value.length > 12) checks.push('entre 6 y 12 caracteres');
+        if (!/[A-Z]/.test(value)) checks.push('1 mayúscula');
+        if (!/[0-9]/.test(value)) checks.push('1 número');
+        return checks.length ? `Falta: ${checks.join(', ')}` : '';
+      }
+      default:
+        return '';
+    }
+  };
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setFieldErrors({ ...fieldErrors, [name]: validarCampo(name, value) });
     setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validar todos los campos antes de enviar
+    const errors = {};
+    Object.entries(formData).forEach(([name, value]) => {
+      const msg = validarCampo(name, value);
+      if (msg) errors[name] = msg;
+    });
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -147,12 +195,10 @@ function Registro() {
                       onChange={handleChange}
                       required
                       className="w-full rounded-xl h-12 transition-all"
-                      style={{ 
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                      }}
+                      style={{ border: `1px solid ${fieldErrors.nombre ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                       placeholder="Juan"
                     />
+                    {fieldErrors.nombre && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.nombre}</p>}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold ml-1" style={{ color: '#334155' }}>Apellido</label>
@@ -163,12 +209,10 @@ function Registro() {
                       onChange={handleChange}
                       required
                       className="w-full rounded-xl h-12 transition-all"
-                      style={{ 
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                      }}
+                      style={{ border: `1px solid ${fieldErrors.apellido ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                       placeholder="Pérez"
                     />
+                    {fieldErrors.apellido && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.apellido}</p>}
                   </div>
                 </div>
 
@@ -181,12 +225,10 @@ function Registro() {
                     onChange={handleChange}
                     required
                     className="w-full rounded-xl h-12 transition-all"
-                    style={{ 
-                      border: '1px solid #e2e8f0',
-                      backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                    }}
+                    style={{ border: `1px solid ${fieldErrors.correo ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                     placeholder="usuario@ejemplo.com"
                   />
+                  {fieldErrors.correo && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.correo}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -199,11 +241,8 @@ function Registro() {
                       onChange={handleChange}
                       required
                       className="w-full rounded-xl h-12 transition-all"
-                      style={{ 
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                      }}
-                      placeholder="Min. 8 caracteres"
+                      style={{ border: `1px solid ${fieldErrors.password ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
+                      placeholder="••••••••"
                     />
                     <button
                       type="button"
@@ -214,6 +253,7 @@ function Registro() {
                       {showPassword ? 'visibility_off' : 'visibility'}
                     </button>
                   </div>
+                  {fieldErrors.password && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.password}</p>}
                 </div>
               </section>
 
@@ -240,15 +280,9 @@ function Registro() {
                       onChange={handleChange}
                       required
                       className="w-full rounded-xl h-12 transition-all"
-                      style={{ 
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                      }}
+                      style={{ border: '1px solid #e2e8f0', backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                     >
-                      <option>Cédula de Ciudadanía</option>
-                      <option>Cédula de Extranjería</option>
-                      <option>Pasaporte</option>
-                      <option>PPT</option>
+                      <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
                     </select>
                   </div>
                   <div className="space-y-2">
@@ -259,13 +293,12 @@ function Registro() {
                       value={formData.numeroDocumento}
                       onChange={handleChange}
                       required
+                      maxLength={10}
                       className="w-full rounded-xl h-12 transition-all"
-                      style={{ 
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                      }}
+                      style={{ border: `1px solid ${fieldErrors.numeroDocumento ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                       placeholder="1029384756"
                     />
+                    {fieldErrors.numeroDocumento && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.numeroDocumento}</p>}
                   </div>
                 </div>
 
@@ -278,13 +311,12 @@ function Registro() {
                       value={formData.telefono}
                       onChange={handleChange}
                       required
+                      maxLength={10}
                       className="w-full rounded-xl h-12 transition-all"
-                      style={{ 
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: 'rgba(248, 250, 252, 0.5)'
-                      }}
-                      placeholder="300 000 0000"
+                      style={{ border: `1px solid ${fieldErrors.telefono ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
+                      placeholder="3000000000"
                     />
+                    {fieldErrors.telefono && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.telefono}</p>}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold ml-1" style={{ color: '#334155' }}>Dirección de Residencia</label>

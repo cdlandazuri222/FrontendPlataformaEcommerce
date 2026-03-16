@@ -12,14 +12,32 @@ function Login() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const validarCampo = (name, value) => {
+    if (!value) return '';
+    switch (name) {
+      case 'correo':
+        if (!value.includes('@')) return 'El correo debe contener @';
+        return '';
+      case 'password': {
+        const checks = [];
+        if (value.length < 6 || value.length > 12) checks.push('entre 6 y 12 caracteres');
+        if (!/[A-Z]/.test(value)) checks.push('1 mayúscula');
+        if (!/[0-9]/.test(value)) checks.push('1 número');
+        return checks.length ? `Falta: ${checks.join(', ')}` : '';
+      }
+      default:
+        return '';
+    }
+  };
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setFormData({
-      ...formData,
-      [e.target.name]: value,
-    });
+    const { name } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setFieldErrors({ ...fieldErrors, [name]: validarCampo(name, value) });
     setError('');
   };
 
@@ -202,10 +220,12 @@ function Login() {
                     value={formData.correo}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 rounded-xl border-slate-200 bg-slate-50/50 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 h-12 transition-all placeholder:text-slate-400"
+                    className="w-full pl-12 rounded-xl h-12 transition-all placeholder:text-slate-400"
+                    style={{ border: `1px solid ${fieldErrors.correo ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                     placeholder="usuario@ejemplo.com"
                   />
                 </div>
+                {fieldErrors.correo && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.correo}</p>}
               </div>
 
               <div className="space-y-2">
@@ -221,7 +241,8 @@ function Login() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 pr-12 rounded-xl border-slate-200 bg-slate-50/50 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 h-12 transition-all placeholder:text-slate-400"
+                    className="w-full pl-12 pr-12 rounded-xl h-12 transition-all placeholder:text-slate-400"
+                    style={{ border: `1px solid ${fieldErrors.password ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
                     placeholder="••••••••"
                   />
                   <button
@@ -232,6 +253,7 @@ function Login() {
                     visibility
                   </button>
                 </div>
+                {fieldErrors.password && <p className="text-xs ml-1" style={{ color: '#dc2626' }}>{fieldErrors.password}</p>}
               </div>
 
               <div className="flex items-center gap-2 ml-1">
