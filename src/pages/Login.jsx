@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { authService } from '../services/api';
+import logo from '../assets/Logo.png.png';
+import busCootranar from '../assets/busCootranar.png';
 import '../App.css';
 
 function Login() {
@@ -97,7 +99,7 @@ function Login() {
             <div 
               className="w-full h-full bg-cover bg-center"
               style={{
-                backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuC0-d--scF4TqOJrwxnA_xeMxygJoxLO0rBf672Hz45gLkqUyOAFTctvJaDYCj8EKSXzA-7PllOIGd3sTwVzZM8yRdPpkWcwFIBLNLMq7zSf2VtAmi-i9DstcYG3mS-ZKzVtb3SnUHaahKa_fhHHJT2bHK8U1UJTxMrJhvAMix8GlA-ErIf1ABZ3GSHMoOWk2L8cQz4B4Ap7EgVr84MWELzxskKsZomaOnTWGsCFTWlhYXXozUMrUQ44GumKoJlgMPAaDVl3GsDKMNv")',
+                backgroundImage: `url(${busCootranar})`,
                 filter: 'brightness(0.85) contrast(1.1)'
               }}
             ></div>
@@ -164,20 +166,10 @@ function Login() {
 
         {/* Panel Derecho - Formulario */}
         <div id="form-section" className="w-full lg:w-[50%] flex flex-col bg-white lg:rounded-none rounded-t-[2.5rem] lg:-mt-0 lg:pt-0 relative z-20 custom-scrollbar overflow-y-auto order-2 lg:order-2 shadow-[0_-15px_30px_rgba(0,0,0,0.15)] lg:shadow-none min-h-[100dvh] lg:min-h-0">
-          <div className="flex items-center justify-between p-6 lg:px-12 lg:pt-10">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center shadow-md">
-                <span className="material-symbols-outlined text-white text-2xl">directions_bus</span>
-              </div>
-              <span className="text-2xl font-extrabold tracking-tight text-brand-blue">Cootranar</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-slate-500">¿No tienes cuenta?</span>
-              <Link to="/registro" className="font-bold text-brand-blue hover:text-brand-blue-light transition-colors">Regístrate</Link>
-            </div>
-          </div>
-
           <div className="max-w-[480px] w-full mx-auto px-6 py-8 lg:px-12 lg:py-16 flex-grow flex flex-col justify-center">
+            <div className="flex justify-center mb-8">
+              <img src={logo} alt="Cootranar" className="h-20 w-auto" />
+            </div>
             <header className="mb-10 text-center lg:text-left">
               <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">Bienvenido de nuevo</h1>
               <p className="text-slate-500 text-lg">Inicia sesión para gestionar tus viajes.</p>

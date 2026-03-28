@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { authService } from '../services/api';
+import logo from '../assets/Logo.png.png';
+import busCootranar from '../assets/busCootranar.png';
 import '../App.css';
 
 function Registro() {
@@ -132,13 +134,7 @@ function Registro() {
       <div className="flex w-full h-full lg:h-[95vh] overflow-hidden shadow-2xl bg-white max-w-[1536px] lg:rounded-3xl border border-slate-100">
         {/* Panel Izquierdo - Formulario */}
         <div className="w-full lg:w-[58%] flex flex-col bg-white custom-scrollbar overflow-y-auto">
-          <div className="flex items-center justify-between p-6 lg:px-12 lg:pt-10">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ backgroundColor: '#0a3d82' }}>
-                <span className="material-symbols-outlined text-white text-2xl">directions_bus</span>
-              </div>
-              <span className="text-2xl font-extrabold tracking-tight" style={{ color: '#0a3d82' }}>Cootranar</span>
-            </div>
+          <div className="flex items-center justify-end p-6 lg:px-12 lg:pt-10">
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <span style={{ color: '#64748b' }}>¿Ya tienes cuenta?</span>
               <Link to="/login" className="font-bold transition-colors" style={{ color: '#0a3d82' }}>Iniciar Sesión</Link>
@@ -146,6 +142,9 @@ function Registro() {
           </div>
 
           <div className="max-w-[680px] w-full mx-auto px-6 py-8 lg:px-12 lg:py-12">
+            <div className="flex justify-center mb-8">
+              <img src={logo} alt="Cootranar" className="h-20 w-auto" />
+            </div>
             <header className="mb-10">
               <h1 className="text-4xl font-extrabold tracking-tight mb-3" style={{ color: '#0f172a' }}>Únete a nosotros</h1>
               <p className="text-lg" style={{ color: '#64748b' }}>Crea tu cuenta para gestionar tus tiquetes y beneficios de viaje.</p>
@@ -380,7 +379,7 @@ function Registro() {
             <div 
               className="w-full h-full bg-cover bg-center"
               style={{
-                backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuC0-d--scF4TqOJrwxnA_xeMxygJoxLO0rBf672Hz45gLkqUyOAFTctvJaDYCj8EKSXzA-7PllOIGd3sTwVzZM8yRdPpkWcwFIBLNLMq7zSf2VtAmi-i9DstcYG3mS-ZKzVtb3SnUHaahKa_fhHHJT2bHK8U1UJTxMrJhvAMix8GlA-ErIf1ABZ3GSHMoOWk2L8cQz4B4Ap7EgVr84MWELzxskKsZomaOnTWGsCFTWlhYXXozUMrUQ44GumKoJlgMPAaDVl3GsDKMNv")',
+                backgroundImage: `url(${busCootranar})`,
                 filter: 'brightness(0.85) contrast(1.1)'
               }}
             ></div>
