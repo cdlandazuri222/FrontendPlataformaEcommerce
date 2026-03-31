@@ -4,7 +4,6 @@ import { RegistroPage } from '../pages/auth/RegistroPage';
 import { VerificarEmailPage } from '../pages/auth/VerificarEmailPage';
 import { HomePage } from '../pages/home/HomePage';
 import { SeleccionAsientosPage } from '../pages/seleccion-asientos/SeleccionAsientosPage';
-import { MisViajesPage } from '../pages/mis-viajes/MisViajesPage';
 import { CotizarEncomiendaPage } from '../pages/encomiendas/CotizarEncomiendaPage';
 import { PrivateRoute } from './PrivateRoute';
 import { ROUTES } from '../../shared/constants';
@@ -20,6 +19,7 @@ export const AppRouter = () => {
         <Route path={ROUTES.HOME} element={<HomePage />} />
         <Route path={ROUTES.SELECCION_ASIENTOS} element={<SeleccionAsientosPage />} />
         <Route path={ROUTES.MIS_VIAJES} element={<SeleccionAsientosPage />} />
+
         <Route path={ROUTES.ENCOMIENDAS} element={<CotizarEncomiendaPage />} />
         <Route path={ROUTES.PERFIL} element={<Navigate to={ROUTES.HOME} replace />} />
       </Route>
