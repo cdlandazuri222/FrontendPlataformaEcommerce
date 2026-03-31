@@ -21,7 +21,9 @@ httpClient.interceptors.request.use((config) => {
 httpClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Solo redirigir en 401 si el usuario ya tenía sesión activa (hay token guardado)
+    // Si no hay token, es un intento de login fallido — dejar que el error llegue al handler
+    if (error.response?.status === 401 && localStorage.getItem('authToken')) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('usuario');
       window.location.href = '/login';

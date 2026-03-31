@@ -28,8 +28,8 @@ export const useAuth = () => {
       if (result.token) localStorage.setItem('authToken', result.token);
       return result;
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string } } };
-      const msg = axiosErr.response?.data?.message || 'Error al iniciar sesión';
+      const axiosErr = err as { response?: { data?: { message?: string; data?: { message?: string } } } };
+      const msg = axiosErr.response?.data?.message || axiosErr.response?.data?.data?.message || 'Correo o contraseña incorrectos';
       setError(msg);
       throw err;
     } finally {
