@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../../shared/constants';
+import logo from '../../../assets/Logo.png.png';
 
 const enlaces = [
   { label: 'Home', path: ROUTES.HOME },
@@ -24,11 +25,8 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-100">
       <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
-        <Link to={ROUTES.HOME} className="flex items-center gap-3">
-          <div className="bg-[#0e3a8c] p-1.5 rounded-lg flex items-center justify-center text-white">
-            <span className="material-symbols-outlined text-2xl">directions_bus</span>
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-[#0e3a8c]">Cootranar</h1>
+        <Link to={ROUTES.HOME} className="flex items-center">
+          <img src={logo} alt="Cootranar Logo" className="h-[46px] w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
