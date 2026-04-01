@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../shared/constants';
 import { Navbar } from '../../components/layout/Navbar';
 import { TarjetaViaje } from '../../components/common/TarjetaViaje';
 import busCootranar from '../../../assets/busCootranar.png';
@@ -28,6 +30,7 @@ const VIAJES_PROGRAMADOS: Viaje[] = [
 const HERO_BG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAL9CDZ1831IyzczCQmtcRHIOUvk9Ak8Y0esr_34Rumk_jCH2l0pi2r9lp5BXCBI6L_o76IRAr1Wd_8Y-DKTp2A-koAiZ_SJWXWDXGL7R2lsXT7BbaHkyfh5uQsS29jYLjJE9HkCbjXwFBEwKRUA6jvCyhO1vJcBQyGa8XShx39wOKcF2M_Kp7Juo1M21J8J14KlHGHy5kTyLMunFBLFNMNqdX-CUgoMNJQE_FDLJsqPL6E7HinbTmbbOp4-yxBrVikcZomcDnoayVs';
 
 export function HomePage() {
+  const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState({ origen: '', destino: '', fecha: '' });
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [horaSalida, setHoraSalida] = useState('Mañana');
@@ -239,19 +242,19 @@ export function HomePage() {
 
       {/* Bottom nav móvil */}
       <footer className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 px-6 py-2 pb-6 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-between items-center z-50 rounded-t-2xl">
-        <button className="flex flex-col items-center gap-1 text-[#0e3a8c] p-2 hover:bg-slate-50 rounded-lg transition-colors">
+        <button onClick={() => navigate(ROUTES.HOME)} className="flex flex-col items-center gap-1 text-[#0e3a8c] p-2 hover:bg-slate-50 rounded-lg transition-colors">
           <span className="material-symbols-outlined text-[26px]">home</span>
           <span className="text-[10px] font-extrabold tracking-wide">Home</span>
         </button>
-        <button className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
+        <button onClick={() => navigate(ROUTES.MIS_VIAJES)} className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
           <span className="material-symbols-outlined text-[26px]">confirmation_number</span>
           <span className="text-[10px] font-bold tracking-wide">Mis Viajes</span>
         </button>
-        <button className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
+        <button onClick={() => navigate(ROUTES.ENCOMIENDAS)} className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
           <span className="material-symbols-outlined text-[26px]">box_add</span>
           <span className="text-[10px] font-bold tracking-wide">Encomiendas</span>
         </button>
-        <button className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
+        <button onClick={() => navigate(ROUTES.PERFIL)} className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
           <span className="material-symbols-outlined text-[26px]">person</span>
           <span className="text-[10px] font-bold tracking-wide">Perfil</span>
         </button>

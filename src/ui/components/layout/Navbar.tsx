@@ -23,7 +23,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-slate-100">
+    <header className="sticky top-0 z-[60] bg-white border-b border-slate-100">
       <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
         <Link to={ROUTES.HOME} className="flex items-center">
           <img src={logo} alt="Cootranar Logo" className="h-[46px] w-auto" />
@@ -90,7 +90,7 @@ export function Navbar() {
 
       {/* Menú lateral (Drawer) deslizándose desde la derecha hacia la izquierda */}
       <div 
-        className={`md:hidden fixed top-0 right-0 h-full w-3/4 sm:w-1/2 bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`md:hidden fixed top-0 right-0 h-[100dvh] w-3/4 sm:w-1/2 bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out flex flex-col ${
           menuAbierto ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -122,7 +122,7 @@ export function Navbar() {
         </div>
 
         {usuario ? (
-          <div className="p-4 border-t border-slate-100 bg-slate-50 mt-auto">
+          <div className="p-4 pb-8 border-t border-slate-100 bg-slate-50 mt-auto">
             <div className="mb-4">
               <p className="text-base font-bold text-slate-800">{usuario.nombre}</p>
               <p className="text-sm text-slate-500">{usuario.correo}</p>
@@ -132,7 +132,7 @@ export function Navbar() {
             </button>
           </div>
         ) : (
-          <div className="p-4 border-t border-slate-100 bg-slate-50 mt-auto">
+          <div className="p-4 pb-8 border-t border-slate-100 bg-slate-50 mt-auto">
             <Link
               to={ROUTES.LOGIN}
               onClick={() => setMenuAbierto(false)}

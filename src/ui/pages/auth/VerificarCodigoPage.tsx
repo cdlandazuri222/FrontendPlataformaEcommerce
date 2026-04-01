@@ -55,10 +55,10 @@ export function VerificarCodigoPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden" style={{ backgroundColor: '#f8fafc' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ backgroundColor: '#f8fafc' }}>
       
       {/* Tarjeta Principal */}
-      <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-[440px] px-8 py-10 relative z-10">
+      <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-[440px] px-5 sm:px-8 py-8 sm:py-10 relative z-10">
         
         <button 
           onClick={() => navigate(ROUTES.RECUPERAR_PASSWORD)}
@@ -72,17 +72,17 @@ export function VerificarCodigoPage() {
           <img src={logo} alt="Cootranar" className="h-8 w-auto mix-blend-multiply" />
         </div>
 
-        <h1 className="text-[26px] font-bold text-slate-900 tracking-tight mb-2">
+        <h1 className="text-[22px] sm:text-[26px] font-bold text-slate-900 tracking-tight mb-2">
           Verificar Código
         </h1>
         <p className="text-[13px] text-slate-500 mb-8 leading-relaxed">
           Hemos enviado un código a tu correo...<br/>
-          <strong className="text-[#0B1E4A] font-bold">{email}</strong>
+          <strong className="text-[#0B1E4A] font-bold break-all">{email}</strong>
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
           {/* Inputs del Código */}
-          <div className="flex justify-between gap-2">
+          <div className="flex justify-between gap-1 sm:gap-2">
             {code.map((digit, idx) => (
               <input
                 key={idx}
@@ -93,7 +93,7 @@ export function VerificarCodigoPage() {
                 value={digit}
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-12 h-14 bg-slate-100 rounded-xl text-center text-xl font-bold text-[#0B1E4A] focus:outline-none focus:ring-2 focus:ring-[#0B1E4A] focus:bg-white transition-all border border-transparent focus:border-[#0B1E4A]"
+                className="flex-1 h-12 sm:h-14 max-w-[48px] bg-slate-100 rounded-xl text-center text-lg sm:text-xl font-bold text-[#0B1E4A] focus:outline-none focus:ring-2 focus:ring-[#0B1E4A] focus:bg-white transition-all border border-transparent focus:border-[#0B1E4A]"
               />
             ))}
           </div>
