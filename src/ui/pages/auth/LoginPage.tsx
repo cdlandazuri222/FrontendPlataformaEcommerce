@@ -159,7 +159,7 @@ export function LoginPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-1">
                   <label className="text-sm font-bold text-slate-700">Contraseña</label>
-                  <a href="#" className="text-xs font-bold text-brand-blue hover:text-brand-blue-light">¿Olvidaste tu contraseña?</a>
+                  <Link to={ROUTES.RECUPERAR_PASSWORD} className="text-xs font-bold text-brand-blue hover:text-brand-blue-light">¿Olvidaste tu contraseña?</Link>
                 </div>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-3 text-slate-400">lock</span>

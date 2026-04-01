@@ -25,7 +25,7 @@ export interface AuthClienteService {
   login(credentials: LoginCredentials): Promise<AuthClienteResult>;
   loginGoogle(credencial: string): Promise<AuthClienteResult>;
   registrar(data: RegistroCredentials): Promise<void>;
-  verificarEmail(token: string): Promise<string>;
+  verificarEmail(token: string): Promise<{ message: string; result?: AuthClienteResult }>;
   reenviarVerificacion(correo: string): Promise<void>;
   logout(): Promise<void>;
 }

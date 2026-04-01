@@ -67,26 +67,80 @@ export function RegistroPage() {
       const { confirmarPassword: _, ...data } = formData;
       await registro(data);
       setSuccess(true);
-    } catch {
-      // error handled by useAuth
+    } catch (err: any) {
+      // Mapear mensaje de error del backend hacia error del campo específico si informa duplicado
+      const msg = err?.response?.data?.message?.toLowerCase() || '';
+      if (msg.includes('documento') && (msg.includes('existe') || msg.includes('registrado') || msg.includes('uso'))) {
+        setFieldErrors(prev => ({ ...prev, documento: 'El documento ingresado ya se encuentra registrado' }));
+      }
+      if (msg.includes('correo') && (msg.includes('existe') || msg.includes('registrado') || msg.includes('uso'))) {
+        setFieldErrors(prev => ({ ...prev, correo: 'El correo ingresado ya se encuentra registrado' }));
+      }
     }
   };
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#f8fafc' }}>
-        <div className="bg-white p-10 rounded-2xl shadow-lg max-w-md w-full border border-slate-100 text-center">
-          <span className="material-symbols-outlined text-6xl text-green-500 mb-4 block">mark_email_read</span>
-          <h2 className="text-2xl font-extrabold text-slate-900 mb-3">¡Registro exitoso!</h2>
-          <p className="text-slate-500 mb-6">
-            Te enviamos un correo de verificación a <span className="font-bold text-slate-700">{formData.correo}</span>. Revisa tu bandeja de entrada para activar tu cuenta.
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden" style={{ backgroundColor: '#FAFAFA' }}>
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-slate-100/50 rounded-bl-[100px] -z-10"></div>
+        <div className="absolute bottom-32 right-1/4 w-32 h-32 bg-slate-100/50 rounded-2xl rotate-12 -z-10"></div>
+
+        {/* Header Logo */}
+        <div className="mb-8 flex flex-col items-center z-10">
+          <img src={logo} alt="Cootranar" className="h-8 w-auto mb-3" />
+          <div className="w-8 h-0.5 bg-slate-200 rounded-full"></div>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white px-8 py-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-[420px] w-full text-center relative z-10 border border-slate-50">
+          
+          <div className="flex justify-center mb-6">
+            <div className="w-14 h-14 bg-[#e6f4ea] rounded-xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#1e8e3e] text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            </div>
+          </div>
+
+          <h2 className="text-[24px] font-extrabold text-[#0B1E4A] mb-4">¡Registro Exitoso!</h2>
+          
+          <p className="text-slate-700 mb-4 text-[14px] leading-relaxed font-bold">
+            Hemos enviado un correo de verificación a <br /> tu cuenta
           </p>
-          <Link
-            to={ROUTES.LOGIN}
-            className="inline-block bg-brand-blue text-white font-bold px-8 py-3 rounded-xl hover:bg-brand-blue-light transition-colors"
+          
+          <p className="text-slate-500 mb-8 text-[13px] leading-relaxed px-4">
+            Por favor, revisa tu bandeja de entrada y haz<br />clic en el enlace para activar tu cuenta.
+          </p>
+
+          <a 
+            href="https://mail.google.com" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 bg-[#0B1E4A] hover:bg-[#1a3673] text-white font-semibold text-sm px-8 py-3.5 rounded-lg transition-colors mb-10"
           >
-            Ir a Iniciar Sesión
-          </Link>
+            Ir a mi correo
+            <span className="material-symbols-outlined text-[18px]">mail</span>
+          </a>
+
+          <div>
+            <Link 
+              to={ROUTES.LOGIN} 
+              className="inline-flex items-center gap-2 text-slate-500 hover:text-[#0B1E4A] text-xs font-semibold transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+              Volver al Inicio de Sesión
+            </Link>
+          </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="mt-16 text-center text-[10px] text-slate-400 flex flex-col items-center gap-4 z-10 font-medium">
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-slate-500 transition-colors">Privacy Policy</a>
+            <span>·</span>
+            <a href="#" className="hover:text-slate-500 transition-colors">Terms of Service</a>
+            <span>·</span>
+            <a href="#" className="hover:text-slate-500 transition-colors">Help Center</a>
+          </div>
+          <p>© 2024 Cootranar Administrative Authority. All rights reserved.</p>
         </div>
       </div>
     );

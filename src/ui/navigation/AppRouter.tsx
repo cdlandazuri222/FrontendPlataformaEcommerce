@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegistroPage } from '../pages/auth/RegistroPage';
 import { VerificarEmailPage } from '../pages/auth/VerificarEmailPage';
+import { OlvidoPasswordPage } from '../pages/auth/OlvidoPasswordPage';
+import { VerificarCodigoPage } from '../pages/auth/VerificarCodigoPage';
+import { NuevaPasswordPage } from '../pages/auth/NuevaPasswordPage';
 import { HomePage } from '../pages/home/HomePage';
 import { SeleccionAsientosPage } from '../pages/seleccion-asientos/SeleccionAsientosPage';
 import { MisViajesPage } from '../pages/mis-viajes/MisViajesPage';
@@ -15,6 +18,9 @@ export const AppRouter = () => {
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTRO} element={<RegistroPage />} />
       <Route path={ROUTES.VERIFICAR_EMAIL} element={<VerificarEmailPage />} />
+      <Route path={ROUTES.RECUPERAR_PASSWORD} element={<OlvidoPasswordPage />} />
+      <Route path={ROUTES.VERIFICAR_CODIGO_PASSWORD} element={<VerificarCodigoPage />} />
+      <Route path={ROUTES.NUEVA_PASSWORD} element={<NuevaPasswordPage />} />
 
       <Route element={<PrivateRoute />}>
         <Route path={ROUTES.HOME} element={<HomePage />} />

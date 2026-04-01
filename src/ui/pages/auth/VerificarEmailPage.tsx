@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../../shared/constants';
 
@@ -7,6 +7,7 @@ type Estado = 'verificando' | 'exitoso' | 'error';
 
 export function VerificarEmailPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [estado, setEstado] = useState<Estado>('verificando');
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(true);
@@ -24,7 +25,11 @@ export function VerificarEmailPage() {
       try {
         const msg = await verificarEmail(token);
         setEstado('exitoso');
-        setMensaje(msg || '¡Correo verificado exitosamente!');
+        setMensaje(msg || '¡Correo verificado exitosamente! Redirigiendo...');
+        // Redirigir al home poco después de una verificación exitosa
+        setTimeout(() => {
+          navigate(ROUTES.HOME);
+        }, 2500);
       } catch (err: unknown) {
         const axiosErr = err as { response?: { data?: { message?: string } } };
         setEstado('error');
@@ -34,7 +39,7 @@ export function VerificarEmailPage() {
       }
     };
     verificarToken();
-  }, [searchParams, verificarEmail]);
+  }, [searchParams, verificarEmail, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#f8fafc' }}>
@@ -54,10 +59,10 @@ export function VerificarEmailPage() {
             </div>
             <h1 className="text-2xl font-extrabold mb-4" style={{ color: '#0f172a' }}>¡Cuenta verificada!</h1>
             <p className="mb-8" style={{ color: '#64748b' }}>{mensaje}</p>
-            <Link to={ROUTES.LOGIN}
+            <Link to={ROUTES.HOME}
               className="inline-flex w-full items-center justify-center text-white font-bold h-14 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
               style={{ backgroundColor: '#0a3d82' }}>
-              Iniciar Sesión
+              Ir al Inicio
             </Link>
           </>
         ) : (

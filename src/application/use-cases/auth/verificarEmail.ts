@@ -1,8 +1,8 @@
-import type { AuthClienteService } from '@/domain/services/AuthClienteService';
+import type { AuthClienteService, AuthClienteResult } from '@/domain/services/AuthClienteService';
 
 export const verificarEmail = async (
   authService: AuthClienteService,
   token: string,
-): Promise<string> => {
+): Promise<{ message: string; result?: AuthClienteResult }> => {
   return authService.verificarEmail(token);
 };

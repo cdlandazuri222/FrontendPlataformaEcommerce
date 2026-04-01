@@ -30,9 +30,18 @@ export class ApiAuthClienteService implements AuthClienteService {
     await httpClient.post('/auth/registrar/cliente', data);
   }
 
-  async verificarEmail(token: string): Promise<string> {
+  async verificarEmail(token: string): Promise<{ message: string; result?: AuthClienteResult }> {
     const response = await httpClient.get(`/auth/verificar-email?token=${token}`);
-    return response.data.message;
+    const resData = response.data;
+    const payload = resData.data || resData;
+
+    const authToken = payload.token || payload.access_token;
+    const cliente = payload.usuario ?? payload.cliente;
+
+    return {
+      message: resData.message || 'Verificado de forma correcta.',
+      result: (authToken && cliente) ? { token: authToken, cliente } : undefined,
+    };
   }
 
   async reenviarVerificacion(correo: string): Promise<void> {

@@ -83,7 +83,12 @@ export const useAuth = () => {
     setLoading(true);
     setError('');
     try {
-      return await verificarEmail(authService, token);
+      const res = await verificarEmail(authService, token);
+      if (res.result) {
+        localStorage.setItem('usuario', JSON.stringify(res.result.cliente));
+        if (res.result.token) localStorage.setItem('authToken', res.result.token);
+      }
+      return res.message;
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       const msg = axiosErr.response?.data?.message || 'Error al verificar el correo';
