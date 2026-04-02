@@ -112,71 +112,71 @@ export function MisViajesPage() {
         </div>
 
         {/* Panel de filtros */}
-        <div className="bg-white rounded-[2rem] border border-slate-100 p-6 mb-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-          <div className="flex flex-col sm:flex-row gap-5 items-end">
+        <div className="bg-white rounded-[2rem] border border-slate-100 px-6 py-5 mb-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
             {/* Código de tiquete */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-wide">Código de Tiquete</label>
-              <div className="flex items-center gap-2 border border-slate-200/80 rounded-full px-5 py-3 bg-slate-50/50">
-                <span className="material-symbols-outlined text-slate-400 text-xl">confirmation_number</span>
+              <div className="flex items-center gap-2 border border-slate-200/80 rounded-full px-4 py-2.5 bg-slate-50/50">
+                <span className="material-symbols-outlined text-slate-400 text-lg">confirmation_number</span>
                 <input
                   type="text"
                   placeholder="Ej. TRX-12345"
                   value={codigoBusqueda}
                   onChange={(e) => setCodigoBusqueda(e.target.value)}
-                  className="flex-1 text-sm font-medium outline-none text-slate-700 placeholder:text-slate-400 bg-transparent"
+                  className="flex-1 text-sm font-medium outline-none text-slate-700 placeholder:text-slate-400 bg-transparent min-w-0"
                 />
               </div>
             </div>
 
             {/* Fecha de viaje */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-wide">Fecha de Viaje</label>
-              <div className="flex items-center gap-2 border border-slate-200/80 rounded-full px-5 py-3 bg-slate-50/50">
-                <span className="material-symbols-outlined text-slate-400 text-xl">calendar_month</span>
+              <div className="flex items-center gap-2 border border-slate-200/80 rounded-full px-4 py-2.5 bg-slate-50/50">
+                <span className="material-symbols-outlined text-slate-400 text-lg">calendar_month</span>
                 <input
                   type="text"
                   placeholder="mm/dd/yyyy"
                   value={fechaBusqueda}
                   onChange={(e) => setFechaBusqueda(e.target.value)}
-                  className="flex-1 text-sm font-medium outline-none text-slate-700 placeholder:text-slate-400 bg-transparent"
+                  className="flex-1 text-sm font-medium outline-none text-slate-700 placeholder:text-slate-400 bg-transparent min-w-0"
                 />
-                <span className="material-symbols-outlined text-slate-400 text-lg cursor-pointer">event</span>
+                <span className="material-symbols-outlined text-slate-400 text-base cursor-pointer">event</span>
               </div>
             </div>
 
             {/* Ruta */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-wide">Ruta</label>
-              <div className="flex items-center justify-between border border-slate-200/80 rounded-full px-5 py-3 bg-slate-50/50">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="material-symbols-outlined text-slate-400 text-xl">route</span>
+              <div className="flex items-center justify-between border border-slate-200/80 rounded-full px-4 py-2.5 bg-slate-50/50">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="material-symbols-outlined text-slate-400 text-lg">route</span>
                   <select
                     value={rutaSeleccionada}
                     onChange={(e) => setRutaSeleccionada(e.target.value)}
-                    className="flex-1 text-sm font-medium outline-none text-slate-700 bg-transparent appearance-none cursor-pointer"
+                    className="flex-1 text-sm font-medium outline-none text-slate-700 bg-transparent appearance-none cursor-pointer min-w-0"
                   >
                     {RUTAS.map((ruta) => (
                       <option key={ruta} value={ruta}>{ruta}</option>
                     ))}
                   </select>
                 </div>
-                <span className="material-symbols-outlined text-slate-400 text-xl pointer-events-none">expand_more</span>
+                <span className="material-symbols-outlined text-slate-400 text-lg pointer-events-none">expand_more</span>
               </div>
             </div>
 
             {/* Botones */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 self-end">
               <button
-                onClick={() => {}} // el filtrado es reactivo, no necesita acción
-                className="flex items-center gap-2 bg-[#1b367d] text-white text-sm font-bold px-8 py-3 rounded-full hover:bg-blue-900 transition-colors shadow-lg shadow-blue-900/20"
+                onClick={() => {}}
+                className="flex items-center gap-1.5 bg-[#1b367d] text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-blue-900 transition-colors shadow-md shadow-blue-900/20 whitespace-nowrap"
               >
-                <span className="material-symbols-outlined text-lg">search</span>
+                <span className="material-symbols-outlined text-base">search</span>
                 Buscar
               </button>
               <button
                 onClick={limpiarFiltros}
-                className="text-xs font-extrabold text-[#1b367d] hover:bg-blue-50 px-4 py-3.5 rounded-full transition-colors uppercase tracking-wider"
+                className="text-xs font-extrabold text-[#1b367d] hover:bg-blue-50 px-4 py-2.5 rounded-full transition-colors uppercase tracking-wider whitespace-nowrap"
               >
                 Limpiar
               </button>

@@ -4,6 +4,7 @@ import { Navbar } from '../../components/layout/Navbar';
 import { SelectorAsientos } from '../../components/common/SelectorAsientos';
 import { ROUTES } from '../../../shared/constants';
 import busCootranar from '../../../assets/busCootranar.png';
+import { httpClient } from '../../../infrastructure/api/httpClient';
 
 // Tipos
 type EstadoAsiento = 'disponible' | 'ocupado' | 'reservado' | 'seleccionado';
@@ -73,24 +74,53 @@ export function SeleccionAsientosPage() {
   const viaje: ViajeInfo = (location.state as ViajeInfo) ?? VIAJE_DEFAULT;
 
   const [asientos, setAsientos] = useState<Asiento[]>(generarAsientos);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(false);
 
   // Asientos que el usuario ha seleccionado
   const seleccionados = asientos.filter((a) => a.estado === 'seleccionado');
 
   const handleSeleccionar = (numero: number) => {
+    setErrorMsg(null);
     setAsientos((prev) =>
       prev.map((a) => {
-        if (a.numero !== numero) return a;
-        // Si ya estaba seleccionado, lo volvemos disponible
-        return { ...a, estado: a.estado === 'seleccionado' ? 'disponible' : 'seleccionado' };
+        if (a.numero === numero) {
+          // Toggle del asiento clickeado
+          return { ...a, estado: a.estado === 'seleccionado' ? 'disponible' : 'seleccionado' };
+        }
+        // Deseleccionar cualquier otro que estuviera seleccionado
+        if (a.estado === 'seleccionado') {
+          return { ...a, estado: 'disponible' };
+        }
+        return a;
       })
     );
   };
 
-  const handleConfirmar = () => {
+  const handleConfirmar = async () => {
     if (seleccionados.length === 0) return;
-    // Aquí iría la lógica de confirmación / navegación al pago
-    alert(`Asiento(s) ${seleccionados.map((a) => a.numero).join(', ')} confirmado(s).`);
+
+    setErrorMsg(null);
+    setCargando(true);
+
+    try {
+      // El backend valida si el usuario ya tiene un tiquete comprado para este viaje
+      await httpClient.post('/tiquetes/comprar', {
+        viajeId: (viaje as any).id,
+        asientoNumero: seleccionados[0].numero,
+      });
+
+      navigate(ROUTES.MIS_VIAJES, {
+        state: { asientoComprado: seleccionados[0].numero, viaje },
+      });
+    } catch (error: any) {
+      const mensaje =
+        error?.response?.data?.message ||
+        'No se pudo completar la compra. Intenta de nuevo.';
+      setErrorMsg(mensaje);
+    } finally {
+      setCargando(false);
+    }
   };
 
   const totalPrecio = seleccionados.length * viaje.precio;
@@ -176,6 +206,14 @@ export function SeleccionAsientosPage() {
               {/* Mapa de asientos */}
               <SelectorAsientos asientos={asientos} onSeleccionar={handleSeleccionar} />
 
+              {/* Mensaje de error */}
+              {errorMsg && (
+                <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                  <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
               {/* Footer: precio y botón confirmar */}
               <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -195,11 +233,15 @@ export function SeleccionAsientosPage() {
 
                 <button
                   onClick={handleConfirmar}
-                  disabled={seleccionados.length === 0}
+                  disabled={seleccionados.length === 0 || cargando}
                   className="flex items-center gap-2 bg-[#0e3a8c] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-40 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
                 >
-                  <span className="material-symbols-outlined text-base">check_circle</span>
-                  Confirmar asiento
+                  {cargando ? (
+                    <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-base">check_circle</span>
+                  )}
+                  {cargando ? 'Procesando...' : 'Confirmar asiento'}
                 </button>
               </div>
             </div>
