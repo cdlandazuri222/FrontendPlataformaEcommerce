@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../shared/constants';
 import logo from '../../../assets/Logo.png.png';
+import busCootranar from '../../../assets/busCootranar.png';
 
 export function OlvidoPasswordPage() {
   const navigate = useNavigate();
@@ -37,41 +38,42 @@ export function OlvidoPasswordPage() {
         {/* Panel Izquierdo */}
         <div className="flex w-full h-[100dvh] lg:h-auto lg:w-[50%] relative overflow-hidden bg-[#0B1E4A] order-1 lg:order-1 shrink-0">
           <div className="absolute inset-0 z-0">
-            {/* Gradiente similar al diseño */}
-            <div className="w-full h-full bg-gradient-to-br from-[#4d6c69] via-[#0B1E4A] to-[#041029] opacity-90" />
+            <img src={busCootranar} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
+            <div className="absolute inset-0 bg-black/50" />
           </div>
-          <div className="relative z-10 flex flex-col justify-end p-8 pt-32 pb-8 lg:p-20 text-white w-full h-full">
-            <div className="space-y-8 max-w-lg mb-10 lg:mb-20">
-              <div className="space-y-4">
-                <div className="w-16 h-1 bg-white/30 rounded-full mb-8 lg:mb-12" />
-                <h2 className="text-4xl lg:text-7xl font-bold leading-tight tracking-tight">
-                  Recupera tu<br/>acceso.
-                </h2>
-                <p className="text-base lg:text-lg text-blue-50 font-medium opacity-90 leading-relaxed mt-6 lg:mt-8">
-                  Estamos aquí para ayudarte a volver al camino.<br/>
-                  Restablece tu contraseña de forma segura y<br/>rápida.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 mt-auto">
-               <div className="flex -space-x-2">
-                 <div className="w-8 h-8 rounded-full bg-white text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-[#0B1E4A]">C1</div>
-                 <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-[#0B1E4A]">C2</div>
-                 <div className="w-8 h-8 rounded-full bg-blue-300 text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-[#0B1E4A]">C3</div>
-               </div>
-               <div className="text-sm">
-                 <p className="font-bold">Soporte 24/7</p>
-                 <p className="text-blue-100/80 text-xs">Seguridad garantizada</p>
-               </div>
+          <div className="relative z-10 flex flex-col justify-between p-8 lg:p-14 text-white w-full h-full">
+            {/* Top */}
+            <div className="w-12 h-1 bg-white/40 rounded-full" />
+
+            {/* Center */}
+            <div className="space-y-4">
+              <h2 className="text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight drop-shadow-md">
+                Recupera<br/>tu acceso.
+              </h2>
+              <p className="text-sm lg:text-base text-white/80 leading-relaxed max-w-xs">
+                Restablece tu contraseña de forma segura y rápida. Estamos aquí para ayudarte.
+              </p>
             </div>
 
-            <div className="flex lg:hidden w-full pt-8 pb-4">
-                <a href="#form-section" className="flex items-center justify-center gap-2 bg-white text-brand-blue font-bold px-8 py-4 rounded-xl w-full hover:bg-slate-50 transition-colors shadow-lg shadow-black/10">
-                  <span>Recuperar</span>
-                  <span className="material-symbols-outlined">arrow_downward</span>
-                </a>
+            {/* Bottom */}
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                <div className="w-8 h-8 rounded-full bg-white text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-white/30">C1</div>
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-white/30">C2</div>
+                <div className="w-8 h-8 rounded-full bg-blue-300 text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-white/30">C3</div>
               </div>
+              <div className="text-sm">
+                <p className="font-bold">Soporte 24/7</p>
+                <p className="text-white/60 text-xs">Seguridad garantizada</p>
+              </div>
+            </div>
+
+            <div className="flex lg:hidden w-full">
+              <a href="#form-section" className="flex items-center justify-center gap-2 bg-white text-[#0B1E4A] font-bold px-8 py-4 rounded-xl w-full hover:bg-slate-50 transition-colors shadow-lg">
+                <span>Recuperar</span>
+                <span className="material-symbols-outlined">arrow_downward</span>
+              </a>
+            </div>
           </div>
         </div>
 

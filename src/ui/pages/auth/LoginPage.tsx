@@ -117,7 +117,7 @@ export function LoginPage() {
               </div>
             )}
 
-            <div className="mb-8 google-login-wrapper">
+            <div className="mb-8 flex justify-center google-login-wrapper">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => setError('Error al iniciar sesión con Google. Por favor, intenta de nuevo.')}
@@ -125,8 +125,9 @@ export function LoginPage() {
                 theme="outline"
                 size="large"
                 text="continue_with"
-                shape="rectangular"
+                shape="pill"
                 logo_alignment="left"
+                width="360"
               />
             </div>
 

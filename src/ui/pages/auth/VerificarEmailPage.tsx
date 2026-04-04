@@ -58,7 +58,7 @@ export function VerificarEmailPage() {
               <span className="material-symbols-outlined text-4xl" style={{ color: '#059669' }}>check_circle</span>
             </div>
             <h1 className="text-2xl font-extrabold mb-4" style={{ color: '#0f172a' }}>¡Cuenta verificada!</h1>
-            <p className="mb-8" style={{ color: '#64748b' }}>{mensaje}</p>
+            <p className="mb-8" style={{ color: '#64748b' }}>Cuenta verificada exitosamente</p>
             <Link to={ROUTES.HOME}
               className="inline-flex w-full items-center justify-center text-white font-bold h-14 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
               style={{ backgroundColor: '#0a3d82' }}>

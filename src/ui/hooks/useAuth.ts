@@ -5,6 +5,7 @@ import { loginClienteGoogle } from '../../application/use-cases/auth/loginClient
 import { registrarCliente } from '../../application/use-cases/auth/registrarCliente';
 import { logoutCliente } from '../../application/use-cases/auth/logoutCliente';
 import { verificarEmail } from '../../application/use-cases/auth/verificarEmail';
+import { clearSession } from '../../infrastructure/api/httpClient';
 import type { LoginCredentials, RegistroCredentials } from '../../domain/services/AuthClienteService';
 import type { Cliente } from '../../domain/entities/Cliente';
 
@@ -74,8 +75,8 @@ export const useAuth = () => {
     try {
       await logoutCliente(authService);
     } finally {
-      localStorage.removeItem('usuario');
-      localStorage.removeItem('authToken');
+      // Limpia localStorage + cookies de sesión accesibles desde JS
+      clearSession();
     }
   };
 

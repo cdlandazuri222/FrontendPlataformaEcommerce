@@ -51,4 +51,10 @@ export class ApiAuthClienteService implements AuthClienteService {
   async logout(): Promise<void> {
     await httpClient.post('/auth/logout');
   }
+
+  async refreshToken(): Promise<{ token: string }> {
+    const response = await httpClient.post('/auth/refresh-token');
+    const payload = response.data.data || response.data;
+    return { token: payload.token || payload.access_token };
+  }
 }

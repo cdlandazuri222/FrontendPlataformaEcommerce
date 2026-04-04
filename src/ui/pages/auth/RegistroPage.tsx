@@ -114,7 +114,7 @@ export function RegistroPage() {
             href="https://mail.google.com" 
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 bg-[#0B1E4A] hover:bg-[#1a3673] text-white font-semibold text-sm px-8 py-3.5 rounded-lg transition-colors mb-10"
+            className="w-full flex items-center justify-center gap-2 bg-[#0a3d82] hover:bg-[#0d4fa8] text-white font-semibold text-sm px-8 py-3.5 rounded-lg transition-colors mb-10"
           >
             Ir a mi correo
             <span className="material-symbols-outlined text-[18px]">mail</span>
