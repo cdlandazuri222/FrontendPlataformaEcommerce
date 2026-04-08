@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../../shared/constants';
 import logo from '../../../assets/Logo.png.png';
+import { AvatarUsuario } from '../common/AvatarUsuario';
 
 const enlacesDesktop = [
   { label: 'Home', path: ROUTES.HOME },
@@ -59,10 +60,13 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             {usuario ? (
               <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold leading-none text-[#0e3a8c]">{usuario.nombre}</p>
-                  <p className="text-xs text-slate-400">{usuario.apellido}</p>
-                </div>
+                <Link to={ROUTES.PERFIL} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                  <AvatarUsuario usuario={usuario} size="sm" />
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-bold leading-none text-[#0e3a8c]">{usuario.nombre}</p>
+                    <p className="text-xs text-slate-400">{usuario.apellido}</p>
+                  </div>
+                </Link>
                 <button
                   onClick={handleLogout}
                   title="Cerrar sesión"
@@ -134,9 +138,12 @@ export function Navbar() {
 
         {usuario ? (
           <div className="p-4 pb-8 border-t border-slate-100 bg-slate-50 mt-auto">
-            <div className="mb-4">
-              <p className="text-base font-bold text-slate-800">{usuario.nombre}</p>
-              <p className="text-sm text-slate-500">{usuario.correo}</p>
+            <div className="flex items-center gap-3 mb-4">
+              <AvatarUsuario usuario={usuario} size="md" />
+              <div>
+                <p className="text-base font-bold text-slate-800">{usuario.nombre}</p>
+                <p className="text-sm text-slate-500">{usuario.correo}</p>
+              </div>
             </div>
             <button
               onClick={handleLogout}

@@ -8,4 +8,6 @@ export interface Cliente {
   telefono: string;
   direccion: string;
   activo: boolean;
+  fotoperfil?: string;
+  proveedor?: string;
 }
