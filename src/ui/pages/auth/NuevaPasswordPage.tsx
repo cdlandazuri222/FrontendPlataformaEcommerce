@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '../../../shared/constants';
 import { useAuth } from '../../hooks/useAuth';
 import logo from '../../../assets/Logo.png.png';
