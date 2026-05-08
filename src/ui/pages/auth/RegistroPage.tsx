@@ -147,13 +147,13 @@ export function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-start lg:items-center justify-center lg:p-6" style={{ backgroundColor: '#f8fafc' }}>
+    <div className="min-h-screen flex items-stretch lg:items-center justify-center lg:p-6" style={{ backgroundColor: '#f8fafc' }}>
       <div className="flex w-full min-h-screen lg:min-h-0 lg:h-[95vh] overflow-hidden lg:shadow-2xl bg-brand-blue lg:bg-white max-w-[1536px] lg:rounded-3xl border-0 lg:border border-slate-100 flex-col lg:flex-row">
 
         {/* Panel Izquierdo */}
-        <div className="flex w-full h-[45vh] lg:h-auto lg:w-[45%] relative overflow-hidden bg-brand-blue order-1 lg:order-1 shrink-0">
+        <div className="flex w-full h-[45vh] lg:h-auto lg:w-[45%] relative overflow-hidden bg-brand-blue order-1 lg:order-1 shrink-0 lg:rounded-l-3xl rounded-none">
           <div className="absolute inset-0 z-0">
-            <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${busCootranar})`, filter: 'brightness(0.85) contrast(1.1)' }} />
+            <img src={busCootranar} alt="" className="w-full h-full object-cover object-center" style={{ filter: 'brightness(0.85) contrast(1.1)' }} />
             <div className="absolute inset-0 bg-gradient-to-tl from-brand-blue via-brand-blue/40 to-transparent" />
           </div>
           <div className="relative z-10 flex flex-col justify-end p-8 pb-8 lg:p-16 text-white w-full h-full">

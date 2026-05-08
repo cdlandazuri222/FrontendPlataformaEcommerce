@@ -10,12 +10,14 @@ import { SeleccionAsientosPage } from '../pages/seleccion-asientos/SeleccionAsie
 import { MisViajesPage } from '../pages/mis-viajes/MisViajesPage';
 import { CotizarEncomiendaPage } from '../pages/encomiendas/CotizarEncomiendaPage';
 import { PerfilPage } from '../pages/perfil/PerfilPage';
+import { PagoResultadoPage } from '../pages/pago/PagoResultadoPage';
 import { PrivateRoute } from './PrivateRoute';
 import { ROUTES } from '../../shared/constants';
 
 export const AppRouter = () => {
   return (
     <Routes>
+      {/* Rutas públicas - sin autenticación requerida */}
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTRO} element={<RegistroPage />} />
       <Route path={ROUTES.VERIFICAR_EMAIL} element={<VerificarEmailPage />} />
@@ -23,6 +25,7 @@ export const AppRouter = () => {
       <Route path={ROUTES.VERIFICAR_CODIGO_PASSWORD} element={<VerificarCodigoPage />} />
       <Route path={ROUTES.NUEVA_PASSWORD} element={<NuevaPasswordPage />} />
 
+      {/* Rutas protegidas - requieren autenticación */}
       <Route element={<PrivateRoute />}>
         <Route path={ROUTES.HOME} element={<HomePage />} />
         <Route path={ROUTES.SELECCION_ASIENTOS} element={<SeleccionAsientosPage />} />
@@ -30,6 +33,7 @@ export const AppRouter = () => {
 
         <Route path={ROUTES.ENCOMIENDAS} element={<CotizarEncomiendaPage />} />
         <Route path={ROUTES.PERFIL} element={<PerfilPage />} />
+        <Route path={ROUTES.PAGO_RESULTADO} element={<PagoResultadoPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />

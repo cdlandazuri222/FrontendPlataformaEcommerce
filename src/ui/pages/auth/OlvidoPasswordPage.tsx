@@ -32,7 +32,7 @@ export function OlvidoPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-start lg:items-center justify-center lg:p-6" style={{ backgroundColor: '#f8fafc' }}>
+    <div className="min-h-screen flex items-stretch lg:items-center justify-center lg:p-6" style={{ backgroundColor: '#f8fafc' }}>
       <div className="flex w-full min-h-screen lg:min-h-0 lg:h-[95vh] overflow-hidden lg:shadow-2xl bg-[#0B1E4A] lg:bg-white max-w-[1536px] lg:rounded-3xl border-0 lg:border border-slate-100 flex-col lg:flex-row">
         
         {/* Panel Izquierdo */}
