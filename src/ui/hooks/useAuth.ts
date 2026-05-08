@@ -100,6 +100,36 @@ export const useAuth = () => {
     }
   };
 
+  const handleOlvidoPassword = async (correo: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      await authService.olvidoPassword(correo);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      const msg = axiosErr.response?.data?.message || 'Error al procesar la solicitud';
+      setError(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestablecerPassword = async (token: string, password: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      await authService.restablecerPassword(token, password);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      const msg = axiosErr.response?.data?.message || 'Error al restablecer la contraseña';
+      setError(msg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     error,
@@ -110,5 +140,7 @@ export const useAuth = () => {
     registro: handleRegistro,
     logout: handleLogout,
     verificarEmail: handleVerificarEmail,
+    olvidoPassword: handleOlvidoPassword,
+    restablecerPassword: handleRestablecerPassword,
   };
 };

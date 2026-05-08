@@ -1,35 +1,42 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ROUTES } from '../../../shared/constants';
+import { useAuth } from '../../hooks/useAuth';
 import logo from '../../../assets/Logo.png.png';
 
 export function NuevaPasswordPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') ?? '';
+  const { restablecerPassword, loading } = useAuth();
+
+  useEffect(() => {
+    console.log('[NuevaPasswordPage] Mounted with token:', token);
+  }, [token]);
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Requisitos interactivos
-  const reqLength = password.length >= 8;
+  const reqLength = password.length >= 6 && password.length <= 12;
   const reqNumber = /\d/.test(password);
   const reqUpper = /[A-Z]/.test(password);
-  const reqSpecial = /[^A-Za-z0-9]/.test(password);
+  const isValid = reqLength && reqNumber && reqUpper && password === confirmPassword && password.length > 0;
 
-  const isValid = reqLength && reqNumber && reqUpper && reqSpecial && password === confirmPassword && password.length > 0;
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
-
-    setLoading(true);
-    
-    // Simulate API update password
-    setTimeout(() => {
-      setLoading(false);
+    if (!token) { setError('Token inválido. Solicita un nuevo enlace.'); return; }
+    setError('');
+    try {
+      await restablecerPassword(token, password);
       navigate(ROUTES.LOGIN);
-    }, 1500);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setError(axiosErr.response?.data?.message || 'Error al restablecer la contraseña');
+    }
   };
 
   return (
@@ -112,12 +119,18 @@ export function NuevaPasswordPage() {
                 <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">REQUISITOS DE SEGURIDAD</span>
               </div>
               <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-[11px] font-medium">
-                <Requisito cumple={reqLength} texto="Mín. 8 caracteres" />
+                <Requisito cumple={reqLength} texto="Entre 6 y 12 caracteres" />
                 <Requisito cumple={reqNumber} texto="Un número" />
                 <Requisito cumple={reqUpper} texto="Una mayúscula" />
-                <Requisito cumple={reqSpecial} texto="Carácter especial" />
+                <Requisito cumple={password === confirmPassword && confirmPassword.length > 0} texto="Contraseñas coinciden" />
               </div>
             </div>
+
+            {error && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200">
+                <p className="text-xs font-medium text-red-800">{error}</p>
+              </div>
+            )}
 
             <div className="pt-2">
               <button

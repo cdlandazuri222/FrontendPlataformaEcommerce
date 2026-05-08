@@ -66,6 +66,7 @@ export function PagoResultadoPage() {
     try {
       const res = await httpClient.get(`/wompi/tiquetes/${datosTiquete.idTiquete}/pdf`);
       if (res.data.success && res.data.signedUrl) {
+        // Abrir en nueva pestaña para descarga directa
         window.open(res.data.signedUrl, '_blank');
       }
     } catch {

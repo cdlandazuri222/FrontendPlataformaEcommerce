@@ -1,40 +1,57 @@
-// Tipos de estado que puede tener un asiento
-type EstadoAsiento = 'disponible' | 'ocupado' | 'reservado' | 'seleccionado';
+export type EstadoAsiento = 'LIBRE' | 'OCUPADO' | 'RESERVADO' | 'SELECCIONADO';
 
-interface Asiento {
-  numero: number;
+export interface AsientoConEstado {
+  idasientoviaje: number;
+  numeroasiento: number;
+  piso: number;
+  espoltrona: boolean;
   estado: EstadoAsiento;
+  precio: number | null;
+}
+
+interface CeldaDistribucion {
+  id: number;
+  vacio: boolean;
+  esBano: boolean;
+  numero: number | null;
+  esPasillo: boolean;
+  esPoltrona: boolean;
+}
+
+interface DistribucionAsientos {
+  columnas: number;
+  distribucion: CeldaDistribucion[];
 }
 
 interface Props {
-  asientos: Asiento[];
-  onSeleccionar: (numero: number) => void;
+  distribucion: DistribucionAsientos;
+  asientos: AsientoConEstado[];
+  onSeleccionar: (asiento: AsientoConEstado) => void;
 }
 
-// Colores según el estado del asiento
 const estilosPorEstado: Record<EstadoAsiento, string> = {
-  disponible: 'bg-white border-2 border-slate-200 text-slate-700 hover:border-[#0e3a8c] hover:text-[#0e3a8c] cursor-pointer',
-  ocupado: 'bg-[#0e3a8c] border-2 border-[#0e3a8c] text-white cursor-not-allowed',
-  reservado: 'bg-yellow-400 border-2 border-yellow-400 text-white cursor-not-allowed',
-  seleccionado: 'bg-green-500 border-2 border-green-500 text-white cursor-pointer',
+  LIBRE:       'bg-white border-2 border-slate-200 text-slate-700 hover:border-[#0e3a8c] hover:text-[#0e3a8c] cursor-pointer',
+  OCUPADO:     'bg-[#0e3a8c] border-2 border-[#0e3a8c] text-white cursor-not-allowed opacity-80',
+  RESERVADO:   'bg-yellow-400 border-2 border-yellow-400 text-white cursor-not-allowed',
+  SELECCIONADO:'bg-green-500 border-2 border-green-500 text-white cursor-pointer',
 };
 
-export function SelectorAsientos({ asientos, onSeleccionar }: Props) {
-  // Dividimos los asientos en filas de 4 (2 a cada lado del pasillo)
-  // Columnas: [1, 2] | pasillo | [3, 4]
-  const filas: Asiento[][] = [];
-  for (let i = 0; i < asientos.length; i += 4) {
-    filas.push(asientos.slice(i, i + 4));
+export function SelectorAsientos({ distribucion, asientos, onSeleccionar }: Props) {
+  // Mapa rápido numero → asiento con estado
+  const mapaAsientos = new Map<number, AsientoConEstado>();
+  for (const a of asientos) mapaAsientos.set(a.numeroasiento, a);
+
+  const { columnas, distribucion: celdas } = distribucion;
+
+  // Dividir en filas según columnas
+  const filas: CeldaDistribucion[][] = [];
+  for (let i = 0; i < celdas.length; i += columnas) {
+    filas.push(celdas.slice(i, i + columnas));
   }
 
-  const handleClick = (asiento: Asiento) => {
-    if (asiento.estado === 'ocupado' || asiento.estado === 'reservado') return;
-    onSeleccionar(asiento.numero);
-  };
-
   return (
-    <div className="bg-[#f6f6f8] rounded-3xl p-6 w-full max-w-sm mx-auto">
-      {/* Parte delantera del bus */}
+    <div className="bg-[#f6f6f8] rounded-3xl p-6 w-full max-w-md mx-auto overflow-x-auto">
+      {/* Parte delantera */}
       <div className="flex justify-between items-end mb-6 px-2">
         <div className="flex flex-col items-center gap-1 text-slate-400">
           <span className="material-symbols-outlined text-3xl">person</span>
@@ -47,39 +64,50 @@ export function SelectorAsientos({ asientos, onSeleccionar }: Props) {
       </div>
 
       {/* Filas de asientos */}
-      <div className="space-y-3">
-        {filas.map((fila, indexFila) => (
-          <div key={indexFila} className="flex items-center gap-2 justify-center">
-            {/* Lado izquierdo: columnas 1 y 2 */}
-            <div className="flex gap-2">
-              {fila.slice(0, 2).map((asiento) => (
-                <button
-                  key={asiento.numero}
-                  onClick={() => handleClick(asiento)}
-                  disabled={asiento.estado === 'ocupado' || asiento.estado === 'reservado'}
-                  className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${estilosPorEstado[asiento.estado]}`}
-                >
-                  {asiento.numero}
-                </button>
-              ))}
-            </div>
+      <div className="space-y-2">
+        {filas.map((fila, fi) => (
+          <div key={fi} className="flex gap-1.5 justify-center">
+            {fila.map((celda) => {
+              // Celda vacía / pasillo
+              if (celda.vacio || celda.esPasillo) {
+                return (
+                  <div
+                    key={celda.id}
+                    className={`w-9 h-9 shrink-0 ${celda.esBano ? 'flex items-center justify-center text-slate-300' : ''}`}
+                  >
+                    {celda.esBano && <span className="material-symbols-outlined text-base">wc</span>}
+                  </div>
+                );
+              }
 
-            {/* Pasillo */}
-            <div className="w-6" />
+              // Asiento real
+              const asiento = celda.numero != null ? mapaAsientos.get(celda.numero) : undefined;
+              if (!asiento) {
+                // Asiento sin datos (no debería pasar, pero fallback)
+                return (
+                  <div key={celda.id} className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-xs text-slate-400">
+                    {celda.numero}
+                  </div>
+                );
+              }
 
-            {/* Lado derecho: columnas 3 y 4 */}
-            <div className="flex gap-2">
-              {fila.slice(2, 4).map((asiento) => (
+              const clickable = asiento.estado === 'LIBRE' || asiento.estado === 'SELECCIONADO';
+
+              return (
                 <button
-                  key={asiento.numero}
-                  onClick={() => handleClick(asiento)}
-                  disabled={asiento.estado === 'ocupado' || asiento.estado === 'reservado'}
-                  className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${estilosPorEstado[asiento.estado]}`}
+                  key={celda.id}
+                  onClick={() => clickable && onSeleccionar(asiento)}
+                  disabled={!clickable}
+                  title={celda.esPoltrona ? 'Poltrona' : undefined}
+                  className={`w-9 h-9 shrink-0 rounded-lg text-xs font-bold transition-all relative ${estilosPorEstado[asiento.estado]}`}
                 >
-                  {asiento.numero}
+                  {celda.esPoltrona && (
+                    <span className="absolute -top-1 -right-1 text-[8px] leading-none">★</span>
+                  )}
+                  {asiento.numeroasiento}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         ))}
       </div>
