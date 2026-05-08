@@ -57,4 +57,12 @@ export class ApiAuthClienteService implements AuthClienteService {
     const payload = response.data.data || response.data;
     return { token: payload.token || payload.access_token };
   }
+
+  async olvidoPassword(correo: string): Promise<void> {
+    await httpClient.post('/auth/olvide-password', { correo });
+  }
+
+  async restablecerPassword(token: string, password: string): Promise<void> {
+    await httpClient.post('/auth/restablecer-password', { token, password });
+  }
 }

@@ -9,7 +9,8 @@ export const ROUTES = {
   SELECCION_ASIENTOS: '/seleccion-asientos',
   RECUPERAR_PASSWORD: '/recuperar-password',
   VERIFICAR_CODIGO_PASSWORD: '/recuperar-password/verificar',
-  NUEVA_PASSWORD: '/recuperar-password/nueva',
+  NUEVA_PASSWORD: '/nueva-password',
+  PAGO_RESULTADO: '/pago-resultado',
 } as const;
 
 export const ESTADOS_TIQUETE = {

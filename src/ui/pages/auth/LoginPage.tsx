@@ -118,17 +118,19 @@ export function LoginPage() {
             )}
 
             <div className="mb-8 flex justify-center google-login-wrapper">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setError('Error al iniciar sesión con Google. Por favor, intenta de nuevo.')}
-                useOneTap={false}
-                theme="outline"
-                size="large"
-                text="continue_with"
-                shape="pill"
-                logo_alignment="left"
-                width="360"
-              />
+              {import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'TU_GOOGLE_CLIENT_ID_AQUI' && (
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setError('Error al iniciar sesión con Google. Por favor, intenta de nuevo.')}
+                  useOneTap={false}
+                  theme="outline"
+                  size="large"
+                  text="continue_with"
+                  shape="pill"
+                  logo_alignment="left"
+                  width="360"
+                />
+              )}
             </div>
 
             <div className="relative flex items-center mb-10">

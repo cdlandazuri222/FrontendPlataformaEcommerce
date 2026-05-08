@@ -10,13 +10,10 @@ export const httpClient = axios.create({
   },
 });
 
-// ─── Helpers de sesión ────────────────────────────────────────────────────────
 
-/** Limpia localStorage y todas las cookies de sesión, luego redirige al login. */
 export const clearSession = (): void => {
   localStorage.removeItem('authToken');
   localStorage.removeItem('usuario');
-  // Expira todas las cookies accesibles desde JS (las HttpOnly las borra el backend en /auth/logout)
   document.cookie.split(';').forEach((cookie) => {
     const name = cookie.split('=')[0].trim();
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
@@ -28,8 +25,23 @@ export const clearSession = (): void => {
 // ─── Interceptor de REQUEST: adjunta token ────────────────────────────────────
 httpClient.interceptors.request.use(async (config) => {
   const token = localStorage.getItem('authToken');
+  
+  // Lista de endpoints públicos que NO deben incluir el token
+  const publicEndpoints = [
+    '/auth/login',
+    '/auth/registrar',
+    '/auth/verificar-email',
+    '/auth/olvide-password',
+    '/auth/restablecer-password',
+    '/auth/reenviar-verificacion',
+    '/auth/loginGoogle',
+  ];
+  
+  const isPublicEndpoint = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
 
-  if (token) {
+  console.log('[httpClient] Request:', config.method?.toUpperCase(), config.url, 'isPublic:', isPublicEndpoint);
+
+  if (token && !isPublicEndpoint) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
@@ -38,11 +50,26 @@ httpClient.interceptors.request.use(async (config) => {
 
 // ─── Interceptor de RESPONSE: maneja 401 ─────────────────────────────────────
 httpClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('[httpClient] Response:', response.status, response.config?.url);
+    return response;
+  },
   async (error) => {
+    console.log('[httpClient] Error:', error.response?.status, error.config?.url);
     if (error.response?.status === 401) {
-      clearSession();
-      window.location.href = '/login';
+      // No redirigir si estamos en la página de nueva contraseña o si es una llamada a restablecer-password
+      const currentPath = window.location.pathname;
+      const requestUrl = error.config?.url || '';
+      
+      console.log('[401 Interceptor] Path:', currentPath, 'URL:', requestUrl);
+      
+      if (!currentPath.includes('/nueva-password') && !requestUrl.includes('restablecer-password')) {
+        console.log('[401 Interceptor] Redirecting to login');
+        clearSession();
+        window.location.href = '/login';
+      } else {
+        console.log('[401 Interceptor] Skipping redirect (on nueva-password page)');
+      }
     }
     return Promise.reject(error);
   }

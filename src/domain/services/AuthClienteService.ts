@@ -28,6 +28,7 @@ export interface AuthClienteService {
   verificarEmail(token: string): Promise<{ message: string; result?: AuthClienteResult }>;
   reenviarVerificacion(correo: string): Promise<void>;
   logout(): Promise<void>;
-  /** Solicita un nuevo token al backend usando el token actual (aún válido). */
   refreshToken(): Promise<{ token: string }>;
+  olvidoPassword(correo: string): Promise<void>;
+  restablecerPassword(token: string, password: string): Promise<void>;
 }

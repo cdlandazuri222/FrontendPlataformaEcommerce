@@ -1,34 +1,27 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ROUTES } from '../../../shared/constants';
+import { useAuth } from '../../hooks/useAuth';
 import logo from '../../../assets/Logo.png.png';
 import busCootranar from '../../../assets/busCootranar.png';
 
 export function OlvidoPasswordPage() {
-  const navigate = useNavigate();
+  const { olvidoPassword, loading } = useAuth();
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [enviado, setEnviado] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setError('Por favor ingresa tu correo electrónico');
-      return;
-    }
-    if (!email.includes('@')) {
-      setError('Por favor ingresa un correo electrónico válido');
-      return;
-    }
-    
+    if (!email) { setError('Por favor ingresa tu correo electrónico'); return; }
+    if (!email.includes('@')) { setError('Por favor ingresa un correo electrónico válido'); return; }
     setError('');
-    setLoading(true);
-    
-    // Simulate API request realistically since there is no backend functionality
-    setTimeout(() => {
-      setLoading(false);
-      navigate(ROUTES.VERIFICAR_CODIGO_PASSWORD, { state: { email } });
-    }, 1500);
+    try {
+      await olvidoPassword(email);
+      setEnviado(true);
+    } catch {
+      setError('Ocurrió un error. Intenta de nuevo.');
+    }
   };
 
   return (
@@ -85,8 +78,25 @@ export function OlvidoPasswordPage() {
               <img src={logo} alt="Cootranar" className="h-10 lg:h-12 w-auto" />
             </div>
 
-            {/* Panel de formulario (success eliminado temporalmente por navegación) */}
-              <>
+            {/* Panel de formulario */}
+              {enviado ? (
+                <>
+                  <div className="flex justify-center mb-6">
+                    <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+                      <span className="material-symbols-outlined text-green-600 text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>mark_email_read</span>
+                    </div>
+                  </div>
+                  <h1 className="text-2xl font-extrabold text-slate-900 mb-4">Revisa tu correo</h1>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-8">
+                    Si el correo está registrado, recibirás las instrucciones para restablecer tu contraseña.
+                  </p>
+                  <Link to={ROUTES.LOGIN} className="inline-flex items-center gap-2 text-slate-600 hover:text-[#0B1E4A] text-sm font-bold transition-colors">
+                    <span className="material-symbols-outlined text-lg">arrow_back</span>
+                    Volver al Inicio de Sesión
+                  </Link>
+                </>
+              ) : (
+                <>
                 <header className="mb-10 text-center">
                   <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mb-4">
                     ¿Olvidaste tu contraseña?
@@ -112,10 +122,7 @@ export function OlvidoPasswordPage() {
                         type="email"
                         name="email"
                         value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setError('');
-                        }}
+                        onChange={(e) => { setEmail(e.target.value); setError(''); }}
                         className="w-full pl-12 rounded-xl h-14 transition-all placeholder:text-slate-400 text-sm"
                         style={{ border: `1px solid ${error ? '#f87171' : '#f1f5f9'}`, backgroundColor: '#f8fafc' }}
                         placeholder="ejemplo@cootranar.com.co"
@@ -134,10 +141,7 @@ export function OlvidoPasswordPage() {
                     </button>
                     
                     <div className="mt-8 text-center">
-                      <Link 
-                        to={ROUTES.LOGIN} 
-                        className="inline-flex items-center gap-2 text-slate-600 hover:text-[#0B1E4A] text-sm font-bold transition-colors"
-                      >
+                      <Link to={ROUTES.LOGIN} className="inline-flex items-center gap-2 text-slate-600 hover:text-[#0B1E4A] text-sm font-bold transition-colors">
                         <span className="material-symbols-outlined text-lg">arrow_back</span>
                         Volver al Inicio de Sesión
                       </Link>
@@ -145,6 +149,7 @@ export function OlvidoPasswordPage() {
                   </div>
                 </form>
               </>
+              )}
           </div>
 
           <footer className="mt-auto p-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-400 font-medium">

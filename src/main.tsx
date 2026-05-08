@@ -7,9 +7,13 @@ import App from './App';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'TU_GOOGLE_CLIENT_ID_AQUI';
 
+// Usar un client ID dummy en nueva-password para evitar errores de OAuth
+const isNuevaPasswordPage = window.location.pathname.includes('/nueva-password');
+const clientId = isNuevaPasswordPage ? 'dummy-client-id' : GOOGLE_CLIENT_ID;
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={clientId}>
       <BrowserRouter>
         <App />
       </BrowserRouter>
