@@ -6,10 +6,19 @@ import { ROUTES } from '../../../shared/constants';
 import { httpClient } from '../../../infrastructure/api/httpClient';
 import { useAsientosRealtime } from '../../hooks/useAsientosRealtime';
 import { useWompiPago } from '../../hooks/useWompiPago';
-import { FormularioCompletarPerfil } from '../../components/pago/FormularioCompletarPerfil';
-import { WompiCheckout } from '../../components/pago/WompiCheckout';
+import type { AsientoTransaccionDTO } from '../../../infrastructure/api/wompiApi';
 import busCootranar from '../../../assets/busCootranar.png';
+import { WompiCheckout } from '../../components/pago/WompiCheckout';
+import { FormularioCompletarPerfil } from '../../components/pago/FormularioCompletarPerfil';
 
+const MAX_ASIENTOS = 10;
+
+const TIPOS_DOCUMENTO = [
+  { value: 'CC', label: 'Cédula de Ciudadanía' },
+  { value: 'TI', label: 'Tarjeta de Identidad' },
+  { value: 'CE', label: 'Cédula de Extranjería' },
+  { value: 'PA', label: 'Pasaporte' },
+];
 
 interface LocationState {
   idviaje: number;
@@ -44,6 +53,33 @@ interface AsientosResponse {
   tiempoMaxReservaMin: number;
 }
 
+export interface AsientoSeleccionadoInfo {
+  idasientoviaje: number;
+  numeroasiento: number;
+  precio: number;
+  espoltrona: boolean;
+}
+
+// Datos de pasajero por formulario
+interface DatosPasajero {
+  nombrePasajero: string;
+  apellidoPasajero: string;
+  tipoDocumento: string;
+  documento: string;
+  telefono: string;
+  correoPasajero: string;
+  esComprador: boolean;
+}
+
+interface PasajeroSugerencia {
+  nombre: string;
+  apellido: string;
+  tipoDocumento: string;
+  documento: string;
+  telefono: string;
+  correo: string;
+}
+
 const LEYENDA = [
   { label: 'Disponible',  color: 'bg-white border-2 border-slate-200' },
   { label: 'Vendido',     color: 'bg-[#0e3a8c]' },
@@ -57,31 +93,43 @@ export function SeleccionAsientosPage() {
   const location = useLocation();
   const state = location.state as LocationState | null;
 
+  // --- Estado del mapa de asientos ---
   const [detalle, setDetalle] = useState<DetalleViaje | null>(null);
   const [asientos, setAsientos] = useState<AsientoConEstado[]>([]);
   const [tiempoMaxMin, setTiempoMaxMin] = useState(15);
-  const [asientoSeleccionado, setAsientoSeleccionado] = useState<AsientoConEstado | null>(null);
+  const [asientosSeleccionados, setAsientosSeleccionados] = useState<AsientoSeleccionadoInfo[]>([]);
   const [segundosRestantes, setSegundosRestantes] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  
+
   const [puntosResueltos, setPuntosResueltos] = useState<{ idPuntoOrigen: number | null; idPuntoDestino: number | null }>({
     idPuntoOrigen: null,
     idPuntoDestino: null
   });
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const asientoReservadoRef = useRef<number | null>(null);
+  const asientosReservadosRef = useRef<Set<number>>(new Set());
+  const asientosPendientesRef = useRef<Set<number>>(new Set());
 
-  const asientoPendienteRef = useRef<number | null>(null);
+  // --- Estado de formularios de pasajeros ---
+  const [pasajeros, setPasajeros] = useState<DatosPasajero[]>([]);
+  const [erroresPasajeros, setErroresPasajeros] = useState<Record<number, Record<string, string>>>({});
+  const [sugerencias, setSugerencias] = useState<Record<number, PasajeroSugerencia[]>>({});
+  const [sugerenciaActiva, setSugerenciaActiva] = useState<number | null>(null);
+  const [buscando, setBuscando] = useState<Record<number, boolean>>({});
+  const [usarMisDatosIdx, setUsarMisDatosIdx] = useState<number | null>(null);
+  const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
-  const { fase: fasePago, datosTransaccion, error: errorPago, iniciarPago, completarPerfil, resetear: resetearPago } = useWompiPago();
+  // --- Hook de pago Wompi ---
+  const { fase, datosTransaccion, error: errorPago, iniciarPago, completarPerfil } = useWompiPago();
 
+  // --- Redirigir si no hay viaje ---
   useEffect(() => {
     if (!state?.idviaje) navigate(ROUTES.HOME, { replace: true });
   }, [state, navigate]);
 
+  // --- Cargar datos del viaje y asientos ---
   useEffect(() => {
     if (!state?.idviaje) return;
 
@@ -101,11 +149,9 @@ export function SeleccionAsientosPage() {
             );
             idPuntoOrigen = puntosRes.data.data.idpuntoorigen;
             idPuntoDestino = puntosRes.data.data.idpuntodestino;
-            console.log('[SeleccionAsientos] Puntos resueltos:', { idPuntoOrigen, idPuntoDestino });
           } catch { /* si falla, continuar sin puntos */ }
         }
 
-        // Guardar los puntos resueltos en el estado
         setPuntosResueltos({ idPuntoOrigen, idPuntoDestino });
 
         const [detalleRes, asientosRes] = await Promise.all([
@@ -129,75 +175,71 @@ export function SeleccionAsientosPage() {
     cargar();
   }, [state?.idviaje, state?.idPuntoOrigen, state?.idPuntoDestino]);
 
-  
+  // --- Realtime ---
   const handleCambioRealtime = useCallback((idasientoviaje: number, nuevoEstado: EstadoAsiento) => {
-  
-    if (idasientoviaje === asientoPendienteRef.current && nuevoEstado === 'RESERVADO') {
-      asientoPendienteRef.current = null;
+    if (asientosPendientesRef.current.has(idasientoviaje) && nuevoEstado === 'RESERVADO') {
+      asientosPendientesRef.current.delete(idasientoviaje);
       setAsientos(prev => prev.map(a =>
         a.idasientoviaje === idasientoviaje ? { ...a, estado: 'SELECCIONADO' as EstadoAsiento } : a
       ));
       return;
     }
-    // Para el asiento ya confirmado como propio, no sobreescribir con RESERVADO de Supabase
-    if (idasientoviaje === asientoReservadoRef.current) return;
-    // Para otros asientos, actualizar normalmente
+    if (asientosReservadosRef.current.has(idasientoviaje)) {
+      if (nuevoEstado === 'RESERVADO') {
+        setAsientos(prev => prev.map(a =>
+          a.idasientoviaje === idasientoviaje ? { ...a, estado: 'SELECCIONADO' as EstadoAsiento } : a
+        ));
+      }
+      return;
+    }
     setAsientos(prev => prev.map(a =>
       a.idasientoviaje === idasientoviaje ? { ...a, estado: nuevoEstado } : a
     ));
   }, []);
 
-  useAsientosRealtime(
-    state?.idviaje ?? null,
-    asientoReservadoRef.current,
-    handleCambioRealtime
-  );
-
-  useEffect(() => {
+  // Refetch puntual al reconectar el canal Realtime (cubre truncates y caídas de conexión)
+  const handleReconectarRealtime = useCallback(async () => {
     if (!state?.idviaje || !puntosResueltos.idPuntoOrigen || !puntosResueltos.idPuntoDestino) return;
-
-    const intervalo = setInterval(async () => {
-      try {
-        const res = await httpClient.get<{ data: AsientosResponse }>(
-          `/plataforma-ecommerce/viaje/${state.idviaje}/asientos`,
-          { params: { idPuntoOrigen: puntosResueltos.idPuntoOrigen, idPuntoDestino: puntosResueltos.idPuntoDestino } }
-        );
-        const nuevos = res.data.data.asientos;
-        // Actualizar solo asientos que no son el seleccionado por el usuario
-        setAsientos(prev => prev.map(a => {
-          if (a.idasientoviaje === asientoReservadoRef.current) return a;
-          const actualizado = nuevos.find(n => n.idasientoviaje === a.idasientoviaje);
-          return actualizado ?? a;
-        }));
-      } catch { /* silencioso */ }
-    }, 30000);
-
-    return () => clearInterval(intervalo);
-  }, [state?.idviaje, puntosResueltos.idPuntoOrigen, puntosResueltos.idPuntoDestino]);
-  const liberarAsientoActual = useCallback(async () => {
-    const id = asientoReservadoRef.current;
-    if (!id) return;
-    asientoReservadoRef.current = null;
     try {
-      await httpClient.post(`/asientos/${id}/liberar`);
+      const res = await httpClient.get<{ data: AsientosResponse }>(
+        `/plataforma-ecommerce/viaje/${state.idviaje}/asientos`,
+        { params: { idPuntoOrigen: puntosResueltos.idPuntoOrigen, idPuntoDestino: puntosResueltos.idPuntoDestino } }
+      );
+      const nuevos = res.data.data.asientos;
+      setAsientos(prev => prev.map(a => {
+        if (asientosReservadosRef.current.has(a.idasientoviaje)) return a;
+        const actualizado = nuevos.find(n => n.idasientoviaje === a.idasientoviaje);
+        return actualizado ?? a;
+      }));
     } catch { /* silencioso */ }
+  }, [state?.idviaje, puntosResueltos.idPuntoOrigen, puntosResueltos.idPuntoDestino]);
+
+  const primerReservado = asientosSeleccionados.length > 0 ? asientosSeleccionados[0].idasientoviaje : null;
+  useAsientosRealtime(state?.idviaje ?? null, primerReservado, handleCambioRealtime, handleReconectarRealtime);
+
+  // --- Liberar asientos al salir ---
+  const liberarTodosLosAsientos = useCallback(async () => {
+    const ids = Array.from(asientosReservadosRef.current);
+    asientosReservadosRef.current.clear();
+    for (const id of ids) {
+      try { await httpClient.post(`/asientos/${id}/liberar`); } catch { /* silencioso */ }
+    }
   }, []);
 
   useEffect(() => {
-    const handleUnload = () => liberarAsientoActual();
+    const handleUnload = () => liberarTodosLosAsientos();
     window.addEventListener('beforeunload', handleUnload);
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
-      liberarAsientoActual();
+      liberarTodosLosAsientos();
     };
-  }, [liberarAsientoActual]);
+  }, [liberarTodosLosAsientos]);
 
-  // Countdown del timer de reserva
+  // --- Temporizador compartido ---
   const iniciarCountdown = useCallback((minutos: number) => {
     if (timerRef.current) clearInterval(timerRef.current);
     let segundos = minutos * 60;
     setSegundosRestantes(segundos);
-
     timerRef.current = setInterval(() => {
       segundos -= 1;
       setSegundosRestantes(segundos);
@@ -205,16 +247,19 @@ export function SeleccionAsientosPage() {
         clearInterval(timerRef.current!);
         timerRef.current = null;
         setSegundosRestantes(null);
-        // Capturar el id antes de limpiar la ref
-        const idExpirado = asientoReservadoRef.current;
-        asientoReservadoRef.current = null;
-        setAsientoSeleccionado(null);
-        if (idExpirado) {
-          setAsientos(prev => prev.map(a =>
-            a.idasientoviaje === idExpirado ? { ...a, estado: 'LIBRE' as EstadoAsiento } : a
-          ));
-          httpClient.post(`/asientos/${idExpirado}/liberar`).catch(() => { /* silencioso */ });
+        const ids = Array.from(asientosReservadosRef.current);
+        asientosReservadosRef.current.clear();
+        asientosPendientesRef.current.clear();
+        setAsientosSeleccionados([]);
+        setPasajeros([]);
+        setUsarMisDatosIdx(null);
+        setAsientos(prev => prev.map(a =>
+          ids.includes(a.idasientoviaje) ? { ...a, estado: 'LIBRE' as EstadoAsiento } : a
+        ));
+        for (const id of ids) {
+          httpClient.post(`/asientos/${id}/liberar`).catch(() => {});
         }
+        setErrorMsg('El tiempo de reserva ha expirado. Los asientos han sido liberados.');
       }
     }, 1000);
   }, []);
@@ -224,56 +269,74 @@ export function SeleccionAsientosPage() {
     setSegundosRestantes(null);
   }, []);
 
-  // Seleccionar asiento
+
+  // --- Sincronizar formularios de pasajeros con asientos seleccionados ---
+  useEffect(() => {
+    const numAsientos = asientosSeleccionados.length;
+    setPasajeros(prev => {
+      if (prev.length === numAsientos) return prev;
+      if (numAsientos === 0) return [];
+      // Agregar nuevos formularios vacíos o recortar
+      if (numAsientos > prev.length) {
+        const nuevos = [...prev];
+        for (let i = prev.length; i < numAsientos; i++) {
+          nuevos.push({ nombrePasajero: '', apellidoPasajero: '', tipoDocumento: 'CC', documento: '', telefono: '', correoPasajero: '', esComprador: i === 0 });
+        }
+        return nuevos;
+      }
+      // Recortar si se removieron asientos
+      return prev.slice(0, numAsientos);
+    });
+    // Si se removió un asiento que tenía el toggle activo, limpiar
+    if (usarMisDatosIdx !== null && usarMisDatosIdx >= numAsientos) {
+      setUsarMisDatosIdx(null);
+    }
+  }, [asientosSeleccionados.length]);
+
+  // --- Selección/deselección de asientos ---
   const handleSeleccionar = async (asiento: AsientoConEstado) => {
     setErrorMsg(null);
+    const yaSeleccionado = asientosReservadosRef.current.has(asiento.idasientoviaje) || asiento.estado === 'SELECCIONADO';
 
-    const esMismoAsiento = asientoReservadoRef.current === asiento.idasientoviaje
-      || asiento.estado === 'SELECCIONADO';
-
-    // Deseleccionar si es el mismo
-    if (esMismoAsiento) {
-      const idLiberar = asientoReservadoRef.current ?? asiento.idasientoviaje;
-      asientoReservadoRef.current = null;
-      asientoPendienteRef.current = null;
-      detenerCountdown();
-      setAsientoSeleccionado(null);
+    if (yaSeleccionado) {
+      const idLiberar = asiento.idasientoviaje;
+      const idxRemovido = asientosSeleccionados.findIndex(a => a.idasientoviaje === idLiberar);
+      asientosReservadosRef.current.delete(idLiberar);
+      asientosPendientesRef.current.delete(idLiberar);
+      setAsientosSeleccionados(prev => prev.filter(a => a.idasientoviaje !== idLiberar));
       setAsientos(prev => prev.map(a =>
         a.idasientoviaje === idLiberar ? { ...a, estado: 'LIBRE' as EstadoAsiento } : a
       ));
+      // Si el asiento removido tenía el toggle "Yo soy este pasajero", limpiar
+      if (usarMisDatosIdx === idxRemovido) setUsarMisDatosIdx(null);
+      else if (usarMisDatosIdx !== null && usarMisDatosIdx > idxRemovido) setUsarMisDatosIdx(usarMisDatosIdx - 1);
       try { await httpClient.post(`/asientos/${idLiberar}/liberar`); } catch { /* silencioso */ }
+      if (asientosReservadosRef.current.size === 0) detenerCountdown();
       return;
     }
 
-    // Si hay otro asiento reservado, liberarlo en background
-    if (asientoReservadoRef.current) {
-      const idAnterior = asientoReservadoRef.current;
-      asientoReservadoRef.current = null;
-      asientoPendienteRef.current = null;
-      detenerCountdown();
-      setAsientos(prev => prev.map(a =>
-        a.idasientoviaje === idAnterior ? { ...a, estado: 'LIBRE' as EstadoAsiento } : a
-      ));
-      httpClient.post(`/asientos/${idAnterior}/liberar`).catch(() => { /* silencioso */ });
+    if (asientosSeleccionados.length >= MAX_ASIENTOS) {
+      setErrorMsg(`Puedes seleccionar máximo ${MAX_ASIENTOS} asientos por compra.`);
+      return;
     }
 
-    // Marcar como pendiente — NO pintar todavía.
-    // El color SELECCIONADO aparecerá cuando llegue el evento de Supabase,
-    // exactamente al mismo tiempo que taquilla ve el color RESERVADO.
-    asientoPendienteRef.current = asiento.idasientoviaje;
-    // Guardar para habilitar el botón "Confirmar" y el countdown
-    setAsientoSeleccionado({ ...asiento, estado: 'SELECCIONADO' as EstadoAsiento });
+    asientosPendientesRef.current.add(asiento.idasientoviaje);
+    const nuevaSeleccion: AsientoSeleccionadoInfo = {
+      idasientoviaje: asiento.idasientoviaje,
+      numeroasiento: asiento.numeroasiento,
+      precio: asiento.precio ?? 0,
+      espoltrona: asiento.espoltrona,
+    };
+    setAsientosSeleccionados(prev => [...prev, nuevaSeleccion]);
 
-    // Reservar en backend
     try {
       await httpClient.post(`/asientos/${asiento.idasientoviaje}/reservar`);
-      asientoReservadoRef.current = asiento.idasientoviaje;
-      iniciarCountdown(tiempoMaxMin);
-      // El color verde aparecerá cuando llegue el evento de Supabase (handleCambioRealtime)
+      asientosReservadosRef.current.add(asiento.idasientoviaje);
+      asientosPendientesRef.current.delete(asiento.idasientoviaje);
+      if (asientosReservadosRef.current.size === 1) iniciarCountdown(tiempoMaxMin);
     } catch (err: any) {
-      // Revertir si falla
-      asientoPendienteRef.current = null;
-      setAsientoSeleccionado(null);
+      asientosPendientesRef.current.delete(asiento.idasientoviaje);
+      setAsientosSeleccionados(prev => prev.filter(a => a.idasientoviaje !== asiento.idasientoviaje));
       const msg = err?.response?.data?.message ?? 'El asiento ya no está disponible';
       setErrorMsg(msg);
       if (puntosResueltos.idPuntoOrigen && puntosResueltos.idPuntoDestino) {
@@ -282,16 +345,165 @@ export function SeleccionAsientosPage() {
             `/plataforma-ecommerce/viaje/${state?.idviaje}/asientos`,
             { params: { idPuntoOrigen: puntosResueltos.idPuntoOrigen, idPuntoDestino: puntosResueltos.idPuntoDestino } }
           );
-          setAsientos(res.data.data.asientos);
+          const nuevos = res.data.data.asientos;
+          setAsientos(prev => prev.map(a => {
+            if (asientosReservadosRef.current.has(a.idasientoviaje)) return a;
+            const actualizado = nuevos.find(n => n.idasientoviaje === a.idasientoviaje);
+            return actualizado ?? a;
+          }));
         } catch { /* silencioso */ }
       }
     }
   };
 
-  // Precio del asiento seleccionado
-  const precioFinal = asientoSeleccionado?.precio ?? state?.precio ?? null;
+  // --- Lógica de formularios de pasajeros ---
+  const validarPasajero = useCallback((datos: DatosPasajero): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!datos.nombrePasajero.trim()) errs.nombrePasajero = 'El nombre es obligatorio';
+    if (!datos.apellidoPasajero.trim()) errs.apellidoPasajero = 'El apellido es obligatorio';
+    if (!datos.tipoDocumento) errs.tipoDocumento = 'Selecciona un tipo de documento';
+    if (!datos.documento.trim()) errs.documento = 'El documento es obligatorio';
+    return errs;
+  }, []);
 
-  // Formatear countdown
+  const formularioValido = useCallback((): boolean => {
+    if (pasajeros.length === 0 || pasajeros.length !== asientosSeleccionados.length) return false;
+    for (const p of pasajeros) {
+      const errs = validarPasajero(p);
+      if (Object.keys(errs).length > 0) return false;
+    }
+    return true;
+  }, [pasajeros, asientosSeleccionados.length, validarPasajero]);
+
+  // Toggle exclusivo "Yo soy este pasajero"
+  const handleToggleUsarMisDatos = (index: number, checked: boolean) => {
+    const usuario = localStorage.getItem('usuario');
+    const datosUsuario = usuario ? JSON.parse(usuario) : null;
+
+    if (checked) {
+      // Desactivar el anterior si había uno
+      if (usarMisDatosIdx !== null && usarMisDatosIdx !== index) {
+        setPasajeros(prev => {
+          const copia = [...prev];
+          copia[usarMisDatosIdx!] = { ...copia[usarMisDatosIdx!], nombrePasajero: '', apellidoPasajero: '', tipoDocumento: 'CC', documento: '', telefono: '', correoPasajero: '' };
+          return copia;
+        });
+      }
+      setUsarMisDatosIdx(index);
+      if (datosUsuario) {
+        setPasajeros(prev => {
+          const copia = [...prev];
+          copia[index] = {
+            ...copia[index],
+            nombrePasajero: datosUsuario.nombre || '',
+            apellidoPasajero: datosUsuario.apellido || '',
+            tipoDocumento: datosUsuario.tipoDocumento || 'CC',
+            documento: datosUsuario.documento || '',
+            telefono: datosUsuario.telefono || '',
+            correoPasajero: datosUsuario.correo || '',
+          };
+          return copia;
+        });
+      }
+    } else {
+      setUsarMisDatosIdx(null);
+      setPasajeros(prev => {
+        const copia = [...prev];
+        copia[index] = { ...copia[index], nombrePasajero: '', apellidoPasajero: '', tipoDocumento: 'CC', documento: '', telefono: '', correoPasajero: '' };
+        return copia;
+      });
+    }
+    setErroresPasajeros(prev => ({ ...prev, [index]: {} }));
+  };
+
+  const handleChangePasajero = (index: number, campo: keyof DatosPasajero, valor: string) => {
+    setPasajeros(prev => {
+      const copia = [...prev];
+      copia[index] = { ...copia[index], [campo]: valor };
+      return copia;
+    });
+    setErroresPasajeros(prev => {
+      const copia = { ...prev };
+      if (copia[index]) { const { [campo]: _, ...rest } = copia[index]; copia[index] = rest; }
+      return copia;
+    });
+    // Autocompletado por documento (solo si no tiene toggle activo)
+    if (campo === 'documento' && usarMisDatosIdx !== index) {
+      buscarPasajeroDebounced(index, valor);
+    }
+  };
+
+  const buscarPasajeroDebounced = (index: number, documento: string) => {
+    if (debounceTimers.current[index]) clearTimeout(debounceTimers.current[index]);
+    if (documento.length < 4) { setSugerencias(prev => ({ ...prev, [index]: [] })); setSugerenciaActiva(null); return; }
+    debounceTimers.current[index] = setTimeout(async () => {
+      setBuscando(prev => ({ ...prev, [index]: true }));
+      try {
+        const res = await httpClient.get<{ pasajeros: PasajeroSugerencia[] }>('/wompi/pasajeros/buscar', { params: { documento } });
+        setSugerencias(prev => ({ ...prev, [index]: res.data.pasajeros || [] }));
+        setSugerenciaActiva(index);
+      } catch { setSugerencias(prev => ({ ...prev, [index]: [] })); }
+      finally { setBuscando(prev => ({ ...prev, [index]: false })); }
+    }, 400);
+  };
+
+  const seleccionarSugerencia = (index: number, sugerencia: PasajeroSugerencia) => {
+    setPasajeros(prev => {
+      const copia = [...prev];
+      copia[index] = { ...copia[index], nombrePasajero: sugerencia.nombre, apellidoPasajero: sugerencia.apellido, tipoDocumento: sugerencia.tipoDocumento || 'CC', documento: sugerencia.documento, telefono: sugerencia.telefono || '', correoPasajero: sugerencia.correo || '' };
+      return copia;
+    });
+    setSugerencias(prev => ({ ...prev, [index]: [] }));
+    setSugerenciaActiva(null);
+    setErroresPasajeros(prev => ({ ...prev, [index]: {} }));
+  };
+
+  const handleBlurPasajero = (index: number) => {
+    const errs = validarPasajero(pasajeros[index]);
+    setErroresPasajeros(prev => ({ ...prev, [index]: errs }));
+  };
+
+  const handleCloseSugerencias = () => setSugerenciaActiva(null);
+
+
+  // --- Confirmar y pagar ---
+  const handleConfirmarYPagar = () => {
+    // Validar todos los formularios
+    const nuevosErrores: Record<number, Record<string, string>> = {};
+    let hayErrores = false;
+    pasajeros.forEach((p, idx) => {
+      const errs = validarPasajero(p);
+      if (Object.keys(errs).length > 0) { nuevosErrores[idx] = errs; hayErrores = true; }
+    });
+    setErroresPasajeros(nuevosErrores);
+    if (hayErrores) return;
+
+    if (!puntosResueltos.idPuntoOrigen || !puntosResueltos.idPuntoDestino) return;
+
+    // Construir payload para Wompi
+    const asientosDTO: AsientoTransaccionDTO[] = asientosSeleccionados.map((asiento, idx) => ({
+      idAsientoViaje: asiento.idasientoviaje,
+      idPuntoOrigen: puntosResueltos.idPuntoOrigen!,
+      idPuntoDestino: puntosResueltos.idPuntoDestino!,
+      monto: asiento.precio,
+      esComprador: idx === 0,
+      nombrePasajero: pasajeros[idx].nombrePasajero,
+      apellidoPasajero: pasajeros[idx].apellidoPasajero,
+      tipoDocumento: pasajeros[idx].tipoDocumento,
+      documento: pasajeros[idx].documento,
+      telefono: pasajeros[idx].telefono || undefined,
+      correoPasajero: pasajeros[idx].correoPasajero || undefined,
+    }));
+
+    iniciarPago(state!.idviaje, asientosDTO);
+  };
+
+  // El widget de Wompi se renderiza inline via WompiCheckout cuando fase === 'widget'
+
+  // --- Valores computados ---
+  const precioTotal = asientosSeleccionados.reduce((sum, a) => sum + a.precio, 0);
+  const numerosAsientos = asientosSeleccionados.map(a => a.numeroasiento).sort((a, b) => a - b);
+
   const formatCountdown = (seg: number) => {
     const m = Math.floor(seg / 60).toString().padStart(2, '0');
     const s = (seg % 60).toString().padStart(2, '0');
@@ -322,9 +534,7 @@ export function SeleccionAsientosPage() {
           <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-sm">
             <span className="material-symbols-outlined text-4xl text-red-500 mb-3 block">error</span>
             <p className="text-red-700 font-medium mb-4">{error}</p>
-            <button onClick={() => navigate(-1)} className="bg-[#0e3a8c] text-white px-6 py-2 rounded-xl font-bold text-sm">
-              Volver
-            </button>
+            <button onClick={() => navigate(-1)} className="bg-[#0e3a8c] text-white px-6 py-2 rounded-xl font-bold text-sm">Volver</button>
           </div>
         </div>
       </div>
@@ -334,7 +544,7 @@ export function SeleccionAsientosPage() {
   const imagenDestino = detalle?.imagendestino ?? busCootranar;
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8]">
+    <div className="min-h-screen bg-[#f6f6f8]" onClick={handleCloseSugerencias}>
       <Navbar />
 
       {/* Breadcrumb */}
@@ -356,17 +566,13 @@ export function SeleccionAsientosPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="p-5 pb-3">
                 <p className="text-xs font-bold text-[#0e3a8c] uppercase tracking-widest mb-1">Detalles del Viaje</p>
-                {state.rutaCompleta && (
-                  <p className="text-[10px] text-slate-400 mb-0.5">Ruta: {state.rutaCompleta}</p>
-                )}
+                {state.rutaCompleta && <p className="text-[10px] text-slate-400 mb-0.5">Ruta: {state.rutaCompleta}</p>}
                 <h2 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
                   {state.origen}
                   <span className="material-symbols-outlined text-[#0e3a8c] text-xl">arrow_forward</span>
                   {state.destino}
                 </h2>
               </div>
-
-              {/* Imagen */}
               <div className="relative mx-5 mb-4 rounded-xl overflow-hidden h-40">
                 <img src={imagenDestino} alt={`Ciudad de ${state.destino}`} className="w-full h-full object-cover" />
                 {detalle?.tipoBus.nombre && (
@@ -375,31 +581,21 @@ export function SeleccionAsientosPage() {
                   </div>
                 )}
               </div>
-
-              {/* Info */}
               <div className="px-5 pb-5 space-y-4">
-                <InfoItem icon="directions_bus" label="Vehículo" value={[
-                  `Placa: ${detalle?.vehiculo.placa ?? state.placa}`,
-                  `Móvil: ${detalle?.vehiculo.numeromovil ?? state.movil} (identificador interno, no teléfono)`
-                ].join('\n')} />
-                {detalle?.tipoBus && (
-                  <InfoItem icon="airline_seat_recline_normal" label="Tipo de Bus"
-                    value={[detalle.tipoBus.nombre, detalle.tipoBus.descripcion].filter(Boolean).join('\n')} />
-                )}
+                <InfoItem icon="directions_bus" label="Vehículo" value={`Placa: ${detalle?.vehiculo.placa ?? state.placa}\nMóvil: ${detalle?.vehiculo.numeromovil ?? state.movil}`} />
+                {detalle?.tipoBus && <InfoItem icon="airline_seat_recline_normal" label="Tipo de Bus" value={[detalle.tipoBus.nombre, detalle.tipoBus.descripcion].filter(Boolean).join('\n')} />}
                 <InfoItem icon="schedule" label="Itinerario" value={`Salida: ${state.hora}\nFecha: ${state.fecha}`} />
-                {detalle?.tipoServicio && (
-                  <InfoItem icon="confirmation_number" label="Tipo de Servicio" value={detalle.tipoServicio.nombre} />
-                )}
+                {detalle?.tipoServicio && <InfoItem icon="confirmation_number" label="Tipo de Servicio" value={detalle.tipoServicio.nombre} />}
               </div>
             </div>
           </div>
 
-          {/* Panel derecho: Selector de asientos */}
-          <div className="flex-1">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
-              {/* Encabezado con leyenda */}
+          {/* Panel derecho: Selector de asientos + formularios */}
+          <div className="flex-1 space-y-6">
+            {/* Mapa de asientos */}
+            <div id="mapa-asientos" className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h3 className="text-lg font-extrabold text-slate-800">Selecciona tu asiento</h3>
+                <h3 className="text-lg font-extrabold text-slate-800">Selecciona tus asientos</h3>
                 <div className="flex flex-wrap items-center gap-3">
                   {LEYENDA.map((item) => (
                     <div key={item.label} className="flex items-center gap-1.5">
@@ -410,23 +606,17 @@ export function SeleccionAsientosPage() {
                 </div>
               </div>
 
-              {/* Countdown */}
               {segundosRestantes !== null && (
                 <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold ${
                   segundosRestantes < 60 ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}>
                   <span className="material-symbols-outlined text-base">timer</span>
-                  Asiento reservado por compra por {formatCountdown(segundosRestantes)} — confirma antes de que expire
+                  Asientos reservados por {formatCountdown(segundosRestantes)} — confirma antes de que expire
                 </div>
               )}
 
-              {/* Mapa de asientos */}
               {detalle?.vehiculo.distribucionasientos ? (
-                <SelectorAsientos
-                  distribucion={detalle.vehiculo.distribucionasientos}
-                  asientos={asientos}
-                  onSeleccionar={handleSeleccionar}
-                />
+                <SelectorAsientos distribucion={detalle.vehiculo.distribucionasientos} asientos={asientos} onSeleccionar={handleSeleccionar} />
               ) : (
                 <div className="text-center py-12 text-slate-400">
                   <span className="material-symbols-outlined text-4xl block mb-2">event_seat</span>
@@ -434,7 +624,6 @@ export function SeleccionAsientosPage() {
                 </div>
               )}
 
-              {/* Error */}
               {errorMsg && (
                 <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
                   <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
@@ -442,88 +631,124 @@ export function SeleccionAsientosPage() {
                 </div>
               )}
 
-              {/* Error de pago */}
-              {fasePago === 'error' && errorPago && (
-                <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-                  <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
-                  <span>{errorPago}</span>
-                </div>
-              )}
-
-              {/* Widget Wompi */}
-              {fasePago === 'widget' && datosTransaccion && (
-                <div className="mt-4">
-                  <WompiCheckout key={datosTransaccion.referencia} datos={datosTransaccion} />
-                </div>
-              )}
-
-              {/* Footer: precio y botón */}
-              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  {asientoSeleccionado ? (
-                    <>
+              {/* Resumen de selección */}
+              {asientosSeleccionados.length > 0 && (
+                <div className="mt-6 pt-5 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
                       <p className="text-sm text-slate-500">
-                        Asiento <span className="font-bold text-slate-700">{asientoSeleccionado.numeroasiento}</span>
-                        {asientoSeleccionado.espoltrona && <span className="ml-1 text-amber-500">★ Poltrona</span>}
+                        {asientosSeleccionados.length === 1 ? '1 asiento seleccionado' : `${asientosSeleccionados.length} asientos seleccionados`}
+                        <span className="text-slate-400 ml-1">(máx. {MAX_ASIENTOS})</span>
                       </p>
-                      <p className="text-2xl font-extrabold text-[#0e3a8c]">
-                        {precioFinal != null
-                          ? `$${precioFinal.toLocaleString('es-CO')} COP`
-                          : 'CONSULTAR'}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-slate-400">Selecciona un asiento disponible</p>
-                  )}
+                      <p className="text-xs text-slate-400 mt-0.5">Asientos: {numerosAsientos.join(', ')}</p>
+                    </div>
+                    <p className="text-2xl font-extrabold text-[#0e3a8c]">{precioTotal.toLocaleString('es-CO')} COP</p>
+                  </div>
+                  <button
+                    onClick={() => document.getElementById('formularios-pasajeros')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="w-full flex items-center justify-center gap-2 bg-[#0e3a8c] text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20"
+                  >
+                    <span className="material-symbols-outlined text-base">arrow_downward</span>
+                    Confirmar asiento{asientosSeleccionados.length > 1 ? 's' : ''}
+                  </button>
+                </div>
+              )}
+              {asientosSeleccionados.length === 0 && (
+                <div className="mt-6 pt-5 border-t border-slate-100">
+                  <p className="text-sm text-slate-400 text-center">Selecciona uno o más asientos disponibles para continuar</p>
+                </div>
+              )}
+            </div>
+
+            {/* Panel de formularios de pasajeros (aparece cuando hay asientos seleccionados) */}
+            {asientosSeleccionados.length > 0 && pasajeros.length === asientosSeleccionados.length && (
+              <div id="formularios-pasajeros" className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-extrabold text-slate-800">Datos de Pasajeros</h3>
+                  <button
+                    onClick={() => document.getElementById('mapa-asientos')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#0e3a8c] transition-colors font-medium"
+                  >
+                    <span className="material-symbols-outlined text-base">arrow_upward</span>
+                    Volver a asientos
+                  </button>
+                </div>
+                <div className="space-y-5">
+                  {pasajeros.map((pasajero, idx) => {
+                    const asiento = asientosSeleccionados[idx];
+                    if (!asiento) return null;
+                    return (
+                      <PasajeroFormInline
+                        key={`${asiento.idasientoviaje}-${idx}`}
+                        index={idx}
+                        asiento={asiento}
+                        datos={pasajero}
+                        errores={erroresPasajeros[idx] || {}}
+                        sugerencias={sugerenciaActiva === idx ? (sugerencias[idx] || []) : []}
+                        buscando={buscando[idx] || false}
+                        usarMisDatos={usarMisDatosIdx === idx}
+                        onToggleUsarMisDatos={(checked) => handleToggleUsarMisDatos(idx, checked)}
+                        onChange={handleChangePasajero}
+                        onBlur={handleBlurPasajero}
+                        onSeleccionarSugerencia={seleccionarSugerencia}
+                      />
+                    );
+                  })}
                 </div>
 
-                <button
-                  disabled={!asientoSeleccionado || fasePago === 'preparando' || fasePago === 'verificando'}
-                  onClick={() => {
-                    console.log('[DEBUG] Click en Confirmar asiento');
-                    console.log('[DEBUG] asientoSeleccionado:', asientoSeleccionado);
-                    console.log('[DEBUG] puntosResueltos:', puntosResueltos);
-                    if (!asientoSeleccionado || !puntosResueltos.idPuntoOrigen || !puntosResueltos.idPuntoDestino) {
-                      console.error('[DEBUG] Faltan datos:', { 
-                        asientoSeleccionado: !!asientoSeleccionado, 
-                        idPuntoOrigen: puntosResueltos.idPuntoOrigen, 
-                        idPuntoDestino: puntosResueltos.idPuntoDestino 
-                      });
-                      return;
-                    }
-                    resetearPago();
-                    iniciarPago({
-                      idAsientoViaje: asientoSeleccionado.idasientoviaje,
-                      idPuntoOrigen: puntosResueltos.idPuntoOrigen,
-                      idPuntoDestino: puntosResueltos.idPuntoDestino,
-                      idViaje: state.idviaje,
-                      monto: precioFinal ?? 0
-                    });
-                  }}
-                  className="flex items-center gap-2 bg-[#0e3a8c] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-40 disabled:cursor-not-allowed w-full sm:w-auto justify-center"
-                >
-                  <span className="material-symbols-outlined text-base">
-                    {fasePago === 'preparando' || fasePago === 'verificando' ? 'progress_activity' : 'check_circle'}
-                  </span>
-                  {fasePago === 'preparando' || fasePago === 'verificando' ? 'Procesando...' : 'Confirmar asiento'}
-                </button>
-              </div>
-            </div>
-          </div>
+                {/* Error de pago */}
+                {fase === 'error' && errorPago && (
+                  <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                    <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
+                    <span>{errorPago.mensaje}</span>
+                  </div>
+                )}
 
+                {/* Widget Wompi */}
+                {fase === 'widget' && datosTransaccion && (
+                  <div className="mt-4">
+                    <WompiCheckout key={datosTransaccion.referencia} datos={datosTransaccion} />
+                  </div>
+                )}
+
+                {/* Botón confirmar y pagar */}
+                <div className="mt-6">
+                  <button
+                    onClick={handleConfirmarYPagar}
+                    disabled={!formularioValido() || fase === 'verificando' || fase === 'preparando'}
+                    className="w-full flex items-center justify-center gap-2 bg-[#0e3a8c] text-white px-6 py-4 rounded-2xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {(fase === 'verificando' || fase === 'preparando') ? (
+                      <>
+                        <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-base">payment</span>
+                        Confirmar y Pagar — {precioTotal.toLocaleString('es-CO')} COP
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Modal: Formulario completar perfil */}
-      {fasePago === 'formulario' && (
+      {fase === 'formulario' && (
         <FormularioCompletarPerfil
           onCompletado={completarPerfil}
-          errorExterno={errorPago}
+          errorExterno={errorPago?.mensaje ?? null}
         />
       )}
     </div>
   );
 }
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
 
 function InfoItem({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
@@ -537,6 +762,107 @@ function InfoItem({ icon, label, value }: { icon: string; label: string; value: 
           <p key={i} className="text-sm text-slate-700 font-medium leading-snug">{line}</p>
         ))}
       </div>
+    </div>
+  );
+}
+
+interface PasajeroFormInlineProps {
+  index: number;
+  asiento: AsientoSeleccionadoInfo;
+  datos: DatosPasajero;
+  errores: Record<string, string>;
+  sugerencias: PasajeroSugerencia[];
+  buscando: boolean;
+  usarMisDatos: boolean;
+  onToggleUsarMisDatos: (checked: boolean) => void;
+  onChange: (index: number, campo: keyof DatosPasajero, valor: string) => void;
+  onBlur: (index: number) => void;
+  onSeleccionarSugerencia: (index: number, sugerencia: PasajeroSugerencia) => void;
+}
+
+function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, buscando, usarMisDatos, onToggleUsarMisDatos, onChange, onBlur, onSeleccionarSugerencia }: PasajeroFormInlineProps) {
+  return (
+    <div className="border border-slate-100 rounded-xl p-4">
+      {/* Encabezado */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#0e3a8c] text-white rounded-lg flex items-center justify-center font-bold text-xs">
+            {asiento.numeroasiento}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-800">
+              Pasajero {index + 1}
+              {datos.esComprador && <span className="ml-2 text-xs bg-blue-100 text-[#0e3a8c] px-2 py-0.5 rounded-full font-semibold">Comprador</span>}
+            </p>
+            <p className="text-xs text-slate-400">Asiento #{asiento.numeroasiento} · {asiento.precio.toLocaleString('es-CO')} COP</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Toggle "Yo soy este pasajero" */}
+      <label className="flex items-center gap-2 mb-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={usarMisDatos}
+          onChange={(e) => onToggleUsarMisDatos(e.target.checked)}
+          className="w-4 h-4 rounded border-slate-300 text-[#0e3a8c] focus:ring-[#0e3a8c]"
+        />
+        <span className="text-sm text-slate-600">Yo soy este pasajero</span>
+      </label>
+
+      {/* Campos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <CampoTexto label="Nombre *" value={datos.nombrePasajero} error={errores.nombrePasajero} placeholder="Nombre" onChange={(v) => onChange(index, 'nombrePasajero', v)} onBlur={() => onBlur(index)} />
+        <CampoTexto label="Apellido *" value={datos.apellidoPasajero} error={errores.apellidoPasajero} placeholder="Apellido" onChange={(v) => onChange(index, 'apellidoPasajero', v)} onBlur={() => onBlur(index)} />
+        <CampoSelect label="Tipo Doc *" value={datos.tipoDocumento} error={errores.tipoDocumento} options={TIPOS_DOCUMENTO} onChange={(v) => onChange(index, 'tipoDocumento', v)} onBlur={() => onBlur(index)} />
+        <div className="relative">
+          <CampoTexto label="Documento *" value={datos.documento} error={errores.documento} placeholder="Número de documento" onChange={(v) => onChange(index, 'documento', v)} onBlur={() => onBlur(index)} />
+          {sugerencias.length > 0 && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              {sugerencias.map((s, i) => (
+                <button key={i} type="button" className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0" onClick={() => onSeleccionarSugerencia(index, s)}>
+                  <p className="text-sm font-medium text-slate-700">{s.nombre} {s.apellido}</p>
+                  <p className="text-xs text-slate-400">{s.tipoDocumento} {s.documento}</p>
+                </button>
+              ))}
+            </div>
+          )}
+          {buscando && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg px-4 py-3">
+              <p className="text-xs text-slate-400 flex items-center gap-2">
+                <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                Buscando...
+              </p>
+            </div>
+          )}
+        </div>
+        <CampoTexto label="Teléfono" value={datos.telefono} placeholder="Teléfono (opcional)" onChange={(v) => onChange(index, 'telefono', v)} onBlur={() => onBlur(index)} />
+        <CampoTexto label="Correo" value={datos.correoPasajero} placeholder="Correo (opcional)" onChange={(v) => onChange(index, 'correoPasajero', v)} onBlur={() => onBlur(index)} />
+      </div>
+    </div>
+  );
+}
+
+function CampoTexto({ label, value, error, placeholder, onChange, onBlur }: { label: string; value: string; error?: string; placeholder?: string; onChange: (v: string) => void; onBlur: () => void }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      <input type="text" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
+        className={`w-full bg-[#f0f2f5] rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white ${error ? 'ring-2 ring-red-300 bg-red-50' : ''}`} />
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+function CampoSelect({ label, value, error, options, onChange, onBlur }: { label: string; value: string; error?: string; options: { value: string; label: string }[]; onChange: (v: string) => void; onBlur: () => void }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
+        className={`w-full bg-[#f0f2f5] rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white appearance-none ${error ? 'ring-2 ring-red-300 bg-red-50' : ''}`}>
+        {options.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+      </select>
+      {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }

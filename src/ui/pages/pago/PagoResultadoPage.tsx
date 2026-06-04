@@ -2,17 +2,12 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { httpClient } from '../../../infrastructure/api/httpClient';
 import { ROUTES } from '../../../shared/constants';
-
-interface DatosTiquete {
-  idTiquete: number;
-  codigoTiquete: string;
-  tienePdf: boolean;
-}
+import type { TiqueteReferencia } from '../../../infrastructure/api/wompiApi';
 
 /**
  * Página de resultado de pago Wompi.
  * Recibe ?status=APPROVED|DECLINED&reference=COOTRANAR-xxx
- * Muestra el diseño completo con botón de descarga de PDF.
+ * Muestra el diseño completo con lista de tiquetes y botón de descarga individual por cada uno.
  */
 export function PagoResultadoPage() {
   const [params] = useSearchParams();
@@ -24,59 +19,54 @@ export function PagoResultadoPage() {
   const esAprobado = status === 'APPROVED';
   const esRechazado = status === 'DECLINED' || status === 'VOIDED';
 
-  const [datosTiquete, setDatosTiquete] = useState<DatosTiquete | null>(null);
-  const [descargando, setDescargando] = useState(false);
+  const [tiquetes, setTiquetes] = useState<TiqueteReferencia[]>([]);
+  const [descargandoId, setDescargandoId] = useState<number | null>(null);
   const [errorDescarga, setErrorDescarga] = useState<string | null>(null);
   // PDF puede tardar unos segundos en generarse tras el webhook
   const [intentos, setIntentos] = useState(0);
 
-  // Obtener idTiquete a partir de la referencia (con reintentos si el PDF aún no está listo)
+  // Obtener tiquetes a partir de la referencia (con reintentos si algún PDF aún no está listo)
   useEffect(() => {
     if (!esAprobado || !reference) return;
 
-    const fetchTiquete = async () => {
+    const fetchTiquetes = async () => {
       try {
         const res = await httpClient.get(`/wompi/tiquetes/por-referencia/${reference}`);
-        if (res.data.success) {
-          setDatosTiquete({
-            idTiquete: res.data.idTiquete,
-            codigoTiquete: res.data.codigoTiquete,
-            tienePdf: res.data.tienePdf,
-          });
-          // Si el PDF aún no está listo, reintentar hasta 5 veces cada 3s
-          if (!res.data.tienePdf && intentos < 5) {
-            setTimeout(() => setIntentos((i) => i + 1), 3000);
-          }
+        const lista: TiqueteReferencia[] = res.data.tiquetes || [];
+        setTiquetes(lista);
+
+        // Si algún tiquete aún no tiene PDF listo, reintentar hasta 5 veces cada 3s
+        const todosConPdf = lista.length > 0 && lista.every((t) => t.tienePdf);
+        if (!todosConPdf && intentos < 5) {
+          setTimeout(() => setIntentos((i) => i + 1), 3000);
         }
       } catch {
-        // El tiquete puede no estar listo aún (webhook en proceso), reintentar
+        // Los tiquetes pueden no estar listos aún (webhook en proceso), reintentar
         if (intentos < 5) {
           setTimeout(() => setIntentos((i) => i + 1), 3000);
         }
       }
     };
 
-    fetchTiquete();
+    fetchTiquetes();
   }, [esAprobado, reference, intentos]);
 
-  const handleDescargar = async () => {
-    if (!datosTiquete?.idTiquete) return;
-    setDescargando(true);
+  const handleDescargar = async (idTiquete: number) => {
+    setDescargandoId(idTiquete);
     setErrorDescarga(null);
     try {
-      const res = await httpClient.get(`/wompi/tiquetes/${datosTiquete.idTiquete}/pdf`);
+      const res = await httpClient.get(`/wompi/tiquetes/${idTiquete}/pdf`);
       if (res.data.success && res.data.signedUrl) {
-        // Abrir en nueva pestaña para descarga directa
         window.open(res.data.signedUrl, '_blank');
       }
     } catch {
       setErrorDescarga('No se pudo generar el enlace de descarga. Intenta de nuevo.');
     } finally {
-      setDescargando(false);
+      setDescargandoId(null);
     }
   };
 
-  const pdfListo = datosTiquete?.tienePdf;
+  const todosConPdf = tiquetes.length > 0 && tiquetes.every((t) => t.tienePdf);
 
   return (
     <div className="min-h-screen bg-[#f6f6f8] font-[Plus_Jakarta_Sans] py-8 px-6">
@@ -109,7 +99,7 @@ export function PagoResultadoPage() {
                     <span className="material-symbols-outlined text-5xl text-red-500">cancel</span>
                   </div>
                   <h1 className="text-3xl font-extrabold text-[#111318] mb-2">Pago no procesado</h1>
-                  <p className="text-slate-500 text-lg">Tu pago fue rechazado o cancelado. El asiento ha sido liberado.</p>
+                  <p className="text-slate-500 text-lg">Tu pago fue rechazado o cancelado. Los asientos han sido liberados.</p>
                 </>
               )}
               {!esAprobado && !esRechazado && (
@@ -134,12 +124,6 @@ export function PagoResultadoPage() {
                         <span className="text-xs text-slate-500">Referencia de pago</span>
                         <span className="text-xs font-mono font-medium text-slate-700">{reference}</span>
                       </div>
-                      {datosTiquete?.codigoTiquete && (
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-xs text-slate-500">Código tiquete</span>
-                          <span className="text-xs font-mono font-medium text-slate-700">{datosTiquete.codigoTiquete}</span>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -151,49 +135,88 @@ export function PagoResultadoPage() {
                     </p>
                   </div>
 
-                  {/* Estado del PDF */}
-                  {!pdfListo && intentos < 5 && (
+                  {/* Estado del PDF - generando */}
+                  {!todosConPdf && intentos < 5 && (
                     <div className="flex items-center gap-2 text-sm text-slate-400 mb-4 justify-center">
                       <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                      Generando tu tiquete PDF...
+                      Generando tus tiquetes PDF...
                     </div>
                   )}
 
                   {errorDescarga && (
                     <p className="text-xs text-red-500 text-center mb-4">{errorDescarga}</p>
                   )}
+
+                  {/* Lista de tiquetes */}
+                  {tiquetes.length > 0 && (
+                    <div className="space-y-3 mb-6">
+                      {tiquetes.map((tiquete) => (
+                        <div
+                          key={tiquete.idTiquete}
+                          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                              <span className="material-symbols-outlined text-[#0e3a8c] text-xl">airline_seat_recline_normal</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-[#111318]">Asiento {tiquete.numeroAsiento}</p>
+                              <p className="text-xs text-slate-500 font-mono truncate">{tiquete.codigoTiquete}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDescargar(tiquete.idTiquete)}
+                            disabled={descargandoId === tiquete.idTiquete || !tiquete.tienePdf}
+                            className="px-4 py-2 bg-[#0e3a8c] text-white rounded-lg text-sm font-bold hover:bg-blue-900 transition-all shadow-sm flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {descargandoId === tiquete.idTiquete ? (
+                              <>
+                                <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                <span className="hidden sm:inline">Descargando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="material-symbols-outlined text-sm">download</span>
+                                <span className="hidden sm:inline">{tiquete.tienePdf ? 'Descargar PDF' : 'Preparando...'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Botón descargar todos */}
+                      {tiquetes.length > 1 && todosConPdf && (
+                        <button
+                          onClick={async () => {
+                            for (const t of tiquetes) {
+                              try {
+                                const res = await httpClient.get(`/wompi/tiquetes/${t.idTiquete}/pdf`);
+                                if (res.data.success && res.data.signedUrl) {
+                                  window.open(res.data.signedUrl, '_blank');
+                                }
+                              } catch { /* silencioso */ }
+                            }
+                          }}
+                          className="w-full px-4 py-3 bg-[#0e3a8c] text-white rounded-xl text-sm font-bold hover:bg-blue-900 transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-sm">download</span>
+                          Descargar todos los tiquetes ({tiquetes.length})
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 
-              {/* Botones */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              {/* Botón volver al inicio */}
+              <div className="flex justify-center pt-2">
                 <button
                   onClick={() => navigate(ROUTES.HOME)}
-                  className="order-2 sm:order-1 px-8 py-3.5 border-2 border-slate-200 text-slate-600 rounded-lg font-bold hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+                  className="px-8 py-3.5 border-2 border-slate-200 text-slate-600 rounded-lg font-bold hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
                 >
                   <span className="material-symbols-outlined">home</span>
                   Volver al Inicio
                 </button>
-
-                {esAprobado && (
-                  <button
-                    onClick={handleDescargar}
-                    disabled={descargando || !pdfListo}
-                    className="order-1 sm:order-2 px-8 py-3.5 bg-[#0e3a8c] text-white rounded-lg font-bold hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {descargando ? (
-                      <>
-                        <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                        Descargando...
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined">download</span>
-                        {pdfListo ? 'Descargar Tiquete (PDF)' : 'Preparando PDF...'}
-                      </>
-                    )}
-                  </button>
-                )}
               </div>
             </div>
 

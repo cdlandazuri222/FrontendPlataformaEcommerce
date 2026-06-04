@@ -1,13 +1,19 @@
 import { useState } from 'react';
-import { wompiApi, type CompletarPerfilDTO, type DatosTransaccionWompi, type PrepararTransaccionDTO } from '../../infrastructure/api/wompiApi';
+import { wompiApi, type CompletarPerfilDTO, type DatosTransaccionWompi, type PrepararTransaccionDTO, type AsientoTransaccionDTO } from '../../infrastructure/api/wompiApi';
 
 export type FasePago = 'idle' | 'verificando' | 'formulario' | 'preparando' | 'widget' | 'error';
+
+export interface ErrorPago {
+  mensaje: string;
+  codigo?: string;
+  status?: number;
+}
 
 interface UseWompiPagoReturn {
   fase: FasePago;
   datosTransaccion: DatosTransaccionWompi | null;
-  error: string | null;
-  iniciarPago: (params: PrepararTransaccionDTO) => Promise<void>;
+  error: ErrorPago | null;
+  iniciarPago: (idViaje: number, asientos: AsientoTransaccionDTO[]) => Promise<void>;
   completarPerfil: (datos: CompletarPerfilDTO) => Promise<void>;
   resetear: () => void;
 }
@@ -15,22 +21,21 @@ interface UseWompiPagoReturn {
 export function useWompiPago(): UseWompiPagoReturn {
   const [fase, setFase] = useState<FasePago>('idle');
   const [datosTransaccion, setDatosTransaccion] = useState<DatosTransaccionWompi | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-
+  const [error, setError] = useState<ErrorPago | null>(null);
   const [paramsPendientes, setParamsPendientes] = useState<PrepararTransaccionDTO | null>(null);
 
-  const iniciarPago = async (params: PrepararTransaccionDTO) => {
+  const iniciarPago = async (idViaje: number, asientos: AsientoTransaccionDTO[]) => {
     setError(null);
     setFase('verificando');
-    setParamsPendientes(params);
+
+    const payload: PrepararTransaccionDTO = { idViaje, asientos };
+    setParamsPendientes(payload);
 
     try {
       const { estadousuario } = await wompiApi.obtenerEstadoCliente();
-      console.log('[Wompi] estadousuario:', estadousuario);
 
       if (estadousuario === 'INACTIVO') {
-        setError('Debes verificar tu correo electrónico antes de realizar un pago.');
+        setError({ mensaje: 'Debes verificar tu correo electrónico antes de realizar un pago.', codigo: 'CORREO_NO_VERIFICADO' });
         setFase('error');
         return;
       }
@@ -40,11 +45,10 @@ export function useWompiPago(): UseWompiPagoReturn {
         return;
       }
 
-
-      await _prepararYMostrarWidget(params);
+      await _prepararYMostrarWidget(payload);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al verificar el estado del cliente';
-      setError(msg);
+      const errorPago = extraerError(err);
+      setError(errorPago);
       setFase('error');
     }
   };
@@ -71,42 +75,20 @@ export function useWompiPago(): UseWompiPagoReturn {
         await _prepararYMostrarWidget(paramsPendientes);
       }
     } catch (err: unknown) {
-      let msg = 'Error al actualizar el perfil';
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as any;
-        msg = axiosError.response?.data?.message || msg;
-      } else if (err instanceof Error) {
-        msg = err.message;
-      }
-      
-      setError(msg);
+      const errorPago = extraerError(err);
+      setError(errorPago);
     }
   };
 
   const _prepararYMostrarWidget = async (params: PrepararTransaccionDTO) => {
     setFase('preparando');
     try {
-      console.log('[Wompi] Preparando transacción con params:', params);
       const datos = await wompiApi.prepararTransaccion(params);
-      console.log('[Wompi] Datos recibidos del backend:', datos);
-      console.log('[Wompi] Tipo de datos:', typeof datos);
-      console.log('[Wompi] Keys de datos:', Object.keys(datos));
       setDatosTransaccion(datos);
-      console.log('[Wompi] Cambiando fase a widget');
       setFase('widget');
     } catch (err: unknown) {
-      console.error('[Wompi] Error preparando transacción:', err);
-      
-      // Extraer mensaje de error del backend
-      let msg = 'Error al preparar el pago';
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as any;
-        msg = axiosError.response?.data?.message || msg;
-      } else if (err instanceof Error) {
-        msg = err.message;
-      }
-      
-      setError(msg);
+      const errorPago = extraerError(err);
+      setError(errorPago);
       setFase('error');
     }
   };
@@ -119,4 +101,21 @@ export function useWompiPago(): UseWompiPagoReturn {
   };
 
   return { fase, datosTransaccion, error, iniciarPago, completarPerfil, resetear };
+}
+
+function extraerError(err: unknown): ErrorPago {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const axiosError = err as any;
+    const data = axiosError.response?.data;
+    const status = axiosError.response?.status;
+    return {
+      mensaje: data?.message || 'Error al procesar el pago',
+      codigo: data?.codigo,
+      status,
+    };
+  }
+  if (err instanceof Error) {
+    return { mensaje: err.message };
+  }
+  return { mensaje: 'Error inesperado al procesar el pago' };
 }

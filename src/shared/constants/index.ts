@@ -11,6 +11,7 @@ export const ROUTES = {
   VERIFICAR_CODIGO_PASSWORD: '/recuperar-password/verificar',
   NUEVA_PASSWORD: '/nueva-password',
   PAGO_RESULTADO: '/pago-resultado',
+  FORMULARIO_PASAJEROS: '/formulario-pasajeros',
 } as const;
 
 export const ESTADOS_TIQUETE = {

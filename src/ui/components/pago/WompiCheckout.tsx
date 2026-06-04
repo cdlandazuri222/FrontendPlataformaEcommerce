@@ -102,7 +102,7 @@ export function WompiCheckout({ datos }: Props) {
             setTimeout(() => {
               console.log('[WompiCheckout] Redirigiendo a página de éxito');
               window.location.href = `${ROUTES.PAGO_RESULTADO}?status=APPROVED&reference=${datos.referencia}`;
-            }, 300);
+            }, 100);
             
           } else if (nuevoEstado === 'RECHAZADO') {
             console.log('[WompiCheckout] ❌ Pago rechazado, cerrando modal y redirigiendo...');
@@ -114,7 +114,7 @@ export function WompiCheckout({ datos }: Props) {
             setTimeout(() => {
               console.log('[WompiCheckout] Redirigiendo a página de error');
               window.location.href = `${ROUTES.PAGO_RESULTADO}?status=DECLINED&reference=${datos.referencia}`;
-            }, 300);
+            }, 100);
             
           } else {
             console.log('[WompiCheckout] ⚠️ Estado no reconocido o sin cambio:', nuevoEstado);
