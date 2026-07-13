@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../../shared/constants';
 import { Navbar } from '../../components/layout/Navbar';
 import { TarjetaViaje } from '../../components/common/TarjetaViaje';
 import { ComboboxCiudades, type OpcionCombobox } from '../../components/common/ComboboxCiudades';
 import { plataformaEcommerceApi, type CiudadOrigen, type OpcionDestino, type ViajesQuery } from '../../../infrastructure/api/plataformaEcommerceApi';
 import { useViajesHome } from '../../hooks/useViajesHome';
+import { usePreferencias } from '../../context/PreferenciasContext';
 
 const HERO_BG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAL9CDZ1831IyzczCQmtcRHIOUvk9Ak8Y0esr_34Rumk_jCH2l0pi2r9lp5BXCBI6L_o76IRAr1Wd_8Y-DKTp2A-koAiZ_SJWXWDXGL7R2lsXT7BbaHkyfh5uQsS29jYLjJE9HkCbjXwFBEwKRUA6jvCyhO1vJcBQyGa8XShx39wOKcF2M_Kp7Juo1M21J8J14KlHGHy5kTyLMunFBLFNMNqdX-CUgoMNJQE_FDLJsqPL6E7HinbTmbbOp4-yxBrVikcZomcDnoayVs';
 
@@ -28,7 +27,8 @@ function hoyISO(): string {
 
 
 export function HomePage() {
-  const navigate = useNavigate();
+  const { tx, idioma } = usePreferencias();
+  const h = tx.home;
 
   const [origenSeleccionado, setOrigenSeleccionado] = useState<OpcionCombobox | null>(null);
   const [destinoSeleccionado, setDestinoSeleccionado] = useState<OpcionCombobox | null>(null);
@@ -77,7 +77,7 @@ export function HomePage() {
     const val = e.target.value;
     setFecha(val);
     if (val && val < hoyISO()) {
-      setFechaError('La fecha no puede ser anterior a hoy');
+      setFechaError(idioma === 'es' ? 'La fecha no puede ser anterior a hoy' : 'The date cannot be before today');
     } else {
       setFechaError('');
     }
@@ -108,7 +108,7 @@ export function HomePage() {
   const handleBuscar = (e: React.FormEvent) => {
     e.preventDefault();
     if (fecha && fecha < hoyISO()) {
-      setFechaError('La fecha no puede ser anterior a hoy');
+      setFechaError(idioma === 'es' ? 'La fecha no puede ser anterior a hoy' : 'The date cannot be before today');
       return;
     }
     setFiltrosActivos({
@@ -120,7 +120,7 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8]">
+    <div className="min-h-screen bg-[#f6f6f8] dark:bg-slate-900 transition-colors duration-200">
       <Navbar />
 
       {/* Hero */}
@@ -136,17 +136,21 @@ export function HomePage() {
 
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 w-full relative z-10 py-10 md:py-16">
           <div className="max-w-xl text-white mb-10">
-            <span className="bg-[#0e3a8c] px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider inline-block">
-              Nuevo Servicio
+            <span className="bg-[#0e3a8c] dark:bg-blue-600 px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider inline-block">
+              {idioma === 'es' ? 'Nuevo Servicio' : 'New Service'}
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mt-4 mb-3 md:mb-4 leading-tight">
-              Tu seguridad es nuestra prioridad
+              {idioma === 'es' ? 'Tu seguridad es nuestra prioridad' : 'Your safety is our priority'}
             </h2>
-            <p className="text-lg opacity-90">Viaja tranquilo con rastreo GPS y conductores certificados.</p>
+            <p className="text-lg opacity-90">
+              {idioma === 'es'
+                ? 'Viaja tranquilo con rastreo GPS y conductores certificados.'
+                : 'Travel with peace of mind with GPS tracking and certified drivers.'}
+            </p>
           </div>
 
           {/* Buscador */}
-          <div className="bg-white rounded-2xl shadow-2xl p-5 md:p-6 lg:p-8 border border-white/20 mt-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-5 md:p-6 lg:p-8 border border-white/20 dark:border-slate-700 mt-4 transition-colors">
             <form onSubmit={handleBuscar}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5 items-end">
                 {/* Origen combobox */}
@@ -155,10 +159,10 @@ export function HomePage() {
                   value={origenTexto}
                   onInputChange={setOrigenTexto}
                   onSelect={handleOrigenSelect}
-                  placeholder="¿Desde dónde sales?"
+                  placeholder={h.seleccionarOrigen}
                   loading={loadingOrigen}
                   icon="location_on"
-                  label="Origen"
+                  label={h.origen}
                 />
 
                 {/* Destino combobox */}
@@ -167,24 +171,24 @@ export function HomePage() {
                   value={destinoTexto}
                   onInputChange={setDestinoTexto}
                   onSelect={handleDestinoSelect}
-                  placeholder="¿A dónde vas?"
+                  placeholder={h.seleccionarDestino}
                   loading={loadingDestino}
                   disabled={opcionesDestino.length === 0 && !loadingDestino && !origenSeleccionado}
                   icon="near_me"
-                  label="Destino"
+                  label={h.destino}
                 />
 
                 {/* Fecha */}
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-[#111318] flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#0e3a8c] text-lg">calendar_month</span> Fecha de salida
+                  <span className="text-sm font-semibold text-[#111318] dark:text-slate-200 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-lg">calendar_month</span> {h.fecha}
                   </span>
                   <input
                     type="date"
                     value={fecha}
                     min={hoyISO()}
                     onChange={handleFechaChange}
-                    className={`w-full bg-[#f6f6f8] border-none rounded-lg h-12 px-4 focus:ring-2 focus:ring-[#0e3a8c] outline-none transition-all text-sm ${
+                    className={`w-full bg-[#f6f6f8] dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-none rounded-lg h-12 px-4 focus:ring-2 focus:ring-[#0e3a8c] dark:focus:ring-blue-400 outline-none transition-all text-sm ${
                       fechaError ? 'ring-2 ring-red-400' : ''
                     }`}
                   />
@@ -194,58 +198,58 @@ export function HomePage() {
                 <button
                   type="button"
                   onClick={limpiarFiltros}
-                  className="bg-slate-50 border border-slate-200 text-[#0e3a8c] h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-100 transition-all text-sm w-full"
+                  className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[#0e3a8c] dark:text-blue-400 h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-600 transition-all text-sm w-full"
                 >
                   <span className="material-symbols-outlined text-base">filter_alt_off</span>
-                  Limpiar
+                  {h.limpiar}
                 </button>
 
                 <button
                   type="submit"
-                  className="bg-[#0e3a8c] text-white h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/30 text-sm w-full lg:col-span-1 sm:col-span-2"
+                  className="bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/30 text-sm w-full lg:col-span-1 sm:col-span-2"
                 >
                   <span className="material-symbols-outlined text-base">search</span>
-                  Buscar viajes
+                  {h.buscarViajesBtn}
                 </button>
               </div>
 
               {/* Filtros avanzados */}
-              <div className="mt-6 pt-4 border-t border-slate-100">
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setFiltrosAbiertos(!filtrosAbiertos)}
-                  className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-[#0e3a8c] transition-colors group"
+                  className="flex items-center gap-2 text-sm font-semibold text-slate-400 dark:text-slate-500 hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors group"
                 >
                   <span className={`material-symbols-outlined text-lg transition-transform ${filtrosAbiertos ? 'rotate-180' : ''}`}>
                     expand_more
                   </span>
-                  Filtros Avanzados
+                  {h.filtrosAvanzados}
                 </button>
 
                 {filtrosAbiertos && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-6">
                     <div className="space-y-3">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Hora de salida</p>
+                      <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{h.horaSalida}</p>
                       <div className="flex flex-wrap gap-2">
-                        {['Mañana', 'Tarde', 'Noche'].map((h) => (
+                        {['Mañana', 'Tarde', 'Noche'].map((horario) => (
                           <button
-                            key={h}
+                            key={horario}
                             type="button"
-                            onClick={() => setHoraSalida(h)}
+                            onClick={() => setHoraSalida(horario)}
                             className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-colors ${
-                              horaSalida === h
-                                ? 'border-[#0e3a8c] bg-[#0e3a8c]/10 text-[#0e3a8c]'
-                                : 'border-slate-200 text-slate-600 hover:border-[#0e3a8c]'
+                              horaSalida === horario
+                                ? 'border-[#0e3a8c] dark:border-blue-400 bg-[#0e3a8c]/10 dark:bg-blue-400/10 text-[#0e3a8c] dark:text-blue-400'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-[#0e3a8c] dark:hover:border-blue-400'
                             }`}
                           >
-                            {h}
+                            {horario === 'Mañana' ? (idioma === 'es' ? 'Mañana' : 'Morning') : horario === 'Tarde' ? (idioma === 'es' ? 'Tarde' : 'Afternoon') : (idioma === 'es' ? 'Noche' : 'Night')}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tipo de Bus</p>
+                      <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{h.tipoBus}</p>
                       <div className="flex flex-wrap gap-2">
                         {['Premium', 'Estándar'].map((t) => (
                           <button
@@ -254,11 +258,11 @@ export function HomePage() {
                             onClick={() => setTipoBus(t)}
                             className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
                               tipoBus === t
-                                ? 'border-[#0e3a8c] bg-[#0e3a8c]/10 text-[#0e3a8c]'
-                                : 'border-slate-200 text-slate-600 hover:border-[#0e3a8c]'
+                                ? 'border-[#0e3a8c] dark:border-blue-400 bg-[#0e3a8c]/10 dark:bg-blue-400/10 text-[#0e3a8c] dark:text-blue-400'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-[#0e3a8c] dark:hover:border-blue-400'
                             }`}
                           >
-                            {t}
+                            {t === 'Premium' ? (idioma === 'es' ? 'Premium' : 'Premium') : (idioma === 'es' ? 'Estándar' : 'Standard')}
                           </button>
                         ))}
                       </div>
@@ -266,8 +270,8 @@ export function HomePage() {
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Precio máximo</p>
-                        <span className="text-xs font-bold text-[#0e3a8c]">${precioMax.toLocaleString('es-CO')}</span>
+                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{h.precioMaximo}</p>
+                        <span className="text-xs font-bold text-[#0e3a8c] dark:text-blue-400">${precioMax.toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')}</span>
                       </div>
                       <input
                         type="range"
@@ -276,7 +280,7 @@ export function HomePage() {
                         step={5000}
                         value={precioMax}
                         onChange={(e) => setPrecioMax(Number(e.target.value))}
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0e3a8c]"
+                        className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#0e3a8c] dark:accent-blue-400"
                       />
                     </div>
                   </div>
@@ -294,12 +298,12 @@ export function HomePage() {
         {error && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <span className="material-symbols-outlined text-5xl text-red-400">error_outline</span>
-            <p className="text-slate-600 text-center">{error}</p>
+            <p className="text-slate-600 dark:text-slate-300 text-center">{error}</p>
             <button
               onClick={refetch}
-              className="px-5 py-2.5 bg-[#0e3a8c] text-white rounded-lg font-bold text-sm hover:bg-blue-900 transition-all"
+              className="px-5 py-2.5 bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-bold text-sm hover:bg-blue-900 transition-all"
             >
-              Reintentar
+              {idioma === 'es' ? 'Reintentar' : 'Retry'}
             </button>
           </div>
         )}
@@ -307,8 +311,8 @@ export function HomePage() {
         {/* Empty state (no loading, no error, no results) */}
         {!loading && !error && viajesHoy.length === 0 && viajesProgramados.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="material-symbols-outlined text-5xl text-slate-300">directions_bus</span>
-            <p className="text-slate-500 text-center font-medium">No hay viajes disponibles en este momento</p>
+            <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">directions_bus</span>
+            <p className="text-slate-500 dark:text-slate-400 text-center font-medium">{h.noViajes}</p>
           </div>
         )}
 
@@ -317,18 +321,18 @@ export function HomePage() {
           <>
             <div>
               <div className="flex items-center gap-4 mb-8">
-                <div className="h-7 w-36 bg-slate-200 rounded animate-pulse" />
-                <div className="h-px flex-1 bg-slate-200" />
+                <div className="h-7 w-36 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white rounded-xl border border-slate-100 overflow-hidden animate-pulse">
-                    <div className="h-44 bg-slate-200" />
+                  <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-pulse">
+                    <div className="h-44 bg-slate-200 dark:bg-slate-700" />
                     <div className="p-5 space-y-3">
-                      <div className="h-5 bg-slate-200 rounded w-3/4" />
-                      <div className="h-4 bg-slate-200 rounded w-1/2" />
-                      <div className="h-4 bg-slate-200 rounded w-2/3" />
-                      <div className="h-10 bg-slate-200 rounded mt-4" />
+                      <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
+                      <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded mt-4" />
                     </div>
                   </div>
                 ))}
@@ -344,11 +348,11 @@ export function HomePage() {
               <>
                 <div>
                   <div className="flex items-center gap-4 mb-8">
-                    <h3 className="text-2xl font-extrabold tracking-tight text-[#111318] whitespace-nowrap">Viajes de hoy</h3>
-                    <div className="h-px flex-1 bg-slate-200" />
+                    <h3 className="text-2xl font-extrabold tracking-tight text-[#111318] dark:text-slate-100 whitespace-nowrap">{h.viajesHoy}</h3>
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                   </div>
                   {viajesHoy.length === 0 ? (
-                    <p className="text-slate-400 text-sm">No hay viajes para hoy</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-sm">{h.noViajesHoy}</p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {viajesHoy.map((viaje) => (
@@ -360,11 +364,11 @@ export function HomePage() {
 
                 <div>
                   <div className="flex items-center gap-4 mb-8">
-                    <h3 className="text-2xl font-extrabold tracking-tight text-slate-400 whitespace-nowrap">Viajes programados</h3>
-                    <div className="h-px flex-1 bg-slate-200" />
+                    <h3 className="text-2xl font-extrabold tracking-tight text-slate-400 dark:text-slate-500 whitespace-nowrap">{h.viajesProgramados}</h3>
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                   </div>
                   {viajesProgramados.length === 0 ? (
-                    <p className="text-slate-400 text-sm">No hay viajes programados disponibles</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-sm">{h.noViajes}</p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {viajesProgramados.map((viaje) => (
@@ -379,25 +383,6 @@ export function HomePage() {
         )}
       </div>
 
-      {/* Bottom nav móvil */}
-      <footer className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 px-6 py-2 pb-6 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex justify-between items-center z-50 rounded-t-2xl">
-        <button onClick={() => navigate(ROUTES.HOME)} className="flex flex-col items-center gap-1 text-[#0e3a8c] p-2 hover:bg-slate-50 rounded-lg transition-colors">
-          <span className="material-symbols-outlined text-[26px]">home</span>
-          <span className="text-[10px] font-extrabold tracking-wide">Home</span>
-        </button>
-        <button onClick={() => navigate(ROUTES.MIS_VIAJES)} className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
-          <span className="material-symbols-outlined text-[26px]">confirmation_number</span>
-          <span className="text-[10px] font-bold tracking-wide">Mis Viajes</span>
-        </button>
-        <button onClick={() => navigate(ROUTES.ENCOMIENDAS)} className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
-          <span className="material-symbols-outlined text-[26px]">box_add</span>
-          <span className="text-[10px] font-bold tracking-wide">Encomiendas</span>
-        </button>
-        <button onClick={() => navigate(ROUTES.PERFIL)} className="flex flex-col items-center gap-1 text-slate-400 p-2 hover:text-[#0e3a8c] hover:bg-slate-50 rounded-lg transition-colors">
-          <span className="material-symbols-outlined text-[26px]">person</span>
-          <span className="text-[10px] font-bold tracking-wide">Perfil</span>
-        </button>
-      </footer>
     </div>
   );
 }

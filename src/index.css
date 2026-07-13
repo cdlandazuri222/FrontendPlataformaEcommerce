@@ -3,11 +3,35 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Modo claro (por defecto) ──────────────────────────────────────── */
+  :root {
+    --bg-page: #f6f6f8;
+    --bg-card: #ffffff;
+    --bg-input: #f0f2f5;
+    --text-primary: #0e3a8c;
+    --text-body: #374151;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+  }
+
+  /* ── Modo oscuro ───────────────────────────────────────────────────── */
+  .dark {
+    --bg-page: #0f172a;
+    --bg-card: #1e293b;
+    --bg-input: #334155;
+    --text-primary: #93c5fd;
+    --text-body: #e2e8f0;
+    --text-muted: #64748b;
+    --border: #334155;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    @apply bg-slate-50;
+    background-color: var(--bg-page);
+    color: var(--text-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   html, body {

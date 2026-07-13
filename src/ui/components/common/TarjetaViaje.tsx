@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../shared/constants';
 import type { ViajeAPI } from '../../../infrastructure/api/plataformaEcommerceApi';
 import busCootranar from '../../../assets/busCootranar.png';
+import { usePreferencias } from '../../context/PreferenciasContext';
 
 interface Props {
   viaje: ViajeAPI;
@@ -9,6 +10,9 @@ interface Props {
 
 export function TarjetaViaje({ viaje }: Props) {
   const navigate = useNavigate();
+  const { tx, idioma } = usePreferencias();
+  const h = tx.home;
+  const c = tx.comun;
 
   const imagen = viaje.imagenDestino ?? busCootranar;
   const etiqueta = viaje.vehiculo.tipobus;
@@ -17,7 +21,7 @@ export function TarjetaViaje({ viaje }: Props) {
 
   const [y, m, d] = (viaje.fechasalida as string).slice(0, 10).split('-').map(Number);
   const fechaLocal = new Date(y, m - 1, d);
-  const fecha = fechaLocal.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+  const fecha = fechaLocal.toLocaleDateString(idioma === 'es' ? 'es-CO' : 'en-US', { day: '2-digit', month: 'short' });
 
   const [hh, mm] = viaje.horasalida.split(':').map(Number);
   const periodo = hh >= 12 ? 'p.m.' : 'a.m.';
@@ -27,7 +31,7 @@ export function TarjetaViaje({ viaje }: Props) {
   const precio = viaje.precio.valor;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-100 overflow-hidden flex flex-col hover:shadow-xl transition-all group">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col hover:shadow-xl transition-all group">
       <div className="relative h-44 w-full overflow-hidden">
         <img
           src={imagen}
@@ -46,39 +50,39 @@ export function TarjetaViaje({ viaje }: Props) {
       <div className="p-5 flex-1 flex flex-col">
         <div className="mb-4">
           {viaje.tramoBuscado && (
-            <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">
+            <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-1">
               Ruta: {viaje.ruta.origen} → {viaje.ruta.destino}
             </p>
           )}
-          <div className="flex items-center gap-2 text-lg font-bold">
+          <div className="flex items-center gap-2 text-lg font-bold text-slate-800 dark:text-slate-100">
             <span>{origen}</span>
-            <span className="material-symbols-outlined text-[#0e3a8c] text-base">arrow_forward</span>
+            <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-base">arrow_forward</span>
             <span>{destino}</span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Fecha Salida</span>
-            <div className="flex items-center gap-1.5 text-xs text-slate-700">
-              <span className="material-symbols-outlined text-[#0e3a8c] text-sm">calendar_month</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">{h.fechaSalida}</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+              <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-sm">calendar_month</span>
               <span className="font-bold">{fecha}, {hora}</span>
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Asientos</span>
-            <div className="flex items-center gap-1.5 text-xs text-slate-700">
-              <span className="material-symbols-outlined text-[#0e3a8c] text-sm">airline_seat_recline_normal</span>
-              <span className="font-bold">{asientos} Disponibles</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">{h.asientos}</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+              <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-sm">airline_seat_recline_normal</span>
+              <span className="font-bold">{asientos} {h.disponibles}</span>
             </div>
           </div>
         </div>
 
-        <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase block leading-none">Precio</span>
-            <p className="text-xl font-extrabold text-[#0e3a8c]">
-              {precio != null ? `$${precio.toLocaleString('es-CO')}` : 'CONSULTAR'}
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase block leading-none">{c.precio}</span>
+            <p className="text-xl font-extrabold text-[#0e3a8c] dark:text-blue-400">
+              {precio != null ? `$${precio.toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')}` : 'CONSULTAR'}
             </p>
           </div>
           <button
@@ -103,9 +107,9 @@ export function TarjetaViaje({ viaje }: Props) {
                 etiqueta: etiqueta ?? '',
               }
             })}
-            className="w-full sm:w-auto px-4 py-2.5 bg-[#0e3a8c] text-white rounded-lg font-bold text-xs hover:bg-blue-900 transition-all shadow-md shadow-blue-900/20 text-center"
+            className="w-full sm:w-auto px-4 py-2.5 bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-bold text-xs hover:bg-blue-900 transition-all shadow-md shadow-blue-900/20 text-center"
           >
-            Seleccionar Asiento
+            {h.seleccionarAsiento}
           </button>
         </div>
       </div>
