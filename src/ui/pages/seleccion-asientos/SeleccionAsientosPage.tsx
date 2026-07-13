@@ -217,23 +217,28 @@ export function SeleccionAsientosPage() {
   const primerReservado = asientosSeleccionados.length > 0 ? asientosSeleccionados[0].idasientoviaje : null;
   useAsientosRealtime(state?.idviaje ?? null, primerReservado, handleCambioRealtime, handleReconectarRealtime);
 
-  // --- Liberar asientos al salir ---
-  const liberarTodosLosAsientos = useCallback(async () => {
-    const ids = Array.from(asientosReservadosRef.current);
-    asientosReservadosRef.current.clear();
-    for (const id of ids) {
-      try { await httpClient.post(`/asientos/${id}/liberar`); } catch { /* silencioso */ }
-    }
-  }, []);
-
+  // --- useEffect: liberar asientos al salir (cierre o reload) via sendBeacon ---
   useEffect(() => {
-    const handleUnload = () => liberarTodosLosAsientos();
-    window.addEventListener('beforeunload', handleUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleUnload);
-      liberarTodosLosAsientos();
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const handlePageHide = () => {
+      const ids = Array.from(asientosReservadosRef.current);
+      if (ids.length === 0) return;
+      const url = `${apiBase}/asientos/liberar-lote`;
+      const blob = new Blob([JSON.stringify({ ids })], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
     };
-  }, [liberarTodosLosAsientos]);
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      // Cleanup por desmontaje (navegación interna React Router)
+      const ids = Array.from(asientosReservadosRef.current);
+      if (ids.length === 0) return;
+      // Liberar cada asiento via fetch (no sendBeacon porque aún estamos en la SPA)
+      ids.forEach(id => {
+        httpClient.post(`/asientos/${id}/liberar`).catch(() => {});
+      });
+    };
+  }, []);
 
   // --- Temporizador compartido ---
   const iniciarCountdown = useCallback((minutos: number) => {
@@ -271,26 +276,27 @@ export function SeleccionAsientosPage() {
 
 
   // --- Sincronizar formularios de pasajeros con asientos seleccionados ---
+  // Solo se usa para agregar formularios nuevos al final. La eliminación se
+  // maneja directamente en handleSeleccionar para usar el índice correcto.
   useEffect(() => {
     const numAsientos = asientosSeleccionados.length;
-    setPasajeros(prev => {
-      if (prev.length === numAsientos) return prev;
-      if (numAsientos === 0) return [];
-      // Agregar nuevos formularios vacíos o recortar
-      if (numAsientos > prev.length) {
-        const nuevos = [...prev];
-        for (let i = prev.length; i < numAsientos; i++) {
-          nuevos.push({ nombrePasajero: '', apellidoPasajero: '', tipoDocumento: 'CC', documento: '', telefono: '', correoPasajero: '', esComprador: i === 0 });
-        }
-        return nuevos;
-      }
-      // Recortar si se removieron asientos
-      return prev.slice(0, numAsientos);
-    });
-    // Si se removió un asiento que tenía el toggle activo, limpiar
-    if (usarMisDatosIdx !== null && usarMisDatosIdx >= numAsientos) {
-      setUsarMisDatosIdx(null);
+
+    if (numAsientos === 0) {
+      setPasajeros([]);
+      if (usarMisDatosIdx !== null) setUsarMisDatosIdx(null);
+      return;
     }
+
+    setPasajeros(prev => {
+      if (prev.length >= numAsientos) return prev; // la reducción se hace en handleSeleccionar
+      // Agregar formularios vacíos para asientos nuevos al final
+      const nuevos = [...prev];
+      for (let i = prev.length; i < numAsientos; i++) {
+        nuevos.push({ nombrePasajero: '', apellidoPasajero: '', tipoDocumento: 'CC', documento: '', telefono: '', correoPasajero: '', esComprador: i === 0 });
+      }
+      return nuevos;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asientosSeleccionados.length]);
 
   // --- Selección/deselección de asientos ---
@@ -304,10 +310,21 @@ export function SeleccionAsientosPage() {
       asientosReservadosRef.current.delete(idLiberar);
       asientosPendientesRef.current.delete(idLiberar);
       setAsientosSeleccionados(prev => prev.filter(a => a.idasientoviaje !== idLiberar));
+      // Eliminar el formulario en el índice correcto (no siempre el último)
+      if (idxRemovido >= 0) {
+        setPasajeros(prev => {
+          if (prev.length === 0) return prev;
+          const copia = [...prev];
+          copia.splice(idxRemovido, 1);
+          // Reajustar esComprador: siempre el primero es el comprador
+          if (copia.length > 0) copia[0] = { ...copia[0], esComprador: true };
+          return copia;
+        });
+      }
       setAsientos(prev => prev.map(a =>
         a.idasientoviaje === idLiberar ? { ...a, estado: 'LIBRE' as EstadoAsiento } : a
       ));
-      // Si el asiento removido tenía el toggle "Yo soy este pasajero", limpiar
+      // Ajustar índice del toggle "Yo soy este pasajero"
       if (usarMisDatosIdx === idxRemovido) setUsarMisDatosIdx(null);
       else if (usarMisDatosIdx !== null && usarMisDatosIdx > idxRemovido) setUsarMisDatosIdx(usarMisDatosIdx - 1);
       try { await httpClient.post(`/asientos/${idLiberar}/liberar`); } catch { /* silencioso */ }
@@ -496,6 +513,8 @@ export function SeleccionAsientosPage() {
     }));
 
     iniciarPago(state!.idviaje, asientosDTO);
+    // Limpiar ref para evitar liberación innecesaria si Wompi redirige al resultado
+    asientosReservadosRef.current.clear();
   };
 
   // El widget de Wompi se renderiza inline via WompiCheckout cuando fase === 'widget'
