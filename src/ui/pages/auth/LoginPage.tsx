@@ -111,7 +111,7 @@ export function LoginPage() {
             <div className="absolute inset-0 bg-gradient-to-tl from-brand-blue via-brand-blue/40 to-transparent" />
           </div>
 
-          {/* Redes Sociales - Esquina superior izquierda (Draggables) */}
+          {/* Redes Sociales - Esquina superior izquierda (Draggables & Touch Support) */}
           <div className="absolute top-8 left-8 lg:top-20 lg:left-20 z-20 flex items-center gap-3">
             {socialButtons.map((btn, index) => {
               const isDragging = draggedId === btn.id;
@@ -121,6 +121,8 @@ export function LoginPage() {
               return (
                 <a
                   key={btn.id}
+                  data-id={btn.id}
+                  data-index={index}
                   href={isDragging ? undefined : btn.href}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -129,12 +131,11 @@ export function LoginPage() {
                   onClick={e => { if (draggedId) e.preventDefault(); }}
                   onMouseEnter={() => setHoveredId(btn.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  /* ── Drag handlers ── */
+                  /* ── Desktop Drag handlers ── */
                   onDragStart={e => {
                     dragOriginIndex.current = index;
                     setDraggedId(btn.id);
                     e.dataTransfer.effectAllowed = 'move';
-                    // ghost image: invisible (real element stays via opacity)
                     const ghost = document.createElement('div');
                     ghost.style.width = '0px';
                     ghost.style.height = '0px';
@@ -151,7 +152,6 @@ export function LoginPage() {
                     e.preventDefault();
                     if (draggedId && draggedId !== btn.id) {
                       setDragOverId(btn.id);
-                      // Reorder on the fly
                       setSocialButtons(prev => {
                         const next = [...prev];
                         const from = next.findIndex(b => b.id === draggedId);
@@ -165,7 +165,42 @@ export function LoginPage() {
                   }}
                   onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                   onDrop={e => { e.preventDefault(); setDragOverId(null); }}
-                  className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-lg select-none"
+                  /* ── Mobile Touch handlers ── */
+                  onTouchStart={() => {
+                    dragOriginIndex.current = index;
+                    setDraggedId(btn.id);
+                  }}
+                  onTouchMove={e => {
+                    if (!draggedId) return;
+                    const touch = e.touches[0];
+                    // Encontrar elemento debajo del dedo
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const targetEl = element?.closest('[data-id]');
+                    if (targetEl) {
+                      const targetId = targetEl.getAttribute('data-id');
+                      const targetIdxStr = targetEl.getAttribute('data-index');
+                      const targetIdx = targetIdxStr ? parseInt(targetIdxStr, 10) : -1;
+
+                      if (targetId && targetId !== draggedId && targetIdx !== -1) {
+                        setDragOverId(targetId);
+                        setSocialButtons(prev => {
+                          const next = [...prev];
+                          const from = next.findIndex(b => b.id === draggedId);
+                          const to = targetIdx;
+                          if (from === -1 || from === to) return prev;
+                          const [moved] = next.splice(from, 1);
+                          next.splice(to, 0, moved);
+                          return next;
+                        });
+                      }
+                    }
+                  }}
+                  onTouchEnd={() => {
+                    setDraggedId(null);
+                    setDragOverId(null);
+                    dragOriginIndex.current = -1;
+                  }}
+                  className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-lg select-none touch-none"
                   style={{
                     backdropFilter: 'blur(10px)',
                     border: isDropTarget
