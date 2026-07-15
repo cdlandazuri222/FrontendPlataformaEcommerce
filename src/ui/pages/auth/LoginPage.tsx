@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
@@ -54,6 +54,29 @@ export function LoginPage() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const dragOriginIndex = useRef<number>(-1);
+
+  const googleContainerRef = useRef<HTMLDivElement>(null);
+  const [googleWidth, setGoogleWidth] = useState<string>("360");
+
+  useEffect(() => {
+    if (!googleContainerRef.current) return;
+    const updateWidth = () => {
+      if (googleContainerRef.current) {
+        // Google's button limits are between 250px and 400px
+        const parentWidth = googleContainerRef.current.offsetWidth;
+        const widthVal = Math.max(250, Math.min(400, parentWidth));
+        setGoogleWidth(String(widthVal));
+      }
+    };
+    updateWidth();
+    // Add small delay to ensure rendering layout is completed
+    const timer = setTimeout(updateWidth, 100);
+    window.addEventListener('resize', updateWidth);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
 
   const validarCampo = (name: string, value: string): string => {
     if (!value) return '';
@@ -299,9 +322,10 @@ export function LoginPage() {
               </div>
             )}
 
-            <div className="mb-8 flex justify-center google-login-wrapper">
+            <div ref={googleContainerRef} className="mb-8 flex justify-center google-login-wrapper w-full">
               {import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'TU_GOOGLE_CLIENT_ID_AQUI' && (
                 <GoogleLogin
+                  key={googleWidth}
                   onSuccess={handleGoogleSuccess}
                   onError={() => setError('Error al iniciar sesión con Google. Por favor, intenta de nuevo.')}
                   useOneTap={false}
@@ -310,7 +334,7 @@ export function LoginPage() {
                   text="continue_with"
                   shape="pill"
                   logo_alignment="left"
-                  width="360"
+                  width={googleWidth}
                 />
               )}
             </div>
