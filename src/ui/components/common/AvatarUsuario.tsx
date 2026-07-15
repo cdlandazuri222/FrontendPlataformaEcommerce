@@ -24,7 +24,6 @@ function getIniciales(nombre: string, apellido: string): string {
 
 export function AvatarUsuario({ usuario, size = 'md', className = '', fotoLocal }: AvatarUsuarioProps) {
   const clasesTamano = sizeClasses[size];
-  const tieneFotoGoogle = usuario.proveedor?.toUpperCase() === 'GOOGLE' && usuario.fotoperfil;
 
   if (fotoLocal) {
     return (
@@ -36,12 +35,13 @@ export function AvatarUsuario({ usuario, size = 'md', className = '', fotoLocal 
     );
   }
 
-  if (tieneFotoGoogle) {
+  if (usuario.fotoperfil) {
+    const esGoogle = usuario.proveedor?.toUpperCase() === 'GOOGLE';
     return (
       <img
         src={usuario.fotoperfil}
         alt={`${usuario.nombre} ${usuario.apellido}`}
-        referrerPolicy="no-referrer"
+        referrerPolicy={esGoogle ? 'no-referrer' : undefined}
         className={`${clasesTamano} rounded-full object-cover ring-2 ring-white ${className}`}
       />
     );

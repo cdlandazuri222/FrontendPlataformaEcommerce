@@ -6,6 +6,8 @@ import { Navbar } from '../../components/layout/Navbar';
 import { AvatarUsuario, FOTO_PERFIL_LOCAL_KEY } from '../../components/common/AvatarUsuario';
 import { ROUTES } from '../../../shared/constants';
 import type { Idioma } from '../../../shared/i18n/translations';
+import { httpClient } from '../../../infrastructure/api/httpClient';
+import type { Cliente } from '../../../domain/entities/Cliente';
 
 
 /* ────────────────────────────────────────────
@@ -54,7 +56,7 @@ export function PerfilPage() {
   const navigate = useNavigate();
   const { getUsuario, logout } = useAuth();
   const { esDark, toggleTema, idioma, setIdioma, tx } = usePreferencias();
-  const usuario = getUsuario();
+  const [usuario, setUsuario] = useState<Cliente | null>(() => getUsuario());
   const p = tx.perfil;
 
   /* ── Estado de foto de perfil ── */
@@ -75,13 +77,14 @@ export function PerfilPage() {
   };
 
   /* ── Al seleccionar un archivo ── */
-  const handleArchivoSeleccionado = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleArchivoSeleccionado = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const archivo = e.target.files?.[0];
     if (!archivo) return;
 
-    // Validar que sea imagen
-    if (!archivo.type.startsWith('image/')) {
-      alert('Por favor selecciona un archivo de imagen válido.');
+    // Validar tipo de imagen (jpg/png/webp)
+    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(archivo.type)) {
+      alert('Por favor selecciona una imagen válida (JPG, PNG o WEBP).');
       return;
     }
 
@@ -91,18 +94,49 @@ export function PerfilPage() {
       return;
     }
 
+    // Mostrar preview de la imagen seleccionada inmediatamente
+    const previewUrl = URL.createObjectURL(archivo);
+    setFotoPreview(previewUrl);
     setSubiendoFoto(true);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      localStorage.setItem(FOTO_PERFIL_LOCAL_KEY, dataUrl);
-      setFotoPreview(dataUrl);
-      setSubiendoFoto(false);
-    };
-    reader.readAsDataURL(archivo);
 
-    // Limpiar el input para permitir volver a seleccionar el mismo archivo
-    e.target.value = '';
+    try {
+      const formData = new FormData();
+      formData.append('foto', archivo);
+
+      const response = await httpClient.put<{
+        success: boolean;
+        message: string;
+        data: { urlFoto: string };
+      }>('/usuarios/foto-perfil', formData);
+
+      if (response.data?.success && response.data?.data?.urlFoto) {
+        const urlFoto = response.data.data.urlFoto;
+
+        // Actualizar el localStorage key usuario
+        const storedUser = localStorage.getItem('usuario');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser) as Cliente;
+          parsedUser.fotoperfil = urlFoto;
+          localStorage.setItem('usuario', JSON.stringify(parsedUser));
+          setUsuario(parsedUser);
+        }
+
+        // Limpiar el localStorage viejo local
+        localStorage.removeItem(FOTO_PERFIL_LOCAL_KEY);
+        setFotoPreview(null);
+        alert('Foto de perfil actualizada exitosamente.');
+      } else {
+        throw new Error('No se recibió la URL de la foto de perfil en la respuesta.');
+      }
+    } catch (error) {
+      console.error('Error al subir foto de perfil:', error);
+      setFotoPreview(null); // Revertir preview en caso de fallo
+      alert('Hubo un error al subir la foto de perfil. Por favor intenta de nuevo.');
+    } finally {
+      setSubiendoFoto(false);
+      // Limpiar el input para permitir volver a seleccionar el mismo archivo
+      e.target.value = '';
+    }
   };
 
   if (!usuario) {
@@ -164,8 +198,8 @@ export function PerfilPage() {
                     <div className="w-4 h-0.5 rounded-full bg-slate-500" />
                   </div>
                   <div className="flex-1 bg-gradient-to-b from-[#0e3a8c]/80 to-[#0a1628] flex items-center justify-center overflow-hidden">
-                    {fotoPreview ? (
-                      <img src={fotoPreview} alt="preview" className="w-full h-full object-cover" />
+                    {fotoPreview || usuario.fotoperfil ? (
+                      <img src={fotoPreview || usuario.fotoperfil} alt="preview" className="w-full h-full object-cover" />
                     ) : (
                       <span className="material-symbols-outlined text-blue-400 text-2xl">person</span>
                     )}
