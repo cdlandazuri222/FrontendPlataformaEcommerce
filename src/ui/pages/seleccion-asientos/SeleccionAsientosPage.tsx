@@ -606,9 +606,8 @@ export function SeleccionAsientosPage() {
     // Mostrar el mensaje de error del backend en el banner de la página
     if (errorPago) setErrorMsg(errorPago.mensaje);
 
-    return () => {
-      resetear();
-    };
+    // Resetear el hook de pago para permitir un nuevo intento
+    resetear();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fase]);
 
