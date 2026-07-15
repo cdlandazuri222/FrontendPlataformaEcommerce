@@ -65,6 +65,9 @@ export function PerfilPage() {
     localStorage.getItem(FOTO_PERFIL_LOCAL_KEY)
   );
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [verFotoCompleta, setVerFotoCompleta] = useState(false);
+
+  const fotoActual = fotoPreview || usuario?.fotoperfil || null;
 
   const handleLogout = async () => {
     await logout();
@@ -222,6 +225,17 @@ export function PerfilPage() {
                     <span className="material-symbols-outlined text-white text-sm">photo_camera</span>
                   )}
                 </button>
+
+                {/* Botón ver foto completa — solo si hay foto */}
+                {fotoActual && (
+                  <button
+                    onClick={() => setVerFotoCompleta(true)}
+                    title="Ver foto completa"
+                    className="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-95 flex items-center justify-center shadow-md ring-2 ring-[#0d1b2e] transition-all duration-200"
+                  >
+                    <span className="material-symbols-outlined text-white text-sm">zoom_in</span>
+                  </button>
+                )}
               </div>
 
               {/* Nombre e info */}
@@ -236,9 +250,10 @@ export function PerfilPage() {
                 </div>
               </div>
 
-              {/* Avatar + botón cámara (solo móvil) */}
+              {/* Avatar + botones (solo móvil) */}
               <div className="sm:hidden shrink-0 relative">
                 <AvatarUsuario usuario={usuario} size="xl" fotoLocal={fotoPreview} />
+                {/* Botón cámara */}
                 <button
                   onClick={abrirSelectorFoto}
                   title={p.editarFoto}
@@ -251,10 +266,54 @@ export function PerfilPage() {
                     <span className="material-symbols-outlined text-sm">photo_camera</span>
                   )}
                 </button>
+
+                {/* Botón ver foto completa — solo si hay foto */}
+                {fotoActual && (
+                  <button
+                    onClick={() => setVerFotoCompleta(true)}
+                    title="Ver foto completa"
+                    className="absolute -bottom-1 -left-1 w-8 h-8 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-full flex items-center justify-center shadow-md ring-2 ring-[#0d1b2e] transition-all duration-200"
+                  >
+                    <span className="material-symbols-outlined text-sm">zoom_in</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* ── Lightbox foto completa ── */}
+        {verFotoCompleta && fotoActual && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
+            onClick={() => setVerFotoCompleta(false)}
+            onKeyDown={(e) => e.key === 'Escape' && setVerFotoCompleta(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Foto de perfil completa"
+            tabIndex={-1}
+          >
+            {/* Botón cerrar */}
+            <button
+              onClick={() => setVerFotoCompleta(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-95 flex items-center justify-center shadow-lg ring-2 ring-white/20 transition-all duration-200"
+              title="Cerrar"
+            >
+              <span className="material-symbols-outlined text-white text-lg">close</span>
+            </button>
+
+            {/* Imagen */}
+            <img
+              src={fotoActual}
+              alt={`${usuario.nombre} ${usuario.apellido}`}
+              referrerPolicy={usuario.proveedor?.toUpperCase() === 'GOOGLE' ? 'no-referrer' : undefined}
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl ring-1 ring-white/10"
+              style={{ animation: 'scale-in 0.2s ease-out' }}
+            />
+          </div>
+        )}
 
         {/* ── Información Personal ── */}
         <div className={`rounded-2xl shadow-sm transition-colors border ${cardBg}`}>
