@@ -110,7 +110,9 @@ export function PerfilPage() {
         success: boolean;
         message: string;
         data: { urlFoto: string };
-      }>('/usuarios/foto-perfil', formData);
+      }>('/usuarios/foto-perfil', formData, {
+        headers: { 'Content-Type': undefined },
+      });
 
       if (response.data?.success && response.data?.data?.urlFoto) {
         const urlFoto = response.data.data.urlFoto;
@@ -285,7 +287,7 @@ export function PerfilPage() {
         {/* ── Lightbox foto completa ── */}
         {verFotoCompleta && fotoActual && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4"
             style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
             onClick={() => setVerFotoCompleta(false)}
             onKeyDown={(e) => e.key === 'Escape' && setVerFotoCompleta(false)}
