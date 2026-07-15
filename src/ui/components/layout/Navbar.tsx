@@ -84,6 +84,23 @@ export function Navbar() {
           {/* Right actions */}
           <div className="flex items-center gap-3">
 
+            {/* Botón de ayuda — solo en HomePage */}
+            {location.pathname === ROUTES.HOME && (
+              <button
+                id="navbar-btn-tour"
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('cootranar:iniciar-tour'))}
+                title={idioma === 'es' ? 'Ver tutorial de búsqueda' : 'View search tutorial'}
+                className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${iconBtn} relative group`}
+              >
+                <span className="material-symbols-outlined text-xl">help_outline</span>
+                {/* Tooltip */}
+                <span className="pointer-events-none absolute top-full mt-2 right-0 whitespace-nowrap bg-[#0e3a8c] dark:bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-50">
+                  {idioma === 'es' ? '¿Cómo buscar un viaje?' : 'How to search a trip?'}
+                </span>
+              </button>
+            )}
+
             {/* Language selector */}
             <div className={`hidden sm:flex items-center gap-1 rounded-lg p-1 transition-colors duration-200 ${pillBg}`}>
               {(['es', 'en'] as Idioma[]).map((lang) => (

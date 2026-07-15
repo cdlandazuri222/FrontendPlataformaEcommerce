@@ -5,6 +5,7 @@ import { ComboboxCiudades, type OpcionCombobox } from '../../components/common/C
 import { plataformaEcommerceApi, type CiudadOrigen, type OpcionDestino, type ViajesQuery } from '../../../infrastructure/api/plataformaEcommerceApi';
 import { useViajesHome } from '../../hooks/useViajesHome';
 import { usePreferencias } from '../../context/PreferenciasContext';
+import { useTourBusqueda } from '../../hooks/useTourBusqueda';
 
 const HERO_BG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAL9CDZ1831IyzczCQmtcRHIOUvk9Ak8Y0esr_34Rumk_jCH2l0pi2r9lp5BXCBI6L_o76IRAr1Wd_8Y-DKTp2A-koAiZ_SJWXWDXGL7R2lsXT7BbaHkyfh5uQsS29jYLjJE9HkCbjXwFBEwKRUA6jvCyhO1vJcBQyGa8XShx39wOKcF2M_Kp7Juo1M21J8J14KlHGHy5kTyLMunFBLFNMNqdX-CUgoMNJQE_FDLJsqPL6E7HinbTmbbOp4-yxBrVikcZomcDnoayVs';
 
@@ -29,6 +30,7 @@ function hoyISO(): string {
 export function HomePage() {
   const { tx, idioma } = usePreferencias();
   const h = tx.home;
+  const { iniciarTour } = useTourBusqueda();
 
   const [origenSeleccionado, setOrigenSeleccionado] = useState<OpcionCombobox | null>(null);
   const [destinoSeleccionado, setDestinoSeleccionado] = useState<OpcionCombobox | null>(null);
@@ -136,6 +138,14 @@ export function HomePage() {
 
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 w-full relative z-10 py-10 md:py-16">
           <div className="max-w-xl text-white mb-10">
+            {/* Botón de tour — visible en hero para acceso rápido */}
+            <button
+              id="btn-tour-hero"
+              type="button"
+              onClick={iniciarTour}
+              className="hidden"
+              aria-label="Iniciar tour"
+            />
             <span className="bg-[#0e3a8c] dark:bg-blue-600 px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider inline-block">
               {idioma === 'es' ? 'Nuevo Servicio' : 'New Service'}
             </span>
@@ -150,36 +160,40 @@ export function HomePage() {
           </div>
 
           {/* Buscador */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-5 md:p-6 lg:p-8 border border-white/20 dark:border-slate-700 mt-4 transition-colors">
+          <div id="buscador-viaje" className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-5 md:p-6 lg:p-8 border border-white/20 dark:border-slate-700 mt-4 transition-colors">
             <form onSubmit={handleBuscar}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5 items-end">
                 {/* Origen combobox */}
-                <ComboboxCiudades
-                  opciones={ciudadesOrigen}
-                  value={origenTexto}
-                  onInputChange={setOrigenTexto}
-                  onSelect={handleOrigenSelect}
-                  placeholder={h.seleccionarOrigen}
-                  loading={loadingOrigen}
-                  icon="location_on"
-                  label={h.origen}
-                />
+                <div id="campo-origen">
+                  <ComboboxCiudades
+                    opciones={ciudadesOrigen}
+                    value={origenTexto}
+                    onInputChange={setOrigenTexto}
+                    onSelect={handleOrigenSelect}
+                    placeholder={h.seleccionarOrigen}
+                    loading={loadingOrigen}
+                    icon="location_on"
+                    label={h.origen}
+                  />
+                </div>
 
                 {/* Destino combobox */}
-                <ComboboxCiudades
-                  opciones={opcionesDestino}
-                  value={destinoTexto}
-                  onInputChange={setDestinoTexto}
-                  onSelect={handleDestinoSelect}
-                  placeholder={h.seleccionarDestino}
-                  loading={loadingDestino}
-                  disabled={opcionesDestino.length === 0 && !loadingDestino && !origenSeleccionado}
-                  icon="near_me"
-                  label={h.destino}
-                />
+                <div id="campo-destino">
+                  <ComboboxCiudades
+                    opciones={opcionesDestino}
+                    value={destinoTexto}
+                    onInputChange={setDestinoTexto}
+                    onSelect={handleDestinoSelect}
+                    placeholder={h.seleccionarDestino}
+                    loading={loadingDestino}
+                    disabled={opcionesDestino.length === 0 && !loadingDestino && !origenSeleccionado}
+                    icon="near_me"
+                    label={h.destino}
+                  />
+                </div>
 
                 {/* Fecha */}
-                <label className="flex flex-col gap-2">
+                <label id="campo-fecha" className="flex flex-col gap-2">
                   <span className="text-sm font-semibold text-[#111318] dark:text-slate-200 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-lg">calendar_month</span> {h.fecha}
                   </span>
@@ -196,6 +210,7 @@ export function HomePage() {
                 </label>
 
                 <button
+                  id="boton-limpiar"
                   type="button"
                   onClick={limpiarFiltros}
                   className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[#0e3a8c] dark:text-blue-400 h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-600 transition-all text-sm w-full"
@@ -205,6 +220,7 @@ export function HomePage() {
                 </button>
 
                 <button
+                  id="boton-buscar"
                   type="submit"
                   className="bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/30 text-sm w-full lg:col-span-1 sm:col-span-2"
                 >
@@ -214,7 +230,7 @@ export function HomePage() {
               </div>
 
               {/* Filtros avanzados */}
-              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+              <div id="filtros-avanzados" className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setFiltrosAbiertos(!filtrosAbiertos)}
@@ -292,7 +308,7 @@ export function HomePage() {
       </section>
 
       {/* Tarjetas */}
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 mt-12 md:mt-16 space-y-12 md:space-y-16 pb-28 md:pb-16">
+      <div id="lista-viajes" className="max-w-[1200px] mx-auto px-4 sm:px-6 mt-12 md:mt-16 space-y-12 md:space-y-16 pb-28 md:pb-16">
 
         {/* Error state */}
         {error && (
