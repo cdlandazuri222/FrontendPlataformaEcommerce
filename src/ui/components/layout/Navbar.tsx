@@ -3,13 +3,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePreferencias } from '../../context/PreferenciasContext';
 import { ROUTES } from '../../../shared/constants';
 import { AvatarUsuario } from '../common/AvatarUsuario';
+import type { Idioma } from '../../../shared/i18n/translations';
 
 export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { getUsuario, logout } = useAuth();
   const usuario = getUsuario();
-  const { tx } = usePreferencias();
+  const { esDark, toggleTema, idioma, setIdioma, tx } = usePreferencias();
   const n = tx.navbar;
 
   const enlacesDesktop = [
@@ -30,13 +31,39 @@ export function Navbar() {
     navigate(ROUTES.LOGIN);
   };
 
+  /* ── Clases condicionales según tema ── */
+  const navBg   = esDark ? 'bg-[#0d1b2e] border-white/5'  : 'bg-white border-slate-200';
+  const linkActive   = esDark ? 'text-white' : 'text-[#0e3a8c]';
+  const linkInactive = esDark
+    ? 'text-slate-400 hover:text-white'
+    : 'text-slate-500 hover:text-[#0e3a8c]';
+  const pillBg  = esDark ? 'bg-white/5'   : 'bg-slate-100';
+  const pillActive = esDark ? 'bg-white/15 text-white' : 'bg-[#0e3a8c] text-white';
+  const pillInactive = esDark
+    ? 'text-slate-400 hover:text-white'
+    : 'text-slate-500 hover:text-slate-800';
+  const iconBtn = esDark
+    ? 'text-slate-400 hover:text-white hover:bg-white/10'
+    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100';
+  const userName = esDark ? 'text-white' : 'text-[#0e3a8c]';
+
+  const bottomNavBg = esDark
+    ? 'bg-[#0d1b2e] border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.3)]'
+    : 'bg-white border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.07)]';
+  const bottomActive   = esDark ? 'bg-white/10 text-white' : 'bg-[#e8f0fe] text-[#0e3a8c]';
+  const bottomInactive = esDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600';
+  const bottomLabelActive   = esDark ? 'text-white' : 'text-[#0e3a8c]';
+  const bottomLabelInactive = esDark ? 'text-slate-500' : 'text-slate-400';
+
   return (
     <>
       {/* Header top bar */}
-      <header className="sticky top-0 z-[60] bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 transition-colors">
+      <header className={`sticky top-0 z-[60] border-b shadow-sm transition-colors duration-200 ${navBg}`}>
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to={ROUTES.HOME} className="flex items-center">
-            <span className="text-[#c01e2e] dark:text-red-500 text-2xl font-black tracking-tight select-none">Cootranar</span>
+
+          {/* Logo */}
+          <Link to={ROUTES.HOME} className="flex items-center select-none">
+            <span className="text-[#c01e2e] text-2xl font-black tracking-tight">Cootranar</span>
           </Link>
 
           {/* Nav desktop */}
@@ -45,10 +72,8 @@ export function Navbar() {
               <Link
                 key={enlace.path}
                 to={enlace.path}
-                className={`text-sm font-semibold transition-colors ${
-                  location.pathname === enlace.path
-                    ? 'text-[#0e3a8c] dark:text-blue-400 font-bold'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-[#0e3a8c] dark:hover:text-blue-400'
+                className={`text-sm font-semibold transition-colors duration-200 ${
+                  location.pathname === enlace.path ? linkActive : linkInactive
                 }`}
               >
                 {enlace.label}
@@ -56,29 +81,63 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* Acciones (desktop + mobile avatar directly!) */}
-          <div className="flex items-center gap-4">
+          {/* Right actions */}
+          <div className="flex items-center gap-3">
+
+            {/* Language selector */}
+            <div className={`hidden sm:flex items-center gap-1 rounded-lg p-1 transition-colors duration-200 ${pillBg}`}>
+              {(['es', 'en'] as Idioma[]).map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => setIdioma(lang)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all duration-200 ${
+                    idioma === lang ? pillActive : pillInactive
+                  }`}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTema}
+              title={esDark ? 'Modo claro' : 'Modo oscuro'}
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${iconBtn}`}
+            >
+              <span className="material-symbols-outlined text-xl">
+                {esDark ? 'dark_mode' : 'light_mode'}
+              </span>
+            </button>
+
             {usuario ? (
-              <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 sm:border-l border-slate-100 dark:border-slate-800">
-                <Link to={ROUTES.PERFIL} className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
-                  <AvatarUsuario usuario={usuario} size="sm" />
-                  <div className="text-right hidden md:block">
-                    <p className="text-sm font-bold leading-none text-[#0e3a8c] dark:text-blue-400">{usuario.nombre}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">{usuario.apellido}</p>
+              <div className="flex items-center gap-2">
+                {/* User name + avatar */}
+                <Link
+                  to={ROUTES.PERFIL}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  <span className={`hidden md:block text-sm font-bold uppercase tracking-wide transition-colors duration-200 ${userName}`}>
+                    {usuario.nombre} {usuario.apellido}
+                  </span>
+                  <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-slate-200 dark:ring-white/20 flex items-center justify-center">
+                    <AvatarUsuario usuario={usuario} size="sm" />
                   </div>
                 </Link>
+
+                {/* Logout */}
                 <button
                   onClick={handleLogout}
                   title={n.cerrarSesion}
-                  className="p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                  className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 ${iconBtn}`}
                 >
-                  <span className="material-symbols-outlined text-lg">logout</span>
+                  <span className="material-symbols-outlined text-xl">logout</span>
                 </button>
               </div>
             ) : (
               <Link
                 to={ROUTES.LOGIN}
-                className="bg-[#0e3a8c] text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-blue-900 transition-colors"
+                className="bg-[#0e3a8c] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors"
               >
                 {n.iniciarSesion}
               </Link>
@@ -88,7 +147,7 @@ export function Navbar() {
       </header>
 
       {/* Bottom Navigation — solo móvil y tablet */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.07)] transition-colors">
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-[60] border-t transition-colors duration-200 ${bottomNavBg}`}>
         <div className="flex items-center justify-around px-2 pt-2.5 pb-[calc(0.6rem+env(safe-area-inset-bottom))]">
           {enlacesBottomNav.map((enlace) => {
             const activo = location.pathname === enlace.path;
@@ -100,9 +159,7 @@ export function Navbar() {
               >
                 <div
                   className={`px-5 py-1 rounded-full transition-all duration-200 flex items-center justify-center ${
-                    activo
-                      ? 'bg-[#e8f0fe] dark:bg-blue-950/40 text-[#0e3a8c] dark:text-blue-400'
-                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                    activo ? bottomActive : bottomInactive
                   }`}
                 >
                   <span
@@ -113,8 +170,8 @@ export function Navbar() {
                   </span>
                 </div>
                 <span
-                  className={`text-[10px] font-bold tracking-wide transition-colors ${
-                    activo ? 'text-[#0e3a8c] dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'
+                  className={`text-[10px] font-bold tracking-wide transition-colors duration-200 ${
+                    activo ? bottomLabelActive : bottomLabelInactive
                   }`}
                 >
                   {enlace.label}
@@ -127,4 +184,3 @@ export function Navbar() {
     </>
   );
 }
-
