@@ -25,14 +25,14 @@ export function OlvidoPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-stretch lg:items-center justify-center lg:p-6" style={{ backgroundColor: '#f8fafc' }}>
+    <div className="min-h-screen flex items-start lg:items-center justify-center lg:p-6" style={{ backgroundColor: '#f8fafc' }}>
       <div className="flex w-full min-h-screen lg:min-h-0 lg:h-[95vh] overflow-hidden lg:shadow-2xl bg-[#0B1E4A] lg:bg-white max-w-[1536px] lg:rounded-3xl border-0 lg:border border-slate-100 flex-col lg:flex-row">
         
         {/* Panel Izquierdo */}
-        <div className="flex w-full h-[100dvh] lg:h-auto lg:w-[50%] relative overflow-hidden bg-[#0B1E4A] order-1 lg:order-1 shrink-0">
+        <div className="flex w-full h-[100dvh] lg:h-auto lg:w-[50%] relative overflow-hidden bg-brand-blue order-1 lg:order-1 shrink-0 lg:rounded-l-3xl">
           <div className="absolute inset-0 z-0">
-            <img src={busCootranar} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
-            <div className="absolute inset-0 bg-black/50" />
+            <div className="w-full h-full bg-cover scale-[1.03] origin-center" style={{ backgroundImage: `url(${busCootranar})`, filter: 'brightness(0.85) contrast(1.1)', backgroundPosition: 'center 40%' }} />
+            <div className="absolute inset-0 bg-gradient-to-tl from-brand-blue via-brand-blue/40 to-transparent" />
           </div>
           <div className="relative z-10 flex flex-col justify-between p-8 lg:p-14 text-white w-full h-full">
             {/* Top */}
@@ -48,18 +48,7 @@ export function OlvidoPasswordPage() {
               </p>
             </div>
 
-            {/* Bottom */}
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-white text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-white/30">C1</div>
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-white/30">C2</div>
-                <div className="w-8 h-8 rounded-full bg-blue-300 text-[#0B1E4A] flex items-center justify-center font-bold text-xs ring-2 ring-white/30">C3</div>
-              </div>
-              <div className="text-sm">
-                <p className="font-bold">Soporte 24/7</p>
-                <p className="text-white/60 text-xs">Seguridad garantizada</p>
-              </div>
-            </div>
+    
 
             <div className="flex lg:hidden w-full">
               <a href="#form-section" className="flex items-center justify-center gap-2 bg-white text-[#0B1E4A] font-bold px-8 py-4 rounded-xl w-full hover:bg-slate-50 transition-colors shadow-lg">
@@ -134,7 +123,7 @@ export function OlvidoPasswordPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-[#0B1E4A] hover:bg-[#1a3673] text-white font-bold h-12 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] text-sm flex items-center justify-center gap-2"
+                      className="w-full bg-brand-blue hover:bg-brand-blue-light text-white font-bold h-12 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] text-sm flex items-center justify-center gap-2"
                     >
                       {loading ? 'Enviando...' : 'Enviar instrucciones'}
                       {!loading && <span className="material-symbols-outlined text-sm">arrow_forward</span>}

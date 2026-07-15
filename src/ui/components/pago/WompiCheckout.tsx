@@ -6,6 +6,7 @@ import type { DatosTransaccionWompi } from '../../../infrastructure/api/wompiApi
 
 interface Props {
   datos: DatosTransaccionWompi;
+  onCerrar?: () => void;
 }
 
 /**
@@ -13,7 +14,7 @@ interface Props {
  * Abre automáticamente el checkout sin necesidad de botón adicional.
  * Escucha cambios en la tabla pagowompi vía Supabase Realtime para redirigir automáticamente.
  */
-export function WompiCheckout({ datos }: Props) {
+export function WompiCheckout({ datos, onCerrar }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const navigate = useNavigate();
   const [scriptCargado, setScriptCargado] = useState(false);
@@ -262,6 +263,50 @@ export function WompiCheckout({ datos }: Props) {
       if (formRef.current) formRef.current.innerHTML = '';
     };
   }, [datos.referencia]); // Re-ejecutar solo si cambia la referencia
+
+  // Escuchar mensaje de Wompi para detectar cierre
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.origin.includes('wompi.co')) return;
+      
+      console.log('[WompiCheckout] Mensaje recibido de Wompi:', event.data);
+      const data = event.data;
+      const isClosed = 
+        data === 'close' || 
+        data === 'closed' || 
+        data?.event === 'closed' || 
+        data?.action === 'closed' ||
+        data?.type === 'closed' ||
+        (typeof data === 'object' && data !== null && 'event' in data && data.event === 'closed');
+        
+      if (isClosed) {
+        console.log('[WompiCheckout] Cierre detectado por mensaje postMessage');
+        onCerrar?.();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onCerrar]);
+
+  // Detectar por desaparición del iframe en el DOM
+  useEffect(() => {
+    let iframeDetectado = false;
+    const checkInterval = setInterval(() => {
+      const iframes = document.querySelectorAll('iframe[src*="wompi"], iframe[src*="checkout"]');
+      if (iframes.length > 0) {
+        iframeDetectado = true;
+      } else if (iframeDetectado) {
+        console.log('[WompiCheckout] Cierre detectado porque el iframe ya no existe en el DOM');
+        clearInterval(checkInterval);
+        onCerrar?.();
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(checkInterval);
+    };
+  }, [onCerrar]);
 
   return (
     <div className="flex flex-col items-center gap-4 py-4">

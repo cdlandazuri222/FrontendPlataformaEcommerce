@@ -123,7 +123,7 @@ export function SeleccionAsientosPage() {
   const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
   // --- Hook de pago Wompi ---
-  const { fase, datosTransaccion, error: errorPago, iniciarPago, completarPerfil } = useWompiPago();
+  const { fase, datosTransaccion, error: errorPago, iniciarPago, completarPerfil, resetear } = useWompiPago();
 
   // --- Redirigir si no hay viaje ---
   useEffect(() => {
@@ -605,8 +605,19 @@ export function SeleccionAsientosPage() {
     }
     // Mostrar el mensaje de error del backend en el banner de la página
     if (errorPago) setErrorMsg(errorPago.mensaje);
+
+    return () => {
+      resetear();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fase]);
+
+  // Resetear la pasarela si el usuario deselecciona todos los asientos estando en fase de widget
+  useEffect(() => {
+    if (fase === 'widget' && asientosSeleccionados.length === 0) {
+      resetear();
+    }
+  }, [fase, asientosSeleccionados.length, resetear]);
 
   // El widget de Wompi se renderiza inline via WompiCheckout cuando fase === 'widget'
 
@@ -819,7 +830,7 @@ export function SeleccionAsientosPage() {
                 {/* Widget Wompi */}
                 {fase === 'widget' && datosTransaccion && (
                   <div className="mt-4">
-                    <WompiCheckout key={datosTransaccion.referencia} datos={datosTransaccion} />
+                    <WompiCheckout key={datosTransaccion.referencia} datos={datosTransaccion} onCerrar={resetear} />
                   </div>
                 )}
 
