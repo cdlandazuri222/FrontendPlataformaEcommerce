@@ -7,6 +7,7 @@ import { httpClient } from '../../../infrastructure/api/httpClient';
 import { useAsientosRealtime } from '../../hooks/useAsientosRealtime';
 import { useWompiPago } from '../../hooks/useWompiPago';
 import type { AsientoTransaccionDTO } from '../../../infrastructure/api/wompiApi';
+import { wompiApi } from '../../../infrastructure/api/wompiApi';
 import busCootranar from '../../../assets/busCootranar.png';
 import { WompiCheckout } from '../../components/pago/WompiCheckout';
 import { FormularioCompletarPerfil } from '../../components/pago/FormularioCompletarPerfil';
@@ -373,6 +374,29 @@ export function SeleccionAsientosPage() {
     }
   };
 
+  // --- Eliminar asiento directamente desde el formulario de pasajero ---
+  const handleEliminarAsientoDesdeFormulario = async (idx: number) => {
+    const asientoInfo = asientosSeleccionados[idx];
+    if (!asientoInfo) return;
+    const idLiberar = asientoInfo.idasientoviaje;
+    asientosReservadosRef.current.delete(idLiberar);
+    asientosPendientesRef.current.delete(idLiberar);
+    setAsientosSeleccionados(prev => prev.filter((_, i) => i !== idx));
+    setPasajeros(prev => {
+      const copia = [...prev];
+      copia.splice(idx, 1);
+      if (copia.length > 0) copia[0] = { ...copia[0], esComprador: true };
+      return copia;
+    });
+    setAsientos(prev => prev.map(a =>
+      a.idasientoviaje === idLiberar ? { ...a, estado: 'LIBRE' as EstadoAsiento } : a
+    ));
+    if (usarMisDatosIdx === idx) setUsarMisDatosIdx(null);
+    else if (usarMisDatosIdx !== null && usarMisDatosIdx > idx) setUsarMisDatosIdx(usarMisDatosIdx - 1);
+    try { await httpClient.post(`/asientos/${idLiberar}/liberar`); } catch { /* silencioso */ }
+    if (asientosReservadosRef.current.size === 0) detenerCountdown();
+  };
+
   // --- Lógica de formularios de pasajeros ---
   const validarPasajero = useCallback((datos: DatosPasajero): Record<string, string> => {
     const errs: Record<string, string> = {};
@@ -484,7 +508,8 @@ export function SeleccionAsientosPage() {
 
 
   // --- Confirmar y pagar ---
-  const handleConfirmarYPagar = () => {
+  const handleConfirmarYPagar = async () => {
+    setErrorMsg(null);
     // Validar todos los formularios
     const nuevosErrores: Record<number, Record<string, string>> = {};
     let hayErrores = false;
@@ -496,6 +521,40 @@ export function SeleccionAsientosPage() {
     if (hayErrores) return;
 
     if (!puntosResueltos.idPuntoOrigen || !puntosResueltos.idPuntoDestino) return;
+
+    // Bug 1 fix: si el usuario marcó "Yo soy este pasajero" completar el perfil
+    // directamente con esos datos ANTES de iniciar el pago, para evitar que
+    // useWompiPago muestre FormularioCompletarPerfil con los mismos campos otra vez.
+    if (usarMisDatosIdx !== null) {
+      const p = pasajeros[usarMisDatosIdx];
+      try {
+        await wompiApi.completarPerfil({
+          nombre: p.nombrePasajero,
+          apellido: p.apellidoPasajero,
+          tipoDocumento: p.tipoDocumento,
+          documento: p.documento,
+          telefono: p.telefono,
+        });
+        // Actualizar localStorage para que useWompiPago encuentre el perfil COMPLETO
+        const usuarioGuardado = localStorage.getItem('usuario');
+        if (usuarioGuardado) {
+          const usuario = JSON.parse(usuarioGuardado);
+          localStorage.setItem('usuario', JSON.stringify({
+            ...usuario,
+            nombre: p.nombrePasajero,
+            apellido: p.apellidoPasajero,
+            tipoDocumento: p.tipoDocumento,
+            documento: p.documento,
+            telefono: p.telefono,
+            estadousuario: 'COMPLETO',
+          }));
+        }
+      } catch (err: any) {
+        const msg = err?.response?.data?.message ?? 'Error al guardar los datos del perfil. Intenta de nuevo.';
+        setErrorMsg(msg);
+        return; // no continuar al pago
+      }
+    }
 
     // Construir payload para Wompi
     const asientosDTO: AsientoTransaccionDTO[] = asientosSeleccionados.map((asiento, idx) => ({
@@ -513,9 +572,41 @@ export function SeleccionAsientosPage() {
     }));
 
     iniciarPago(state!.idviaje, asientosDTO);
-    // Limpiar ref para evitar liberación innecesaria si Wompi redirige al resultado
-    asientosReservadosRef.current.clear();
+    // Nota: asientosReservadosRef.current se limpia en el useEffect de fase === 'widget'
+    // para garantizar que solo se borra cuando el widget ya está activo (pago en curso).
   };
+
+  // Bug 2 fix (parte 1): cuando el widget ya está activo, limpiar los refs para que
+  // pagehide/desmontaje no libere asientos que ya forman parte de una transacción activa.
+  useEffect(() => {
+    if (fase !== 'widget') return;
+    asientosReservadosRef.current.clear();
+    asientosPendientesRef.current.clear();
+  }, [fase]);
+
+  // Bug 2 fix (parte 2): cuando el backend rechaza la preparación del pago (cualquier error,
+  // incluyendo PASAJERO_YA_EN_VIAJE), liberar TODOS los asientos reservados de inmediato.
+  useEffect(() => {
+    if (fase !== 'error') return;
+    const ids = Array.from(asientosReservadosRef.current);
+    if (ids.length > 0) {
+      asientosReservadosRef.current.clear();
+      asientosPendientesRef.current.clear();
+      ids.forEach(id => {
+        httpClient.post(`/asientos/${id}/liberar`).catch(() => {});
+      });
+      setAsientos(prev => prev.map(a =>
+        ids.includes(a.idasientoviaje) ? { ...a, estado: 'LIBRE' as EstadoAsiento } : a
+      ));
+      setAsientosSeleccionados([]);
+      setPasajeros([]);
+      setUsarMisDatosIdx(null);
+      detenerCountdown();
+    }
+    // Mostrar el mensaje de error del backend en el banner de la página
+    if (errorPago) setErrorMsg(errorPago.mensaje);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fase]);
 
   // El widget de Wompi se renderiza inline via WompiCheckout cuando fase === 'widget'
 
@@ -706,10 +797,12 @@ export function SeleccionAsientosPage() {
                         sugerencias={sugerenciaActiva === idx ? (sugerencias[idx] || []) : []}
                         buscando={buscando[idx] || false}
                         usarMisDatos={usarMisDatosIdx === idx}
+                        totalAsientos={asientosSeleccionados.length}
                         onToggleUsarMisDatos={(checked) => handleToggleUsarMisDatos(idx, checked)}
                         onChange={handleChangePasajero}
                         onBlur={handleBlurPasajero}
                         onSeleccionarSugerencia={seleccionarSugerencia}
+                        onEliminar={() => handleEliminarAsientoDesdeFormulario(idx)}
                       />
                     );
                   })}
@@ -756,8 +849,11 @@ export function SeleccionAsientosPage() {
         </div>
       </div>
 
-      {/* Modal: Formulario completar perfil */}
-      {fase === 'formulario' && (
+      {/* Modal: Formulario completar perfil
+           Solo se muestra como fallback cuando el usuario NO marcó "Yo soy este pasajero".
+           Si sí lo marcó (usarMisDatosIdx !== null), el perfil ya se completó
+           automáticamente en handleConfirmarYPagar antes de llamar iniciarPago. */}
+      {fase === 'formulario' && usarMisDatosIdx === null && (
         <FormularioCompletarPerfil
           onCompletado={completarPerfil}
           errorExterno={errorPago?.mensaje ?? null}
@@ -793,15 +889,28 @@ interface PasajeroFormInlineProps {
   sugerencias: PasajeroSugerencia[];
   buscando: boolean;
   usarMisDatos: boolean;
+  totalAsientos: number;
   onToggleUsarMisDatos: (checked: boolean) => void;
   onChange: (index: number, campo: keyof DatosPasajero, valor: string) => void;
   onBlur: (index: number) => void;
   onSeleccionarSugerencia: (index: number, sugerencia: PasajeroSugerencia) => void;
+  onEliminar: () => void;
 }
 
-function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, buscando, usarMisDatos, onToggleUsarMisDatos, onChange, onBlur, onSeleccionarSugerencia }: PasajeroFormInlineProps) {
+function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, buscando, usarMisDatos, totalAsientos, onToggleUsarMisDatos, onChange, onBlur, onSeleccionarSugerencia, onEliminar }: PasajeroFormInlineProps) {
   return (
-    <div className="border border-slate-100 rounded-xl p-4">
+    <div className="relative border border-slate-100 rounded-xl p-4">
+      {/* Botón X para eliminar asiento (solo visible si hay más de 1 asiento seleccionado) */}
+      {totalAsientos > 1 && (
+        <button
+          type="button"
+          onClick={onEliminar}
+          title="Eliminar este asiento"
+          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-400 transition-all duration-150 z-10"
+        >
+          <span className="material-symbols-outlined text-sm leading-none">close</span>
+        </button>
+      )}
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
