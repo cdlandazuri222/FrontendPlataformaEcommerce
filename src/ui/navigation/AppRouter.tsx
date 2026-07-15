@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ScrollToTop } from './ScrollToTop';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegistroPage } from '../pages/auth/RegistroPage';
 import { VerificarEmailPage } from '../pages/auth/VerificarEmailPage';
@@ -16,7 +17,9 @@ import { ROUTES } from '../../shared/constants';
 
 export const AppRouter = () => {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       {/* Rutas públicas - sin autenticación requerida */}
       <Route path={ROUTES.LOGIN} element={<LoginPage />} />
       <Route path={ROUTES.REGISTRO} element={<RegistroPage />} />
@@ -38,6 +41,7 @@ export const AppRouter = () => {
 
       <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
       <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 };
