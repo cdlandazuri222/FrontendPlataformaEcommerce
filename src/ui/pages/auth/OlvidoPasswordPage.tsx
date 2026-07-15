@@ -79,6 +79,9 @@ export function OlvidoPasswordPage() {
                   <p className="text-slate-500 text-sm leading-relaxed mb-8">
                     Si el correo está registrado, recibirás las instrucciones para restablecer tu contraseña.
                   </p>
+                   <p className="text-slate-500 text-sm leading-relaxed mb-8">
+                    Si no encuentras el correo en tu bandeja principal, buscala en spam
+                  </p>
                   <Link to={ROUTES.LOGIN} className="inline-flex items-center gap-2 text-slate-600 hover:text-[#0B1E4A] text-sm font-bold transition-colors">
                     <span className="material-symbols-outlined text-lg">arrow_back</span>
                     Volver al Inicio de Sesión
