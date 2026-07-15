@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import heic2any from 'heic2any';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePreferencias } from '../../context/PreferenciasContext';
@@ -79,25 +80,56 @@ export function PerfilPage() {
     fileInputRef.current?.click();
   };
 
+  /* ── Detectar si un archivo es HEIC (por MIME o extensión) ── */
+  const esHeic = (archivo: File): boolean => {
+    if (archivo.type === 'image/heic' || archivo.type === 'image/heif') return true;
+    const nombre = archivo.name.toLowerCase();
+    return nombre.endsWith('.heic') || nombre.endsWith('.heif');
+  };
+
+  /* ── Convertir HEIC → JPEG y devolver un File listo para usar ── */
+  const convertirHeicAJpeg = async (archivo: File): Promise<File> => {
+    const blob = await heic2any({ blob: archivo, toType: 'image/jpeg', quality: 0.92 });
+    const jpegBlob = Array.isArray(blob) ? blob[0] : blob;
+    const nombreJpeg = archivo.name.replace(/\.hei[cf]$/i, '.jpg');
+    return new File([jpegBlob], nombreJpeg, { type: 'image/jpeg' });
+  };
+
   /* ── Al seleccionar un archivo ── */
   const handleArchivoSeleccionado = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = e.target.files?.[0];
+    let archivo = e.target.files?.[0];
     if (!archivo) return;
+
+    // ── Convertir HEIC/HEIF a JPEG antes de cualquier validación ──
+    if (esHeic(archivo)) {
+      setSubiendoFoto(true); // mostrar spinner durante la conversión
+      try {
+        archivo = await convertirHeicAJpeg(archivo);
+      } catch (convErr) {
+        console.error('Error al convertir HEIC:', convErr);
+        alert('No se pudo convertir la imagen HEIC. Por favor selecciona una imagen en formato JPG, PNG o WEBP.');
+        setSubiendoFoto(false);
+        e.target.value = '';
+        return;
+      }
+    }
 
     // Validar tipo de imagen (jpg/png/webp)
     const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
     if (!tiposPermitidos.includes(archivo.type)) {
       alert('Por favor selecciona una imagen válida (JPG, PNG o WEBP).');
+      e.target.value = '';
       return;
     }
 
     // Validar tamaño (máx 5 MB)
     if (archivo.size > 5 * 1024 * 1024) {
       alert('La imagen no debe superar los 5 MB.');
+      e.target.value = '';
       return;
     }
 
-    // Mostrar preview de la imagen seleccionada inmediatamente
+    // Mostrar preview inmediatamente
     const previewUrl = URL.createObjectURL(archivo);
     setFotoPreview(previewUrl);
     setSubiendoFoto(true);
@@ -117,7 +149,7 @@ export function PerfilPage() {
       if (response.data?.success && response.data?.data?.urlFoto) {
         const urlFoto = response.data.data.urlFoto;
 
-        // Actualizar el localStorage key usuario
+        // Actualizar el localStorage
         const storedUser = localStorage.getItem('usuario');
         if (storedUser) {
           const parsedUser = JSON.parse(storedUser) as Cliente;
@@ -126,7 +158,7 @@ export function PerfilPage() {
           setUsuario(parsedUser);
         }
 
-        // Limpiar el localStorage viejo local
+        // Limpiar preview local
         localStorage.removeItem(FOTO_PERFIL_LOCAL_KEY);
         setFotoPreview(null);
         alert('Foto de perfil actualizada exitosamente.');
@@ -135,11 +167,10 @@ export function PerfilPage() {
       }
     } catch (error) {
       console.error('Error al subir foto de perfil:', error);
-      setFotoPreview(null); // Revertir preview en caso de fallo
+      setFotoPreview(null);
       alert('Hubo un error al subir la foto de perfil. Por favor intenta de nuevo.');
     } finally {
       setSubiendoFoto(false);
-      // Limpiar el input para permitir volver a seleccionar el mismo archivo
       e.target.value = '';
     }
   };
@@ -174,7 +205,7 @@ export function PerfilPage() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif,image/heic,image/heif"
         capture={undefined}   /* sin capture → abre galería + cámara según el dispositivo */
         className="hidden"
         onChange={handleArchivoSeleccionado}
