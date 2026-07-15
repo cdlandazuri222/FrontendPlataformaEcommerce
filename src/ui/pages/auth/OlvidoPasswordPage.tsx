@@ -36,7 +36,7 @@ export function OlvidoPasswordPage() {
           </div>
           <div className="relative z-10 flex flex-col justify-between p-8 lg:p-14 text-white w-full h-full">
             {/* Top */}
-            <div className="w-12 h-1 bg-white/40 rounded-full" />
+            <div className="w-12 h-1 bg-transparent rounded-full" />
 
             {/* Center */}
             <div className="space-y-4">
