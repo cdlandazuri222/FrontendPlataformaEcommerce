@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
 import type { Cliente } from '../../../domain/entities/Cliente';
+
+export const FOTO_PERFIL_LOCAL_KEY = 'fotoPerfilLocal';
 
 interface AvatarUsuarioProps {
   usuario: Cliente;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
-  /** Permite sobreescribir la foto con un data URL local */
   fotoLocal?: string | null;
 }
 
@@ -22,28 +22,14 @@ function getIniciales(nombre: string, apellido: string): string {
   return n + a || '?';
 }
 
-/** Clave usada en localStorage para persistir la foto de perfil local */
-export const FOTO_PERFIL_LOCAL_KEY = 'fotoperfil_local';
-
 export function AvatarUsuario({ usuario, size = 'md', className = '', fotoLocal }: AvatarUsuarioProps) {
   const clasesTamano = sizeClasses[size];
-
-  // Foto local persistida en localStorage
-  const [fotoGuardada, setFotoGuardada] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(FOTO_PERFIL_LOCAL_KEY);
-    setFotoGuardada(stored);
-  }, []);
-
-  // Prioridad: prop fotoLocal > localStorage > foto de Google > iniciales
-  const fotoMostrar = fotoLocal ?? fotoGuardada;
   const tieneFotoGoogle = usuario.proveedor?.toUpperCase() === 'GOOGLE' && usuario.fotoperfil;
 
-  if (fotoMostrar) {
+  if (fotoLocal) {
     return (
       <img
-        src={fotoMostrar}
+        src={fotoLocal}
         alt={`${usuario.nombre} ${usuario.apellido}`}
         className={`${clasesTamano} rounded-full object-cover ring-2 ring-white ${className}`}
       />

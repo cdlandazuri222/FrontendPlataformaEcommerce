@@ -7,6 +7,7 @@ import { AvatarUsuario, FOTO_PERFIL_LOCAL_KEY } from '../../components/common/Av
 import { ROUTES } from '../../../shared/constants';
 import type { Idioma } from '../../../shared/i18n/translations';
 
+
 /* ────────────────────────────────────────────
    Campo de solo lectura
 ──────────────────────────────────────────── */
