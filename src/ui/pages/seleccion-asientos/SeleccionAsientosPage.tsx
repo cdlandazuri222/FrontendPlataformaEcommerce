@@ -11,14 +11,15 @@ import { wompiApi } from '../../../infrastructure/api/wompiApi';
 import busCootranar from '../../../assets/busCootranar.png';
 import { WompiCheckout } from '../../components/pago/WompiCheckout';
 import { FormularioCompletarPerfil } from '../../components/pago/FormularioCompletarPerfil';
+import { usePreferencias } from '../../context/PreferenciasContext';
 
 const MAX_ASIENTOS = 10;
 
-const TIPOS_DOCUMENTO = [
-  { value: 'CC', label: 'Cédula de Ciudadanía' },
-  { value: 'TI', label: 'Tarjeta de Identidad' },
-  { value: 'CE', label: 'Cédula de Extranjería' },
-  { value: 'PA', label: 'Pasaporte' },
+const LEYENDA_BASE = [
+  { key: 'disponible' as const, color: 'bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600' },
+  { key: 'vendido'    as const, color: 'bg-[#0e3a8c]' },
+  { key: 'reservado'  as const, color: 'bg-yellow-400' },
+  { key: 'seleccionado' as const, color: 'bg-green-500' },
 ];
 
 interface LocationState {
@@ -81,18 +82,31 @@ interface PasajeroSugerencia {
   correo: string;
 }
 
-const LEYENDA = [
-  { label: 'Disponible',  color: 'bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600' },
-  { label: 'Vendido',     color: 'bg-[#0e3a8c]' },
-  { label: 'Reservado',   color: 'bg-yellow-400' },
-  { label: 'Seleccionado',color: 'bg-green-500' },
-];
+// (LEYENDA_BASE is defined above and used inside the component)
 
 
 export function SeleccionAsientosPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as LocationState | null;
+  const { tx } = usePreferencias();
+  const s = tx.seleccionAsientos;
+
+  // Tipos de documento traducidos
+  const TIPOS_DOCUMENTO = [
+    { value: 'CC', label: s.cedula },
+    { value: 'TI', label: s.tarjetaIdentidad },
+    { value: 'CE', label: s.cedulaExtranjeria },
+    { value: 'PA', label: s.pasaporte },
+  ];
+
+  // Leyenda traducida
+  const LEYENDA = [
+    { label: s.disponible,   color: LEYENDA_BASE[0].color },
+    { label: s.vendido,      color: LEYENDA_BASE[1].color },
+    { label: s.reservado,    color: LEYENDA_BASE[2].color },
+    { label: s.seleccionado, color: LEYENDA_BASE[3].color },
+  ];
 
   // --- Estado del mapa de asientos ---
   const [detalle, setDetalle] = useState<DetalleViaje | null>(null);
@@ -334,7 +348,7 @@ export function SeleccionAsientosPage() {
     }
 
     if (asientosSeleccionados.length >= MAX_ASIENTOS) {
-      setErrorMsg(`Puedes seleccionar máximo ${MAX_ASIENTOS} asientos por compra.`);
+      setErrorMsg(`${s.maxAsientos} ${MAX_ASIENTOS} ${s.maxAsientosSufijo}`);
       return;
     }
 
@@ -639,7 +653,7 @@ export function SeleccionAsientosPage() {
         <div className="flex items-center justify-center h-[80vh]">
           <div className="text-center">
             <span className="material-symbols-outlined text-5xl text-[#0e3a8c] dark:text-blue-400 animate-spin">progress_activity</span>
-            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">Cargando asientos...</p>
+            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">{s.cargando}</p>
           </div>
         </div>
       </div>
@@ -654,7 +668,7 @@ export function SeleccionAsientosPage() {
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-8 text-center max-w-sm">
             <span className="material-symbols-outlined text-4xl text-red-500 mb-3 block">error</span>
             <p className="text-red-700 dark:text-red-400 font-medium mb-4">{error}</p>
-            <button onClick={() => navigate(-1)} className="bg-[#0e3a8c] text-white px-6 py-2 rounded-xl font-bold text-sm">Volver</button>
+            <button onClick={() => navigate(-1)} className="bg-[#0e3a8c] text-white px-6 py-2 rounded-xl font-bold text-sm">{s.volver}</button>
           </div>
         </div>
       </div>
@@ -670,11 +684,11 @@ export function SeleccionAsientosPage() {
       {/* Breadcrumb */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4">
         <nav className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
-          <button onClick={() => navigate(ROUTES.HOME)} className="hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors">Inicio</button>
+          <button onClick={() => navigate(ROUTES.HOME)} className="hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors">{s.inicio}</button>
           <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <button onClick={() => navigate(-1)} className="hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors">Resultados</button>
+          <button onClick={() => navigate(-1)} className="hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors">{s.resultados}</button>
           <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <span className="text-[#0e3a8c] dark:text-blue-400 font-semibold">Selección de Asientos</span>
+          <span className="text-[#0e3a8c] dark:text-blue-400 font-semibold">{s.titulo}</span>
         </nav>
       </div>
 
@@ -685,8 +699,8 @@ export function SeleccionAsientosPage() {
           <div className="w-full lg:w-80 shrink-0">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
               <div className="p-5 pb-3">
-                <p className="text-xs font-bold text-[#0e3a8c] dark:text-blue-400 uppercase tracking-widest mb-1">Detalles del Viaje</p>
-                {state.rutaCompleta && <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Ruta: {state.rutaCompleta}</p>}
+                <p className="text-xs font-bold text-[#0e3a8c] dark:text-blue-400 uppercase tracking-widest mb-1">{s.detallesViaje}</p>
+                {state.rutaCompleta && <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">{s.ruta}: {state.rutaCompleta}</p>}
                 <h2 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                   {state.origen}
                   <span className="material-symbols-outlined text-[#0e3a8c] text-xl">arrow_forward</span>
@@ -702,10 +716,10 @@ export function SeleccionAsientosPage() {
                 )}
               </div>
               <div className="px-5 pb-5 space-y-4">
-                <InfoItem icon="directions_bus" label="Vehículo" value={`Placa: ${detalle?.vehiculo.placa ?? state.placa}\nMóvil: ${detalle?.vehiculo.numeromovil ?? state.movil}`} />
-                {detalle?.tipoBus && <InfoItem icon="airline_seat_recline_normal" label="Tipo de Bus" value={[detalle.tipoBus.nombre, detalle.tipoBus.descripcion].filter(Boolean).join('\n')} />}
-                <InfoItem icon="schedule" label="Itinerario" value={`Salida: ${state.hora}\nFecha: ${state.fecha}`} />
-                {detalle?.tipoServicio && <InfoItem icon="confirmation_number" label="Tipo de Servicio" value={detalle.tipoServicio.nombre} />}
+                <InfoItem icon="directions_bus" label={s.vehiculo} value={`${s.placa}: ${detalle?.vehiculo.placa ?? state.placa}\n${s.movil}: ${detalle?.vehiculo.numeromovil ?? state.movil}`} />
+                {detalle?.tipoBus && <InfoItem icon="airline_seat_recline_normal" label={s.tipoBus} value={[detalle.tipoBus.nombre, detalle.tipoBus.descripcion].filter(Boolean).join('\n')} />}
+                <InfoItem icon="schedule" label={s.itinerario} value={`${s.salida}: ${state.hora}\n${s.fecha}: ${state.fecha}`} />
+                {detalle?.tipoServicio && <InfoItem icon="confirmation_number" label={s.tipoServicio} value={detalle.tipoServicio.nombre} />}
               </div>
             </div>
           </div>
@@ -715,7 +729,7 @@ export function SeleccionAsientosPage() {
             {/* Mapa de asientos */}
             <div id="mapa-asientos" className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 md:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">Selecciona tus asientos</h3>
+                <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{s.seleccionaTusAsientos}</h3>
                 <div className="flex flex-wrap items-center gap-3">
                   {LEYENDA.map((item) => (
                     <div key={item.label} className="flex items-center gap-1.5">
@@ -733,7 +747,7 @@ export function SeleccionAsientosPage() {
                     : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                 }`}>
                   <span className="material-symbols-outlined text-base">timer</span>
-                  Asientos reservados por {formatCountdown(segundosRestantes)} — confirma antes de que expire
+                  {s.timerMsg} {formatCountdown(segundosRestantes)} {s.timerConfirma}
                 </div>
               )}
 
@@ -742,7 +756,7 @@ export function SeleccionAsientosPage() {
               ) : (
                 <div className="text-center py-12 text-slate-400 dark:text-slate-500">
                   <span className="material-symbols-outlined text-4xl block mb-2">event_seat</span>
-                  No se pudo cargar el mapa de asientos
+                  {s.errorMapaAsientos}
                 </div>
               )}
 
@@ -759,10 +773,12 @@ export function SeleccionAsientosPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {asientosSeleccionados.length === 1 ? '1 asiento seleccionado' : `${asientosSeleccionados.length} asientos seleccionados`}
-                        <span className="text-slate-400 dark:text-slate-500 ml-1">(máx. {MAX_ASIENTOS})</span>
+                        {asientosSeleccionados.length === 1
+                          ? `1 ${s.asientoSeleccionado}`
+                          : `${asientosSeleccionados.length} ${s.asientosSeleccionados}`}
+                        <span className="text-slate-400 dark:text-slate-500 ml-1">({s.max} {MAX_ASIENTOS})</span>
                       </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Asientos: {numerosAsientos.join(', ')}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{s.asientos}: {numerosAsientos.join(', ')}</p>
                     </div>
                     <p className="text-2xl font-extrabold text-[#0e3a8c] dark:text-blue-400">{precioTotal.toLocaleString('es-CO')} COP</p>
                   </div>
@@ -771,13 +787,13 @@ export function SeleccionAsientosPage() {
                     className="w-full flex items-center justify-center gap-2 bg-[#0e3a8c] text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20"
                   >
                     <span className="material-symbols-outlined text-base">arrow_downward</span>
-                    Confirmar asiento{asientosSeleccionados.length > 1 ? 's' : ''}
+                    {asientosSeleccionados.length > 1 ? s.confirmarAsientos : s.confirmarAsiento}
                   </button>
                 </div>
               )}
               {asientosSeleccionados.length === 0 && (
                 <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700">
-                  <p className="text-sm text-slate-400 dark:text-slate-500 text-center">Selecciona uno o más asientos disponibles para continuar</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 text-center">{s.seleccionaParaContinuar}</p>
                 </div>
               )}
             </div>
@@ -786,13 +802,13 @@ export function SeleccionAsientosPage() {
             {asientosSeleccionados.length > 0 && pasajeros.length === asientosSeleccionados.length && (
               <div id="formularios-pasajeros" className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">Datos de Pasajeros</h3>
+                  <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{s.datosPasajeros}</h3>
                   <button
                     onClick={() => document.getElementById('mapa-asientos')?.scrollIntoView({ behavior: 'smooth' })}
                     className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors font-medium"
                   >
                     <span className="material-symbols-outlined text-base">arrow_upward</span>
-                    Volver a asientos
+                    {s.volverAAsientos}
                   </button>
                 </div>
                 <div className="space-y-5">
@@ -810,6 +826,8 @@ export function SeleccionAsientosPage() {
                         buscando={buscando[idx] || false}
                         usarMisDatos={usarMisDatosIdx === idx}
                         totalAsientos={asientosSeleccionados.length}
+                        tiposDocumento={TIPOS_DOCUMENTO}
+                        labels={s}
                         onToggleUsarMisDatos={(checked) => handleToggleUsarMisDatos(idx, checked)}
                         onChange={handleChangePasajero}
                         onBlur={handleBlurPasajero}
@@ -845,12 +863,12 @@ export function SeleccionAsientosPage() {
                     {(fase === 'verificando' || fase === 'preparando') ? (
                       <>
                         <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                        Procesando...
+                        {s.procesando}
                       </>
                     ) : (
                       <>
                         <span className="material-symbols-outlined text-base">payment</span>
-                        Confirmar y Pagar — {precioTotal.toLocaleString('es-CO')} COP
+                        {s.confirmarYPagar} — {precioTotal.toLocaleString('es-CO')} COP
                       </>
                     )}
                   </button>
@@ -902,6 +920,15 @@ interface PasajeroFormInlineProps {
   buscando: boolean;
   usarMisDatos: boolean;
   totalAsientos: number;
+  tiposDocumento: { value: string; label: string }[];
+  labels: {
+    pasajero: string; comprador: string; asiento: string;
+    yoSoyEstePasajero: string; nombre: string; apellido: string;
+    tipoDoc: string; documento: string; telefono: string; correo: string;
+    nombrePlaceholder: string; apellidoPlaceholder: string;
+    documentoPlaceholder: string; telefonoPlaceholder: string; correoPlaceholder: string;
+    buscando: string; eliminarAsiento: string;
+  };
   onToggleUsarMisDatos: (checked: boolean) => void;
   onChange: (index: number, campo: keyof DatosPasajero, valor: string) => void;
   onBlur: (index: number) => void;
@@ -909,7 +936,7 @@ interface PasajeroFormInlineProps {
   onEliminar: () => void;
 }
 
-function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, buscando, usarMisDatos, totalAsientos, onToggleUsarMisDatos, onChange, onBlur, onSeleccionarSugerencia, onEliminar }: PasajeroFormInlineProps) {
+function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, buscando, usarMisDatos, totalAsientos, tiposDocumento, labels, onToggleUsarMisDatos, onChange, onBlur, onSeleccionarSugerencia, onEliminar }: PasajeroFormInlineProps) {
   return (
     <div className="relative border border-slate-100 dark:border-slate-700 rounded-xl p-4 dark:bg-slate-800/50">
       {/* Botón X para eliminar asiento (solo visible si hay más de 1 asiento seleccionado) */}
@@ -917,7 +944,7 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
         <button
           type="button"
           onClick={onEliminar}
-          title="Eliminar este asiento"
+          title={labels.eliminarAsiento}
           className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 text-slate-400 transition-all duration-150 z-10"
         >
           <span className="material-symbols-outlined text-sm leading-none">close</span>
@@ -931,10 +958,10 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
           </div>
           <div>
             <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-              Pasajero {index + 1}
-              {datos.esComprador && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/40 text-[#0e3a8c] dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">Comprador</span>}
+              {labels.pasajero} {index + 1}
+              {datos.esComprador && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/40 text-[#0e3a8c] dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">{labels.comprador}</span>}
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Asiento #{asiento.numeroasiento} · {asiento.precio.toLocaleString('es-CO')} COP</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{labels.asiento} #{asiento.numeroasiento} · {asiento.precio.toLocaleString('es-CO')} COP</p>
           </div>
         </div>
       </div>
@@ -947,16 +974,16 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
           onChange={(e) => onToggleUsarMisDatos(e.target.checked)}
           className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[#0e3a8c] focus:ring-[#0e3a8c]"
         />
-        <span className="text-sm text-slate-600 dark:text-slate-300">Yo soy este pasajero</span>
+        <span className="text-sm text-slate-600 dark:text-slate-300">{labels.yoSoyEstePasajero}</span>
       </label>
 
       {/* Campos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <CampoTexto label="Nombre *" value={datos.nombrePasajero} error={errores.nombrePasajero} placeholder="Nombre" onChange={(v) => onChange(index, 'nombrePasajero', v)} onBlur={() => onBlur(index)} />
-        <CampoTexto label="Apellido *" value={datos.apellidoPasajero} error={errores.apellidoPasajero} placeholder="Apellido" onChange={(v) => onChange(index, 'apellidoPasajero', v)} onBlur={() => onBlur(index)} />
-        <CampoSelect label="Tipo Doc *" value={datos.tipoDocumento} error={errores.tipoDocumento} options={TIPOS_DOCUMENTO} onChange={(v) => onChange(index, 'tipoDocumento', v)} onBlur={() => onBlur(index)} />
+        <CampoTexto label={labels.nombre} value={datos.nombrePasajero} error={errores.nombrePasajero} placeholder={labels.nombrePlaceholder} onChange={(v) => onChange(index, 'nombrePasajero', v)} onBlur={() => onBlur(index)} />
+        <CampoTexto label={labels.apellido} value={datos.apellidoPasajero} error={errores.apellidoPasajero} placeholder={labels.apellidoPlaceholder} onChange={(v) => onChange(index, 'apellidoPasajero', v)} onBlur={() => onBlur(index)} />
+        <CampoSelect label={labels.tipoDoc} value={datos.tipoDocumento} error={errores.tipoDocumento} options={tiposDocumento} onChange={(v) => onChange(index, 'tipoDocumento', v)} onBlur={() => onBlur(index)} />
         <div className="relative">
-          <CampoTexto label="Documento *" value={datos.documento} error={errores.documento} placeholder="Número de documento" onChange={(v) => onChange(index, 'documento', v)} onBlur={() => onBlur(index)} />
+          <CampoTexto label={labels.documento} value={datos.documento} error={errores.documento} placeholder={labels.documentoPlaceholder} onChange={(v) => onChange(index, 'documento', v)} onBlur={() => onBlur(index)} />
           {sugerencias.length > 0 && (
             <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg max-h-48 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               {sugerencias.map((s, i) => (
@@ -971,13 +998,13 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
             <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg px-4 py-3">
               <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                Buscando...
+                {labels.buscando}
               </p>
             </div>
           )}
         </div>
-        <CampoTexto label="Teléfono" value={datos.telefono} placeholder="Teléfono (opcional)" onChange={(v) => onChange(index, 'telefono', v)} onBlur={() => onBlur(index)} />
-        <CampoTexto label="Correo" value={datos.correoPasajero} placeholder="Correo (opcional)" onChange={(v) => onChange(index, 'correoPasajero', v)} onBlur={() => onBlur(index)} />
+        <CampoTexto label={labels.telefono} value={datos.telefono} placeholder={labels.telefonoPlaceholder} onChange={(v) => onChange(index, 'telefono', v)} onBlur={() => onBlur(index)} />
+        <CampoTexto label={labels.correo} value={datos.correoPasajero} placeholder={labels.correoPlaceholder} onChange={(v) => onChange(index, 'correoPasajero', v)} onBlur={() => onBlur(index)} />
       </div>
     </div>
   );
