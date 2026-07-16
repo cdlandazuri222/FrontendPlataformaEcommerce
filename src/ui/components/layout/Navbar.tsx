@@ -17,6 +17,7 @@ export function Navbar() {
     { label: n.home, path: ROUTES.HOME },
     { label: n.misViajes, path: ROUTES.MIS_VIAJES },
     { label: n.encomiendas, path: ROUTES.ENCOMIENDAS },
+    { label: n.misEncomiendas, path: ROUTES.MIS_ENCOMIENDAS },
   ];
 
   const enlacesBottomNav = [

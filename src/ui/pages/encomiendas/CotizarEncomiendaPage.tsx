@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Navbar } from '../../components/layout/Navbar';
 import busCootranar from '../../../assets/busCootranar.png';
 import { usePreferencias } from '../../context/PreferenciasContext';
 import { useAuth } from '../../hooks/useAuth';
 import { usePreinscripcionEncomienda } from '../../hooks/usePreinscripcionEncomienda';
 import type { OficinaEncomiendaAPI, PreinscripcionResultadoAPI } from '../../../infrastructure/api/encomiendasApi';
+import { ROUTES } from '../../../shared/constants';
 
 const CATEGORIAS = [
   { label: 'Tecnología', icon: 'devices' },
@@ -178,6 +180,12 @@ function ConfirmacionScreen({
             <span className="font-bold">Importante / Important:</span> {e.instruccionesOficina}
           </p>
         </div>
+        <Link
+          to={ROUTES.MIS_ENCOMIENDAS}
+          className="w-full block text-center bg-[#0e3a8c] dark:bg-blue-600 hover:bg-blue-900 dark:hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors text-sm mb-2"
+        >
+          {idioma === 'es' ? 'Ver mis encomiendas' : 'View my parcels'}
+        </Link>
         <button onClick={onVolver} className="w-full text-slate-500 dark:text-slate-400 font-semibold py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
           {e.volverInicio}
         </button>

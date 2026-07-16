@@ -40,7 +40,31 @@ export interface EncomiendaAPI {
   idencomienda: number;
   referenciaencomienda: string;
   estado: string;
+  idoficinaorigen: number;
+  idoficinadestino: number;
+  nombreoficinaorigen?: string;
+  nombreoficinadestino?: string;
+  nombredestinatario: string;
+  documentodestinatario: string;
+  telefonodestinatario: string;
+  contenidodeclarado: string;
+  pesoestimado: string;
+  volumenestimado: string | null;
+  valordeclarado: string | null;
+  valorcobrado: string | null;
+  esdomicilio: boolean;
+  fecharegistro: string;
   [key: string]: unknown;
+}
+
+export interface MisEncomiendasResultadoAPI {
+  encomiendas: EncomiendaAPI[];
+  paginacion: {
+    total: number;
+    totalPaginas: number;
+    paginaActual: number;
+    porPagina: number;
+  };
 }
 
 export interface PreinscripcionResultadoAPI {
@@ -75,6 +99,15 @@ export const encomiendasApi = {
     const response = await httpClient.post<{ data: PreinscripcionResultadoAPI }>(
       '/encomiendas/preinscripcion',
       datos
+    );
+    return response.data.data;
+  },
+
+  /** Lista las encomiendas del cliente autenticado (remitente). */
+  async getMisEncomiendas(page = 1, limit = 50): Promise<MisEncomiendasResultadoAPI> {
+    const response = await httpClient.get<{ data: MisEncomiendasResultadoAPI }>(
+      '/encomiendas/mias',
+      { params: { page, limit } }
     );
     return response.data.data;
   },
