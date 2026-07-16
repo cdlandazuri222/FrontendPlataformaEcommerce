@@ -82,7 +82,7 @@ interface PasajeroSugerencia {
 }
 
 const LEYENDA = [
-  { label: 'Disponible',  color: 'bg-white border-2 border-slate-200' },
+  { label: 'Disponible',  color: 'bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600' },
   { label: 'Vendido',     color: 'bg-[#0e3a8c]' },
   { label: 'Reservado',   color: 'bg-yellow-400' },
   { label: 'Seleccionado',color: 'bg-green-500' },
@@ -634,12 +634,12 @@ export function SeleccionAsientosPage() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-[#f6f6f8]">
+      <div className="min-h-screen bg-[#f6f6f8] dark:bg-slate-900 transition-colors duration-200">
         <Navbar />
         <div className="flex items-center justify-center h-[80vh]">
           <div className="text-center">
-            <span className="material-symbols-outlined text-5xl text-[#0e3a8c] animate-spin">progress_activity</span>
-            <p className="mt-4 text-slate-500 font-medium">Cargando asientos...</p>
+            <span className="material-symbols-outlined text-5xl text-[#0e3a8c] dark:text-blue-400 animate-spin">progress_activity</span>
+            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">Cargando asientos...</p>
           </div>
         </div>
       </div>
@@ -648,12 +648,12 @@ export function SeleccionAsientosPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f6f6f8]">
+      <div className="min-h-screen bg-[#f6f6f8] dark:bg-slate-900 transition-colors duration-200">
         <Navbar />
         <div className="flex items-center justify-center h-[80vh]">
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center max-w-sm">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-8 text-center max-w-sm">
             <span className="material-symbols-outlined text-4xl text-red-500 mb-3 block">error</span>
-            <p className="text-red-700 font-medium mb-4">{error}</p>
+            <p className="text-red-700 dark:text-red-400 font-medium mb-4">{error}</p>
             <button onClick={() => navigate(-1)} className="bg-[#0e3a8c] text-white px-6 py-2 rounded-xl font-bold text-sm">Volver</button>
           </div>
         </div>
@@ -664,17 +664,17 @@ export function SeleccionAsientosPage() {
   const imagenDestino = detalle?.imagendestino ?? busCootranar;
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8]" onClick={handleCloseSugerencias}>
+    <div className="min-h-screen bg-[#f6f6f8] dark:bg-slate-900 transition-colors duration-200" onClick={handleCloseSugerencias}>
       <Navbar />
 
       {/* Breadcrumb */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4">
-        <nav className="flex items-center gap-2 text-sm text-slate-400">
-          <button onClick={() => navigate(ROUTES.HOME)} className="hover:text-[#0e3a8c] transition-colors">Inicio</button>
+        <nav className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
+          <button onClick={() => navigate(ROUTES.HOME)} className="hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors">Inicio</button>
           <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <button onClick={() => navigate(-1)} className="hover:text-[#0e3a8c] transition-colors">Resultados</button>
+          <button onClick={() => navigate(-1)} className="hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors">Resultados</button>
           <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <span className="text-[#0e3a8c] font-semibold">Selección de Asientos</span>
+          <span className="text-[#0e3a8c] dark:text-blue-400 font-semibold">Selección de Asientos</span>
         </nav>
       </div>
 
@@ -683,11 +683,11 @@ export function SeleccionAsientosPage() {
 
           {/* Panel izquierdo: Detalles del viaje */}
           <div className="w-full lg:w-80 shrink-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
               <div className="p-5 pb-3">
-                <p className="text-xs font-bold text-[#0e3a8c] uppercase tracking-widest mb-1">Detalles del Viaje</p>
-                {state.rutaCompleta && <p className="text-[10px] text-slate-400 mb-0.5">Ruta: {state.rutaCompleta}</p>}
-                <h2 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
+                <p className="text-xs font-bold text-[#0e3a8c] dark:text-blue-400 uppercase tracking-widest mb-1">Detalles del Viaje</p>
+                {state.rutaCompleta && <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">Ruta: {state.rutaCompleta}</p>}
+                <h2 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                   {state.origen}
                   <span className="material-symbols-outlined text-[#0e3a8c] text-xl">arrow_forward</span>
                   {state.destino}
@@ -713,14 +713,14 @@ export function SeleccionAsientosPage() {
           {/* Panel derecho: Selector de asientos + formularios */}
           <div className="flex-1 space-y-6">
             {/* Mapa de asientos */}
-            <div id="mapa-asientos" className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
+            <div id="mapa-asientos" className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 md:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h3 className="text-lg font-extrabold text-slate-800">Selecciona tus asientos</h3>
+                <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">Selecciona tus asientos</h3>
                 <div className="flex flex-wrap items-center gap-3">
                   {LEYENDA.map((item) => (
                     <div key={item.label} className="flex items-center gap-1.5">
                       <div className={`w-4 h-4 rounded ${item.color}`} />
-                      <span className="text-xs text-slate-500">{item.label}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -728,7 +728,9 @@ export function SeleccionAsientosPage() {
 
               {segundosRestantes !== null && (
                 <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold ${
-                  segundosRestantes < 60 ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                  segundosRestantes < 60
+                    ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'
+                    : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                 }`}>
                   <span className="material-symbols-outlined text-base">timer</span>
                   Asientos reservados por {formatCountdown(segundosRestantes)} — confirma antes de que expire
@@ -738,14 +740,14 @@ export function SeleccionAsientosPage() {
               {detalle?.vehiculo.distribucionasientos ? (
                 <SelectorAsientos distribucion={detalle.vehiculo.distribucionasientos} asientos={asientos} onSeleccionar={handleSeleccionar} />
               ) : (
-                <div className="text-center py-12 text-slate-400">
+                <div className="text-center py-12 text-slate-400 dark:text-slate-500">
                   <span className="material-symbols-outlined text-4xl block mb-2">event_seat</span>
                   No se pudo cargar el mapa de asientos
                 </div>
               )}
 
               {errorMsg && (
-                <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                <div className="mt-4 flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 text-sm">
                   <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
                   <span>{errorMsg}</span>
                 </div>
@@ -753,16 +755,16 @@ export function SeleccionAsientosPage() {
 
               {/* Resumen de selección */}
               {asientosSeleccionados.length > 0 && (
-                <div className="mt-6 pt-5 border-t border-slate-100">
+                <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
                         {asientosSeleccionados.length === 1 ? '1 asiento seleccionado' : `${asientosSeleccionados.length} asientos seleccionados`}
-                        <span className="text-slate-400 ml-1">(máx. {MAX_ASIENTOS})</span>
+                        <span className="text-slate-400 dark:text-slate-500 ml-1">(máx. {MAX_ASIENTOS})</span>
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">Asientos: {numerosAsientos.join(', ')}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Asientos: {numerosAsientos.join(', ')}</p>
                     </div>
-                    <p className="text-2xl font-extrabold text-[#0e3a8c]">{precioTotal.toLocaleString('es-CO')} COP</p>
+                    <p className="text-2xl font-extrabold text-[#0e3a8c] dark:text-blue-400">{precioTotal.toLocaleString('es-CO')} COP</p>
                   </div>
                   <button
                     onClick={() => document.getElementById('formularios-pasajeros')?.scrollIntoView({ behavior: 'smooth' })}
@@ -774,20 +776,20 @@ export function SeleccionAsientosPage() {
                 </div>
               )}
               {asientosSeleccionados.length === 0 && (
-                <div className="mt-6 pt-5 border-t border-slate-100">
-                  <p className="text-sm text-slate-400 text-center">Selecciona uno o más asientos disponibles para continuar</p>
+                <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700">
+                  <p className="text-sm text-slate-400 dark:text-slate-500 text-center">Selecciona uno o más asientos disponibles para continuar</p>
                 </div>
               )}
             </div>
 
             {/* Panel de formularios de pasajeros (aparece cuando hay asientos seleccionados) */}
             {asientosSeleccionados.length > 0 && pasajeros.length === asientosSeleccionados.length && (
-              <div id="formularios-pasajeros" className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
+              <div id="formularios-pasajeros" className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-extrabold text-slate-800">Datos de Pasajeros</h3>
+                  <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">Datos de Pasajeros</h3>
                   <button
                     onClick={() => document.getElementById('mapa-asientos')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#0e3a8c] transition-colors font-medium"
+                    className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors font-medium"
                   >
                     <span className="material-symbols-outlined text-base">arrow_upward</span>
                     Volver a asientos
@@ -820,7 +822,7 @@ export function SeleccionAsientosPage() {
 
                 {/* Error de pago */}
                 {fase === 'error' && errorPago && (
-                  <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                  <div className="mt-4 flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 text-sm">
                     <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
                     <span>{errorPago.mensaje}</span>
                   </div>
@@ -878,13 +880,13 @@ export function SeleccionAsientosPage() {
 function InfoItem({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="bg-slate-100 p-2 rounded-lg shrink-0">
-        <span className="material-symbols-outlined text-[#0e3a8c] text-lg">{icon}</span>
+      <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg shrink-0">
+        <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-lg">{icon}</span>
       </div>
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</p>
         {value.split('\n').map((line, i) => (
-          <p key={i} className="text-sm text-slate-700 font-medium leading-snug">{line}</p>
+          <p key={i} className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-snug">{line}</p>
         ))}
       </div>
     </div>
@@ -909,14 +911,14 @@ interface PasajeroFormInlineProps {
 
 function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, buscando, usarMisDatos, totalAsientos, onToggleUsarMisDatos, onChange, onBlur, onSeleccionarSugerencia, onEliminar }: PasajeroFormInlineProps) {
   return (
-    <div className="relative border border-slate-100 rounded-xl p-4">
+    <div className="relative border border-slate-100 dark:border-slate-700 rounded-xl p-4 dark:bg-slate-800/50">
       {/* Botón X para eliminar asiento (solo visible si hay más de 1 asiento seleccionado) */}
       {totalAsientos > 1 && (
         <button
           type="button"
           onClick={onEliminar}
           title="Eliminar este asiento"
-          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 hover:bg-red-100 hover:text-red-500 text-slate-400 transition-all duration-150 z-10"
+          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 text-slate-400 transition-all duration-150 z-10"
         >
           <span className="material-symbols-outlined text-sm leading-none">close</span>
         </button>
@@ -928,11 +930,11 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
             {asiento.numeroasiento}
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-800">
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
               Pasajero {index + 1}
-              {datos.esComprador && <span className="ml-2 text-xs bg-blue-100 text-[#0e3a8c] px-2 py-0.5 rounded-full font-semibold">Comprador</span>}
+              {datos.esComprador && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/40 text-[#0e3a8c] dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">Comprador</span>}
             </p>
-            <p className="text-xs text-slate-400">Asiento #{asiento.numeroasiento} · {asiento.precio.toLocaleString('es-CO')} COP</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Asiento #{asiento.numeroasiento} · {asiento.precio.toLocaleString('es-CO')} COP</p>
           </div>
         </div>
       </div>
@@ -943,9 +945,9 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
           type="checkbox"
           checked={usarMisDatos}
           onChange={(e) => onToggleUsarMisDatos(e.target.checked)}
-          className="w-4 h-4 rounded border-slate-300 text-[#0e3a8c] focus:ring-[#0e3a8c]"
+          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[#0e3a8c] focus:ring-[#0e3a8c]"
         />
-        <span className="text-sm text-slate-600">Yo soy este pasajero</span>
+        <span className="text-sm text-slate-600 dark:text-slate-300">Yo soy este pasajero</span>
       </label>
 
       {/* Campos */}
@@ -956,18 +958,18 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
         <div className="relative">
           <CampoTexto label="Documento *" value={datos.documento} error={errores.documento} placeholder="Número de documento" onChange={(v) => onChange(index, 'documento', v)} onBlur={() => onBlur(index)} />
           {sugerencias.length > 0 && (
-            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg max-h-48 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               {sugerencias.map((s, i) => (
-                <button key={i} type="button" className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0" onClick={() => onSeleccionarSugerencia(index, s)}>
-                  <p className="text-sm font-medium text-slate-700">{s.nombre} {s.apellido}</p>
-                  <p className="text-xs text-slate-400">{s.tipoDocumento} {s.documento}</p>
+                <button key={i} type="button" className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-b-0" onClick={() => onSeleccionarSugerencia(index, s)}>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{s.nombre} {s.apellido}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">{s.tipoDocumento} {s.documento}</p>
                 </button>
               ))}
             </div>
           )}
           {buscando && (
-            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg px-4 py-3">
-              <p className="text-xs text-slate-400 flex items-center gap-2">
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg px-4 py-3">
+              <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
                 Buscando...
               </p>
@@ -984,9 +986,9 @@ function PasajeroFormInline({ index, asiento, datos, errores, sugerencias, busca
 function CampoTexto({ label, value, error, placeholder, onChange, onBlur }: { label: string; value: string; error?: string; placeholder?: string; onChange: (v: string) => void; onBlur: () => void }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</label>
       <input type="text" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
-        className={`w-full bg-[#f0f2f5] rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white ${error ? 'ring-2 ring-red-300 bg-red-50' : ''}`} />
+        className={`w-full bg-[#f0f2f5] dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white dark:focus:bg-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${error ? 'ring-2 ring-red-300 bg-red-50 dark:bg-red-900/20' : ''}`} />
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );
@@ -995,9 +997,9 @@ function CampoTexto({ label, value, error, placeholder, onChange, onBlur }: { la
 function CampoSelect({ label, value, error, options, onChange, onBlur }: { label: string; value: string; error?: string; options: { value: string; label: string }[]; onChange: (v: string) => void; onBlur: () => void }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</label>
       <select value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
-        className={`w-full bg-[#f0f2f5] rounded-xl px-3 py-2.5 text-sm text-slate-700 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white appearance-none ${error ? 'ring-2 ring-red-300 bg-red-50' : ''}`}>
+        className={`w-full bg-[#f0f2f5] dark:bg-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white dark:focus:bg-slate-600 appearance-none ${error ? 'ring-2 ring-red-300 bg-red-50 dark:bg-red-900/20' : ''}`}>
         {options.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
       </select>
       {error && <p className="text-xs text-red-500">{error}</p>}

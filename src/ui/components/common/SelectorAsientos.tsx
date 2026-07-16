@@ -30,7 +30,7 @@ interface Props {
 }
 
 const estilosPorEstado: Record<EstadoAsiento, string> = {
-  LIBRE:       'bg-white border-2 border-slate-200 text-slate-700 hover:border-[#0e3a8c] hover:text-[#0e3a8c] cursor-pointer',
+  LIBRE:       'bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-[#0e3a8c] hover:text-[#0e3a8c] dark:hover:border-blue-400 dark:hover:text-blue-400 cursor-pointer',
   OCUPADO:     'bg-[#0e3a8c] border-2 border-[#0e3a8c] text-white cursor-not-allowed opacity-80',
   RESERVADO:   'bg-yellow-400 border-2 border-yellow-400 text-white cursor-not-allowed',
   SELECCIONADO:'bg-green-500 border-2 border-green-500 text-white cursor-pointer',
@@ -50,14 +50,14 @@ export function SelectorAsientos({ distribucion, asientos, onSeleccionar }: Prop
   }
 
   return (
-    <div className="bg-[#f6f6f8] rounded-3xl p-6 w-full max-w-md mx-auto overflow-x-auto">
+    <div className="bg-[#f6f6f8] dark:bg-slate-900/50 rounded-3xl p-6 w-full max-w-md mx-auto overflow-x-auto">
       {/* Parte delantera */}
       <div className="flex justify-between items-end mb-6 px-2">
-        <div className="flex flex-col items-center gap-1 text-slate-400">
+        <div className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500">
           <span className="material-symbols-outlined text-3xl">person</span>
           <span className="text-[10px] font-bold uppercase tracking-wider">Conductor</span>
         </div>
-        <div className="flex flex-col items-center gap-1 text-slate-400">
+        <div className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500">
           <span className="material-symbols-outlined text-2xl">tv</span>
           <span className="text-[10px] font-bold uppercase tracking-wider">TV</span>
         </div>
@@ -73,7 +73,7 @@ export function SelectorAsientos({ distribucion, asientos, onSeleccionar }: Prop
                 return (
                   <div
                     key={celda.id}
-                    className={`w-9 h-9 shrink-0 ${celda.esBano ? 'flex items-center justify-center text-slate-300' : ''}`}
+                    className={`w-9 h-9 shrink-0 ${celda.esBano ? 'flex items-center justify-center text-slate-300 dark:text-slate-600' : ''}`}
                   >
                     {celda.esBano && <span className="material-symbols-outlined text-base">wc</span>}
                   </div>
@@ -85,7 +85,7 @@ export function SelectorAsientos({ distribucion, asientos, onSeleccionar }: Prop
               if (!asiento) {
                 // Asiento sin datos (no debería pasar, pero fallback)
                 return (
-                  <div key={celda.id} className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-xs text-slate-400">
+                  <div key={celda.id} className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">
                     {celda.numero}
                   </div>
                 );
@@ -114,7 +114,7 @@ export function SelectorAsientos({ distribucion, asientos, onSeleccionar }: Prop
 
       {/* Parte trasera */}
       <div className="mt-6 flex justify-center">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-200 px-4 py-1.5 rounded-full">
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border border-slate-200 dark:border-slate-600 px-4 py-1.5 rounded-full">
           Parte trasera
         </span>
       </div>
