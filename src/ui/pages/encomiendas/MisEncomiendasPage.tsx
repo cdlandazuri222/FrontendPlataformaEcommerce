@@ -91,7 +91,7 @@ export function MisEncomiendasPage() {
 
           <Link
             to={ROUTES.ENCOMIENDAS}
-            className="hidden sm:flex items-center gap-2 bg-[#0a1c43] dark:bg-blue-600 hover:bg-[#1b367d] dark:hover:bg-blue-700 text-white text-xs font-extrabold px-6 py-3.5 rounded-2xl transition-all uppercase tracking-wider shadow-sm hover:shadow-md"
+            className="hidden sm:flex items-center gap-2 bg-[#1b367d] hover:bg-blue-900 text-white text-xs font-extrabold px-6 py-3.5 rounded-2xl transition-all uppercase tracking-wider shadow-sm hover:shadow-md"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             {m.enviarNueva}
@@ -207,8 +207,8 @@ export function MisEncomiendasPage() {
             <div className="absolute left-[1.125rem] top-10 bottom-12 w-px border-l-[1.5px] border-dotted border-slate-300 dark:border-slate-700 hidden sm:block" />
             <div className="space-y-6">
               {encomiendasFiltradas.map((enc) => {
-                const valor = enc.valorcobrado;
-                const mostrarValor = valor != null;
+                const valor = enc.valorcobrado ?? enc.valordeclarado;
+                const mostrarValor = enc.valorcobrado != null;
                 return (
                   <div key={enc.idencomienda} className="flex gap-4 sm:gap-8 items-start">
                     <div className="hidden sm:flex flex-shrink-0 w-9 h-9 rounded-full border-[3px] border-[#f6f6f8] dark:border-slate-900 bg-[#3e5677] dark:bg-slate-800 items-center justify-center z-10 mt-6 shadow-sm">
@@ -220,16 +220,7 @@ export function MisEncomiendasPage() {
 
                         {/* Panel izquierdo */}
                         <div className="bg-[#0f2c73] text-white p-7 sm:w-[15.5rem] flex-shrink-0 flex flex-col justify-center">
-                          {mostrarValor && (
-                            <div className="mb-5 text-center sm:text-left">
-                              <p className="text-[10px] font-extrabold uppercase tracking-widest opacity-80 mb-2">
-                                {m.valorCobrado}
-                              </p>
-                              <p className="text-[28px] font-black tracking-tight leading-none">
-                                ${Number(valor).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')}
-                              </p>
-                            </div>
-                          )}
+                        
                           <div className="text-center sm:text-left mt-2">
                             <p className="text-[11px] font-medium lowercase tracking-wide opacity-80 mb-0.5">{m.codigoReferencia}</p>
                             <p className="text-[15px] font-extrabold tracking-wide">{enc.referenciaencomienda}</p>

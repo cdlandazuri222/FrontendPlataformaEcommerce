@@ -116,7 +116,7 @@ export function MisViajesPage() {
 
           <Link
             to={ROUTES.HOME}
-            className="hidden sm:flex items-center gap-2 bg-[#0a1c43] dark:bg-blue-600 hover:bg-[#1b367d] dark:hover:bg-blue-700 text-white text-xs font-extrabold px-6 py-3.5 rounded-2xl transition-all uppercase tracking-wider shadow-sm hover:shadow-md"
+            className="hidden sm:flex items-center gap-2 bg-[#1b367d] hover:bg-blue-900 text-white text-xs font-extrabold px-6 py-3.5 rounded-2xl transition-all uppercase tracking-wider shadow-sm hover:shadow-md"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             {m.comprarNuevo}
