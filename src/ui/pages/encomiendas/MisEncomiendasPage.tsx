@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import QRCode from 'qrcode';
 import { Navbar } from '../../components/layout/Navbar';
 import { ROUTES } from '../../../shared/constants';
 import { encomiendasApi, type EncomiendaAPI } from '../../../infrastructure/api/encomiendasApi';
@@ -23,6 +24,48 @@ const estadoColor: Record<string, string> = {
   DEVUELTA: 'bg-red-50 text-red-500 border-red-200',
 };
 
+// ─── Modal QR ─────────────────────────────────────────────────────────────────
+function QrModal({
+  referencia, qrDataUrl, onClose,
+}: {
+  referencia: string;
+  qrDataUrl: string | null;
+  onClose: () => void;
+}) {
+  const { tx, idioma } = usePreferencias();
+  const m = tx.misEncomiendas;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10 border border-slate-100 dark:border-slate-700 transition-colors">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{m.codigoQr}</h3>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-xl">close</span>
+          </button>
+        </div>
+        <div className="flex flex-col items-center">
+          {qrDataUrl ? (
+            <img src={qrDataUrl} alt="QR" className="w-56 h-56 rounded-lg border border-slate-200 dark:border-slate-700 bg-white" />
+          ) : (
+            <div className="w-56 h-56 flex items-center justify-center">
+              <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 animate-spin">progress_activity</span>
+            </div>
+          )}
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-4 mb-1">{m.codigoReferencia}</p>
+          <p className="text-xl font-extrabold text-[#0e3a8c] dark:text-blue-400">{referencia}</p>
+        </div>
+        <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-4 leading-relaxed">
+          {idioma === 'es'
+            ? 'Presenta este código QR o la referencia en la oficina para gestionar tu encomienda.'
+            : 'Present this QR code or the reference at the office to manage your parcel.'}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MisEncomiendasPage() {
@@ -36,6 +79,18 @@ export function MisEncomiendasPage() {
   // Filtros
   const [codigoBusqueda, setCodigoBusqueda] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('Todos');
+
+  // Modal QR
+  const [qrReferencia, setQrReferencia] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  const handleVerQr = (referencia: string) => {
+    setQrReferencia(referencia);
+    setQrDataUrl(null);
+    QRCode.toDataURL(referencia, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  };
 
   const estadoLabel: Record<string, string> = {
     COTIZADA: m.cotizada,
@@ -64,6 +119,14 @@ export function MisEncomiendasPage() {
     <div className="min-h-screen bg-[#f6f6f8] dark:bg-slate-900 pb-28 sm:pb-8 transition-colors duration-200">
       <Navbar />
 
+      {qrReferencia && (
+        <QrModal
+          referencia={qrReferencia}
+          qrDataUrl={qrDataUrl}
+          onClose={() => setQrReferencia(null)}
+        />
+      )}
+
       <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8">
 
         {/* Breadcrumb */}
@@ -74,7 +137,7 @@ export function MisEncomiendasPage() {
         </nav>
 
         {/* Encabezado */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
               <h1 className="text-2xl sm:text-[32px] font-extrabold text-[#1b2b4e] dark:text-slate-100 tracking-tight leading-none">{m.historial}</h1>
@@ -88,13 +151,23 @@ export function MisEncomiendasPage() {
               {idioma === 'es' ? 'Revisa el estado y los códigos de tus envíos.' : 'Check the status and codes of your shipments.'}
             </p>
           </div>
+        </div>
 
+        {/* Selector de pestañas para encomiendas (Mobile & Desktop) */}
+        <div className="flex bg-slate-200/60 dark:bg-slate-800/60 p-1 rounded-xl mb-8 max-w-md border border-slate-200/40 dark:border-slate-700/50 shadow-sm">
           <Link
             to={ROUTES.ENCOMIENDAS}
-            className="hidden sm:flex items-center gap-2 bg-[#1b367d] hover:bg-blue-900 text-white text-xs font-extrabold px-6 py-3.5 rounded-2xl transition-all uppercase tracking-wider shadow-sm hover:shadow-md"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            {m.enviarNueva}
+            <span className="material-symbols-outlined text-base">local_shipping</span>
+            {tx.navbar.cotizarEncomienda}
+          </Link>
+          <Link
+            to={ROUTES.MIS_ENCOMIENDAS}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#0e3a8c] dark:bg-blue-600 text-white shadow-sm"
+          >
+            <span className="material-symbols-outlined text-base">history</span>
+            {tx.navbar.misEncomiendas}
           </Link>
         </div>
 
@@ -218,11 +291,18 @@ export function MisEncomiendasPage() {
 
                         {/* Panel izquierdo */}
                         <div className="bg-[#0f2c73] text-white p-7 sm:w-[15.5rem] flex-shrink-0 flex flex-col justify-center">
-                        
-                          <div className="text-center sm:text-left mt-2">
+
+                          <div className="text-center sm:text-left mt-2 mb-4">
                             <p className="text-[11px] font-medium lowercase tracking-wide opacity-80 mb-0.5">{m.codigoReferencia}</p>
                             <p className="text-[15px] font-extrabold tracking-wide">{enc.referenciaencomienda}</p>
                           </div>
+                          <button
+                            onClick={() => handleVerQr(enc.referenciaencomienda)}
+                            className="flex items-center justify-center gap-2 text-[10px] font-bold tracking-wide uppercase text-white border-[1.5px] border-white/30 rounded-full px-4 py-2.5 hover:bg-white/10 transition-all w-full"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
+                            {m.verQr}
+                          </button>
                         </div>
 
                         {/* Panel central */}

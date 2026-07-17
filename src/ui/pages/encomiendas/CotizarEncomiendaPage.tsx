@@ -340,12 +340,32 @@ export function CotizarEncomiendaPage() {
               <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest mb-2">
                 {idioma === 'es' ? 'Servicios' : 'Services'} / <span className="text-[#0e3a8c] dark:text-blue-400">{e.titulo}</span>
               </p>
-              <h2 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-1">{e.titulo}</h2>
-              <p className="text-sm text-slate-400 dark:text-slate-500 mb-7">
+              <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
+                <h2 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100">{e.titulo}</h2>
+              </div>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mb-6">
                 {idioma === 'es'
                   ? 'Calcula el costo de tu envío de forma rápida y segura.'
                   : 'Calculate the shipping cost of your parcel quickly and safely.'}
               </p>
+
+              {/* Selector de pestañas para encomiendas (Mobile & Desktop) */}
+              <div className="flex bg-slate-200/60 dark:bg-slate-800/60 p-1 rounded-xl mb-6 max-w-md border border-slate-200/40 dark:border-slate-700/50 shadow-sm">
+                <Link
+                  to={ROUTES.ENCOMIENDAS}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-extrabold transition-all bg-[#0e3a8c] dark:bg-blue-600 text-white shadow-sm"
+                >
+                  <span className="material-symbols-outlined text-base">local_shipping</span>
+                  {tx.navbar.cotizarEncomienda}
+                </Link>
+                <Link
+                  to={ROUTES.MIS_ENCOMIENDAS}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                >
+                  <span className="material-symbols-outlined text-base">history</span>
+                  {tx.navbar.misEncomiendas}
+                </Link>
+              </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Remitente y Destinatario */}
