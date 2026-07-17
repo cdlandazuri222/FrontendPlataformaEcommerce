@@ -207,8 +207,6 @@ export function MisEncomiendasPage() {
             <div className="absolute left-[1.125rem] top-10 bottom-12 w-px border-l-[1.5px] border-dotted border-slate-300 dark:border-slate-700 hidden sm:block" />
             <div className="space-y-6">
               {encomiendasFiltradas.map((enc) => {
-                const valor = enc.valorcobrado ?? enc.valordeclarado;
-                const mostrarValor = enc.valorcobrado != null;
                 return (
                   <div key={enc.idencomienda} className="flex gap-4 sm:gap-8 items-start">
                     <div className="hidden sm:flex flex-shrink-0 w-9 h-9 rounded-full border-[3px] border-[#f6f6f8] dark:border-slate-900 bg-[#3e5677] dark:bg-slate-800 items-center justify-center z-10 mt-6 shadow-sm">
