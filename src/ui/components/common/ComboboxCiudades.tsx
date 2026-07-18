@@ -31,6 +31,20 @@ interface ComboboxCiudadesProps {
   label?: string;
 }
 
+// ─── Normalización de texto (ignora acentos y mayúsculas) ─────────────────────
+
+/**
+ * Normaliza texto para comparación: minúsculas y sin diacríticos.
+ * Evita que "Piendamo" (sin tilde) no coincida con "Piendamó" (con tilde)
+ * al filtrar localmente las opciones del combobox.
+ */
+function normalizar(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 // ─── Debounce hook ────────────────────────────────────────────────────────────
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -73,9 +87,9 @@ export function ComboboxCiudades({
     onInputChange?.(debouncedInput);
   }, [debouncedInput, onInputChange]);
 
-  // Filter options locally by the current input text
+  // Filter options locally by the current input text (ignora acentos y mayúsculas)
   const opcionesFiltradas = opciones.filter((o) =>
-    o.nombre.toLowerCase().includes(inputValue.toLowerCase())
+    normalizar(o.nombre).includes(normalizar(inputValue))
   );
 
   // Close dropdown when clicking outside
