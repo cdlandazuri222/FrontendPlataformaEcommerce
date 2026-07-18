@@ -24,42 +24,112 @@ const estadoColor: Record<string, string> = {
   DEVUELTA: 'bg-red-50 text-red-500 border-red-200',
 };
 
-// ─── Modal QR ─────────────────────────────────────────────────────────────────
-function QrModal({
-  referencia, qrDataUrl, onClose,
+// ─── Modal de información completa ─────────────────────────────────────────────
+
+function DetalleCampo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</span>
+      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 break-words">{value}</span>
+    </div>
+  );
+}
+
+function InfoEncomiendaModal({
+  encomienda, qrDataUrl, onClose,
 }: {
-  referencia: string;
+  encomienda: EncomiendaAPI;
   qrDataUrl: string | null;
   onClose: () => void;
 }) {
   const { tx, idioma } = usePreferencias();
   const m = tx.misEncomiendas;
 
+  const estadoLabel: Record<string, string> = {
+    COTIZADA: m.cotizada,
+    REGISTRADA: m.registrada,
+    EN_TRANSITO: m.enTransito,
+    EN_DESTINO: m.enDestino,
+    ENTREGADA: m.entregada,
+    DEVUELTA: m.devuelta,
+  };
+
+  const formatMoneda = (valor: string | number | null | undefined) =>
+    valor == null
+      ? m.sinDato
+      : `$${Number(valor).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')}`;
+
+  // El valor cobrado (definitivo) solo existe una vez registrada oficialmente;
+  // antes de eso se muestra el valor cotizado (estimado) guardado en la preinscripción.
+  const valorMostrado = encomienda.valorcobrado ?? encomienda.valorcotizado;
+  const labelValor = encomienda.valorcobrado != null ? m.valorCobrado : m.valorCotizado;
+
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4 py-8 overflow-y-auto">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10 border border-slate-100 dark:border-slate-700 transition-colors">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{m.codigoQr}</h3>
+      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10 border border-slate-100 dark:border-slate-700 transition-colors my-auto">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{m.infoCompletaTitulo}</h3>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-xl">close</span>
           </button>
         </div>
-        <div className="flex flex-col items-center">
+
+        <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-6">
           {qrDataUrl ? (
-            <img src={qrDataUrl} alt="QR" className="w-56 h-56 rounded-lg border border-slate-200 dark:border-slate-700 bg-white" />
+            <img src={qrDataUrl} alt="QR" className="w-40 h-40 rounded-lg border border-slate-200 dark:border-slate-700 bg-white flex-shrink-0" />
           ) : (
-            <div className="w-56 h-56 flex items-center justify-center">
+            <div className="w-40 h-40 flex items-center justify-center flex-shrink-0">
               <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 animate-spin">progress_activity</span>
             </div>
           )}
-          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-4 mb-1">{m.codigoReferencia}</p>
-          <p className="text-xl font-extrabold text-[#0e3a8c] dark:text-blue-400">{referencia}</p>
+          <div className="flex flex-col items-center sm:items-start gap-2">
+            <div>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{m.codigoReferencia}</p>
+              <p className="text-xl font-extrabold text-[#0e3a8c] dark:text-blue-400">{encomienda.referenciaencomienda}</p>
+            </div>
+            <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border flex items-center gap-1.5 w-fit ${estadoColor[encomienda.estado] ?? estadoColor.COTIZADA}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current" />
+              {estadoLabel[encomienda.estado] ?? encomienda.estado}
+            </span>
+          </div>
         </div>
-        <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-4 leading-relaxed">
-          {idioma === 'es'
-            ? 'Presenta este código QR o la referencia en la oficina para gestionar tu encomienda.'
-            : 'Present this QR code or the reference at the office to manage your parcel.'}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700 pt-5">
+          <DetalleCampo label={m.trayecto} value={`${encomienda.nombreoficinaorigen ?? `#${encomienda.idoficinaorigen}`} → ${encomienda.nombreoficinadestino ?? `#${encomienda.idoficinadestino}`}`} />
+          <DetalleCampo label={m.fecha} value={formatFecha(encomienda.fecharegistro, idioma)} />
+
+          {encomienda.nombreremitente && (
+            <DetalleCampo label={m.remitente} value={encomienda.nombreremitente} />
+          )}
+          <DetalleCampo label={m.destinatario} value={encomienda.nombredestinatario} />
+          <DetalleCampo label={m.documento} value={encomienda.documentodestinatario} />
+          <DetalleCampo label={m.telefono} value={encomienda.telefonodestinatario} />
+          {encomienda.direcciondestinatario && (
+            <DetalleCampo label={m.direccion} value={encomienda.direcciondestinatario} />
+          )}
+
+          <DetalleCampo label={m.contenido} value={encomienda.contenidodeclarado} />
+          <DetalleCampo
+            label={m.peso}
+            value={`${Number(encomienda.pesoreal ?? encomienda.pesoestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} kg`}
+          />
+          {(encomienda.volumenreal ?? encomienda.volumenestimado) != null && (
+            <DetalleCampo
+              label={m.volumen}
+              value={`${Number(encomienda.volumenreal ?? encomienda.volumenestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} m³`}
+            />
+          )}
+          <DetalleCampo label={m.valorDeclarado} value={formatMoneda(encomienda.valordeclarado)} />
+          <DetalleCampo label={m.domicilio} value={encomienda.esdomicilio ? m.domicilioSi : m.domicilioNo} />
+          {encomienda.esdomicilio && (
+            <DetalleCampo label={m.valorDomicilio} value={formatMoneda(encomienda.valordomicilio)} />
+          )}
+          <DetalleCampo label={labelValor} value={formatMoneda(valorMostrado)} />
+        </div>
+
+        <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-6 leading-relaxed">
+          {m.instruccionQr}
         </p>
       </div>
     </div>
@@ -80,14 +150,14 @@ export function MisEncomiendasPage() {
   const [codigoBusqueda, setCodigoBusqueda] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('Todos');
 
-  // Modal QR
-  const [qrReferencia, setQrReferencia] = useState<string | null>(null);
+  // Modal de información completa (incluye QR)
+  const [encomiendaSeleccionada, setEncomiendaSeleccionada] = useState<EncomiendaAPI | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
-  const handleVerQr = (referencia: string) => {
-    setQrReferencia(referencia);
+  const handleVerInfoCompleta = (encomienda: EncomiendaAPI) => {
+    setEncomiendaSeleccionada(encomienda);
     setQrDataUrl(null);
-    QRCode.toDataURL(referencia, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+    QRCode.toDataURL(encomienda.referenciaencomienda, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
   };
@@ -119,11 +189,11 @@ export function MisEncomiendasPage() {
     <div className="min-h-screen bg-[#f6f6f8] dark:bg-slate-900 pb-28 sm:pb-8 transition-colors duration-200">
       <Navbar />
 
-      {qrReferencia && (
-        <QrModal
-          referencia={qrReferencia}
+      {encomiendaSeleccionada && (
+        <InfoEncomiendaModal
+          encomienda={encomiendaSeleccionada}
           qrDataUrl={qrDataUrl}
-          onClose={() => setQrReferencia(null)}
+          onClose={() => setEncomiendaSeleccionada(null)}
         />
       )}
 
@@ -297,11 +367,11 @@ export function MisEncomiendasPage() {
                             <p className="text-[15px] font-extrabold tracking-wide">{enc.referenciaencomienda}</p>
                           </div>
                           <button
-                            onClick={() => handleVerQr(enc.referenciaencomienda)}
+                            onClick={() => handleVerInfoCompleta(enc)}
                             className="flex items-center justify-center gap-2 text-[10px] font-bold tracking-wide uppercase text-white border-[1.5px] border-white/30 rounded-full px-4 py-2.5 hover:bg-white/10 transition-all w-full"
                           >
-                            <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
-                            {m.verQr}
+                            <span className="material-symbols-outlined text-[16px]">info</span>
+                            {m.verInfoCompleta}
                           </button>
                         </div>
 

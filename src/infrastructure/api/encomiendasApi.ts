@@ -44,15 +44,20 @@ export interface EncomiendaAPI {
   idoficinadestino: number;
   nombreoficinaorigen?: string;
   nombreoficinadestino?: string;
+  nombreremitente?: string;
   nombredestinatario: string;
   documentodestinatario: string;
   telefonodestinatario: string;
+  direcciondestinatario: string | null;
   contenidodeclarado: string;
   pesoestimado: string;
   volumenestimado: string | null;
   valordeclarado: string | null;
   valorcobrado: string | null;
+  /** Cotización estimada guardada en la preinscripción (NULL si nació por registro directo). */
+  valorcotizado: string | null;
   esdomicilio: boolean;
+  valordomicilio: string | null;
   fecharegistro: string;
   [key: string]: unknown;
 }
