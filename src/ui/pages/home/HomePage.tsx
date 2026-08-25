@@ -308,16 +308,18 @@ export function HomePage() {
       </section>
 
       {/* Tarjetas */}
-      <div id="lista-viajes" className="max-w-[1200px] mx-auto px-4 sm:px-6 mt-12 md:mt-16 space-y-12 md:space-y-16 pb-28 md:pb-16">
+      <div id="lista-viajes" className="max-w-[1200px] mx-auto px-4 sm:px-6 mt-10 md:mt-14 space-y-12 md:space-y-16 pb-28 md:pb-16">
 
         {/* Error state */}
         {error && (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <span className="material-symbols-outlined text-5xl text-red-400">error_outline</span>
-            <p className="text-slate-600 dark:text-slate-300 text-center">{error}</p>
+          <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white dark:bg-slate-800 rounded-2xl border border-red-100 dark:border-red-900/30 p-8 shadow-sm">
+            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-950/50 flex items-center justify-center text-red-500">
+              <span className="material-symbols-outlined text-3xl">error_outline</span>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300 text-center font-medium max-w-md">{error}</p>
             <button
               onClick={refetch}
-              className="px-5 py-2.5 bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-bold text-sm hover:bg-blue-900 transition-all"
+              className="px-5 py-2.5 bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl font-bold text-sm hover:bg-blue-900 transition-all shadow-md shadow-blue-900/20"
             >
               {idioma === 'es' ? 'Reintentar' : 'Retry'}
             </button>
@@ -326,35 +328,46 @@ export function HomePage() {
 
         {/* Empty state (no loading, no error, no results) */}
         {!loading && !error && viajesHoy.length === 0 && viajesProgramados.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">directions_bus</span>
-            <p className="text-slate-500 dark:text-slate-400 text-center font-medium">{h.noViajes}</p>
+          <div className="flex flex-col items-center justify-center py-16 px-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/60 shadow-sm text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-400 mb-3">
+              <span className="material-symbols-outlined text-3xl">directions_bus</span>
+            </div>
+            <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">{h.noViajes}</h4>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm">
+              {idioma === 'es'
+                ? 'Intenta seleccionar otra fecha u otro destino para ver viajes disponibles.'
+                : 'Try selecting another date or destination to see available trips.'}
+            </p>
           </div>
         )}
 
         {/* Loading skeletons */}
         {loading && (
-          <>
+          <div className="space-y-12">
             <div>
-              <div className="flex items-center gap-4 mb-8">
-                <div className="h-7 w-36 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                <div className="h-7 w-40 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-pulse">
-                    <div className="h-44 bg-slate-200 dark:bg-slate-700" />
-                    <div className="p-5 space-y-3">
-                      <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
-                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
-                      <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded mt-4" />
+                  <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-pulse">
+                    <div className="h-32 sm:h-36 bg-slate-200 dark:bg-slate-700" />
+                    <div className="p-4 space-y-3">
+                      <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-md w-4/5" />
+                      <div className="h-10 bg-slate-100 dark:bg-slate-700/50 rounded-xl" />
+                      <div className="flex gap-1.5 pt-1">
+                        <div className="h-5 w-12 bg-slate-200 dark:bg-slate-700 rounded" />
+                        <div className="h-5 w-12 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </div>
+                      <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded-xl mt-3" />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Real data */}
@@ -362,15 +375,28 @@ export function HomePage() {
           <>
             {(viajesHoy.length > 0 || viajesProgramados.length > 0) && (
               <>
+                {/* Viajes de Hoy */}
                 <div>
-                  <div className="flex items-center gap-4 mb-8">
-                    <h3 className="text-2xl font-extrabold tracking-tight text-[#111318] dark:text-slate-100 whitespace-nowrap">{h.viajesHoy}</h3>
-                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-sm">
+                      <span className="material-symbols-outlined text-lg">today</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        {h.viajesHoy}
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-50 text-[#0e3a8c] dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                        {viajesHoy.length}
+                      </span>
+                    </div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-slate-200 via-slate-200/50 to-transparent dark:from-slate-700 dark:via-slate-700/50" />
                   </div>
                   {viajesHoy.length === 0 ? (
-                    <p className="text-slate-400 dark:text-slate-500 text-sm">{h.noViajesHoy}</p>
+                    <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/60 text-center">
+                      <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">{h.noViajesHoy}</p>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                       {viajesHoy.map((viaje) => (
                         <TarjetaViaje key={viaje.idviaje} viaje={viaje} />
                       ))}
@@ -378,15 +404,28 @@ export function HomePage() {
                   )}
                 </div>
 
+                {/* Viajes Programados */}
                 <div>
-                  <div className="flex items-center gap-4 mb-8">
-                    <h3 className="text-2xl font-extrabold tracking-tight text-slate-400 dark:text-slate-500 whitespace-nowrap">{h.viajesProgramados}</h3>
-                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 flex items-center justify-center shrink-0 shadow-sm">
+                      <span className="material-symbols-outlined text-lg">calendar_month</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                        {h.viajesProgramados}
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
+                        {viajesProgramados.length}
+                      </span>
+                    </div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-slate-200 via-slate-200/50 to-transparent dark:from-slate-700 dark:via-slate-700/50" />
                   </div>
                   {viajesProgramados.length === 0 ? (
-                    <p className="text-slate-400 dark:text-slate-500 text-sm">{h.noViajes}</p>
+                    <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/60 text-center">
+                      <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">{h.noViajes}</p>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                       {viajesProgramados.map((viaje) => (
                         <TarjetaViaje key={viaje.idviaje} viaje={viaje} />
                       ))}

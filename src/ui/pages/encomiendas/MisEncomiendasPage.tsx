@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { Navbar } from '../../components/layout/Navbar';
@@ -7,6 +7,7 @@ import { encomiendasApi, type EncomiendaAPI } from '../../../infrastructure/api/
 import { usePreferencias } from '../../context/PreferenciasContext';
 
 function formatFecha(fechaISO: string, idioma: 'es' | 'en'): string {
+  if (!fechaISO) return '';
   return new Date(fechaISO).toLocaleDateString(idioma === 'es' ? 'es-CO' : 'en-US', {
     timeZone: 'America/Bogota',
     day: '2-digit',
@@ -15,28 +16,115 @@ function formatFecha(fechaISO: string, idioma: 'es' | 'en'): string {
   });
 }
 
-const estadoColor: Record<string, string> = {
-  COTIZADA: 'bg-[#fff8e6] text-[#ffb020] border-[#ffb020]/20',
-  REGISTRADA: 'bg-[#e8f0fe] text-[#0e3a8c] border-[#0e3a8c]/20',
-  EN_TRANSITO: 'bg-[#e8f0fe] text-[#0e3a8c] border-[#0e3a8c]/20',
-  EN_DESTINO: 'bg-[#eef1fb] text-[#6d3ac9] border-[#6d3ac9]/20',
-  ENTREGADA: 'bg-[#e8f8f2] text-[#28c76f] border-[#28c76f]/20',
-  DEVUELTA: 'bg-red-50 text-red-500 border-red-200',
+function parseOficina(nombre?: string, idFallback?: number): { ciudad: string; detalle: string } {
+  if (!nombre) return { ciudad: `#${idFallback ?? '–'}`, detalle: '' };
+  const parts = nombre.split(/\s*[-–—]\s*/);
+  if (parts.length > 1) {
+    return {
+      ciudad: parts[0].trim(),
+      detalle: parts.slice(1).join(' – ').trim(),
+    };
+  }
+  return { ciudad: nombre.trim(), detalle: '' };
+}
+
+interface EstadoStyle {
+  bg: string;
+  text: string;
+  border: string;
+  dot: string;
+  icon: string;
+}
+
+const estadoStyleMap: Record<string, EstadoStyle> = {
+  COTIZADA: {
+    bg: 'bg-amber-50 dark:bg-amber-950/40',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-200 dark:border-amber-800/50',
+    dot: 'bg-amber-500',
+    icon: 'request_quote',
+  },
+  REGISTRADA: {
+    bg: 'bg-sky-50 dark:bg-sky-950/40',
+    text: 'text-sky-700 dark:text-sky-300',
+    border: 'border-sky-200 dark:border-sky-800/50',
+    dot: 'bg-sky-500',
+    icon: 'inventory_2',
+  },
+  EN_TRANSITO: {
+    bg: 'bg-blue-50 dark:bg-blue-950/40',
+    text: 'text-[#0e3a8c] dark:text-blue-300',
+    border: 'border-blue-200 dark:border-blue-800/50',
+    dot: 'bg-[#0e3a8c] dark:bg-blue-400 animate-pulse',
+    icon: 'local_shipping',
+  },
+  EN_DESTINO: {
+    bg: 'bg-purple-50 dark:bg-purple-950/40',
+    text: 'text-purple-700 dark:text-purple-300',
+    border: 'border-purple-200 dark:border-purple-800/50',
+    dot: 'bg-purple-500',
+    icon: 'pin_drop',
+  },
+  ENTREGADA: {
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200 dark:border-emerald-800/50',
+    dot: 'bg-emerald-500',
+    icon: 'check_circle',
+  },
+  DEVUELTA: {
+    bg: 'bg-rose-50 dark:bg-rose-950/40',
+    text: 'text-rose-700 dark:text-rose-300',
+    border: 'border-rose-200 dark:border-rose-800/50',
+    dot: 'bg-rose-500',
+    icon: 'assignment_return',
+  },
 };
 
 // ─── Modal de información completa ─────────────────────────────────────────────
 
-function DetalleCampo({ label, value }: { label: string; value: string }) {
+function DetalleCampo({
+  label,
+  value,
+  icon,
+  destacado = false,
+  colSpan = 'col-span-1',
+}: {
+  label: string;
+  value: string;
+  icon?: string;
+  destacado?: boolean;
+  colSpan?: string;
+}) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</span>
-      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 break-words">{value}</span>
+    <div
+      className={`${colSpan} ${
+        destacado
+          ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-200/80 dark:border-blue-800/50'
+          : 'bg-slate-50 dark:bg-slate-800/60 border-slate-100 dark:border-slate-700/60'
+      } p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between gap-1 transition-all`}
+    >
+      <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
+        {icon && <span className="material-symbols-outlined text-sm">{icon}</span>}
+        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+      </div>
+      <span
+        className={`text-xs sm:text-sm font-bold ${
+          destacado
+            ? 'text-[#0e3a8c] dark:text-blue-400 font-extrabold'
+            : 'text-slate-800 dark:text-slate-200'
+        } break-words leading-snug`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
 
 function InfoEncomiendaModal({
-  encomienda, qrDataUrl, onClose,
+  encomienda,
+  qrDataUrl,
+  onClose,
 }: {
   encomienda: EncomiendaAPI;
   qrDataUrl: string | null;
@@ -44,6 +132,51 @@ function InfoEncomiendaModal({
 }) {
   const { tx, idioma } = usePreferencias();
   const m = tx.misEncomiendas;
+  const [copiado, setCopiado] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Bloquear scroll de la página de fondo y capturar todo el scroll exclusivamente para el modal
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (contentRef.current) {
+        contentRef.current.scrollTop += e.deltaY;
+      }
+    };
+
+    const overlay = overlayRef.current;
+    if (overlay) {
+      overlay.addEventListener('wheel', handleWheel, { passive: false });
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      if (overlay) {
+        overlay.removeEventListener('wheel', handleWheel);
+      }
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  const handleCopiar = () => {
+    navigator.clipboard.writeText(encomienda.referenciaencomienda);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
 
   const estadoLabel: Record<string, string> = {
     COTIZADA: m.cotizada,
@@ -54,89 +187,401 @@ function InfoEncomiendaModal({
     DEVUELTA: m.devuelta,
   };
 
+  const st = estadoStyleMap[encomienda.estado] ?? estadoStyleMap.COTIZADA;
+
   const formatMoneda = (valor: string | number | null | undefined) =>
     valor == null
       ? m.sinDato
       : `$${Number(valor).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')}`;
 
-  // El valor cobrado (definitivo) solo existe una vez registrada oficialmente;
-  // antes de eso se muestra el valor cotizado (estimado) guardado en la preinscripción.
   const valorMostrado = encomienda.valorcobrado ?? encomienda.valorcotizado;
   const labelValor = encomienda.valorcobrado != null ? m.valorCobrado : m.valorCotizado;
 
+  const origen = parseOficina(encomienda.nombreoficinaorigen, encomienda.idoficinaorigen);
+  const destino = parseOficina(encomienda.nombreoficinadestino, encomienda.idoficinadestino);
+
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4 py-8 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10 border border-slate-100 dark:border-slate-700 transition-colors my-auto">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">{m.infoCompletaTitulo}</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-xl">close</span>
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-5 overflow-hidden"
+    >
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Modal Container */}
+      <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl z-10 border border-slate-200/80 dark:border-slate-700/80 transition-all flex flex-col max-h-[92vh] my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Header Modal (Sticky Top) */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#0e3a8c] dark:text-blue-400 shrink-0">
+              <span className="material-symbols-outlined text-2xl">inventory_2</span>
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 leading-tight">
+                {m.infoCompletaTitulo}
+              </h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-xs">calendar_today</span>
+                {formatFecha(encomienda.fecharegistro, idioma)}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+            aria-label="Cerrar"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
           </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-6">
-          {qrDataUrl ? (
-            <img src={qrDataUrl} alt="QR" className="w-40 h-40 rounded-lg border border-slate-200 dark:border-slate-700 bg-white flex-shrink-0" />
-          ) : (
-            <div className="w-40 h-40 flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 animate-spin">progress_activity</span>
+        {/* Modal Scrollable Body */}
+        <div
+          ref={contentRef}
+          className="p-5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 overscroll-contain"
+        >
+          {/* QR & Referencia Banner */}
+          <div className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 dark:from-slate-800/80 dark:via-slate-800/40 dark:to-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-200/70 dark:border-slate-700/70 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+            <div className="bg-white p-2 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-sm shrink-0">
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="QR Encomienda" className="w-24 h-24 sm:w-28 sm:h-28 object-contain" />
+              ) : (
+                <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-2xl text-slate-300 dark:text-slate-600 animate-spin">
+                    progress_activity
+                  </span>
+                </div>
+              )}
             </div>
-          )}
-          <div className="flex flex-col items-center sm:items-start gap-2">
-            <div>
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{m.codigoReferencia}</p>
-              <p className="text-xl font-extrabold text-[#0e3a8c] dark:text-blue-400">{encomienda.referenciaencomienda}</p>
+
+            <div className="flex-1 text-center sm:text-left flex flex-col items-center sm:items-start gap-1.5 w-full">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-400">
+                {m.codigoReferencia}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-lg sm:text-2xl font-black text-[#0e3a8c] dark:text-blue-400 tracking-wider">
+                  {encomienda.referenciaencomienda}
+                </span>
+                <button
+                  onClick={handleCopiar}
+                  title={m.copiarCodigo}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">
+                    {copiado ? 'check' : 'content_copy'}
+                  </span>
+                </button>
+              </div>
+              {copiado && (
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  {m.codigoCopiado}
+                </span>
+              )}
+
+              <div className="mt-1 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${st.bg} ${st.text} ${st.border}`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${st.dot}`} />
+                  <span className="material-symbols-outlined text-sm">{st.icon}</span>
+                  {estadoLabel[encomienda.estado] ?? encomienda.estado}
+                </span>
+                {encomienda.esdomicilio && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                    <span className="material-symbols-outlined text-xs">home</span>
+                    {m.domicilioBadge}
+                  </span>
+                )}
+              </div>
             </div>
-            <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border flex items-center gap-1.5 w-fit ${estadoColor[encomienda.estado] ?? estadoColor.COTIZADA}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {estadoLabel[encomienda.estado] ?? encomienda.estado}
-            </span>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700 pt-5">
-          <DetalleCampo label={m.trayecto} value={`${encomienda.nombreoficinaorigen ?? `#${encomienda.idoficinaorigen}`} → ${encomienda.nombreoficinadestino ?? `#${encomienda.idoficinadestino}`}`} />
-          <DetalleCampo label={m.fecha} value={formatFecha(encomienda.fecharegistro, idioma)} />
+          {/* Trayecto / Ruta destacado (Full width) */}
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+            <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 mb-2">
+              <span className="material-symbols-outlined text-sm">route</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{m.trayecto}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm">
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">{m.origen}</p>
+                <p className="font-extrabold text-slate-800 dark:text-slate-100">{origen.ciudad}</p>
+                {origen.detalle && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{origen.detalle}</p>
+                )}
+              </div>
+              <div className="hidden sm:flex items-center justify-center text-slate-400 px-2">
+                <span className="material-symbols-outlined text-lg">arrow_forward</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">{m.destino}</p>
+                <p className="font-extrabold text-slate-800 dark:text-slate-100">{destino.ciudad}</p>
+                {destino.detalle && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{destino.detalle}</p>
+                )}
+              </div>
+            </div>
+          </div>
 
-          {encomienda.nombreremitente && (
-            <DetalleCampo label={m.remitente} value={encomienda.nombreremitente} />
-          )}
-          <DetalleCampo label={m.destinatario} value={encomienda.nombredestinatario} />
-          <DetalleCampo label={m.documento} value={encomienda.documentodestinatario} />
-          <DetalleCampo label={m.telefono} value={encomienda.telefonodestinatario} />
-          {encomienda.direcciondestinatario && (
-            <DetalleCampo label={m.direccion} value={encomienda.direcciondestinatario} />
-          )}
+          {/* Datos en Grilla Responsive (2 Columnas ordenadas) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {encomienda.nombreremitente && (
+              <DetalleCampo label={m.remitente} value={encomienda.nombreremitente} icon="person" />
+            )}
+            <DetalleCampo label={m.destinatario} value={encomienda.nombredestinatario} icon="person_pin" />
+            <DetalleCampo label={m.documento} value={encomienda.documentodestinatario} icon="badge" />
+            <DetalleCampo label={m.telefono} value={encomienda.telefonodestinatario} icon="call" />
 
-          <DetalleCampo label={m.contenido} value={encomienda.contenidodeclarado} />
-          <DetalleCampo
-            label={m.peso}
-            value={`${Number(encomienda.pesoreal ?? encomienda.pesoestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} kg`}
-          />
-          {(encomienda.volumenreal ?? encomienda.volumenestimado) != null && (
+            {encomienda.direcciondestinatario && (
+              <DetalleCampo
+                label={m.direccion}
+                value={encomienda.direcciondestinatario}
+                icon="location_on"
+                colSpan="col-span-1 sm:col-span-2"
+              />
+            )}
+
             <DetalleCampo
-              label={m.volumen}
-              value={`${Number(encomienda.volumenreal ?? encomienda.volumenestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} m³`}
+              label={m.contenido}
+              value={encomienda.contenidodeclarado}
+              icon="inventory_2"
+              colSpan="col-span-1 sm:col-span-2"
             />
-          )}
-          <DetalleCampo label={m.valorDeclarado} value={formatMoneda(encomienda.valordeclarado)} />
-          <DetalleCampo label={m.domicilio} value={encomienda.esdomicilio ? m.domicilioSi : m.domicilioNo} />
-          {encomienda.esdomicilio && (
-            <DetalleCampo label={m.valorDomicilio} value={formatMoneda(encomienda.valordomicilio)} />
-          )}
-          <DetalleCampo label={labelValor} value={formatMoneda(valorMostrado)} />
-        </div>
+            
+            <DetalleCampo
+              label={m.peso}
+              value={`${Number(encomienda.pesoreal ?? encomienda.pesoestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} kg`}
+              icon="scale"
+            />
+            {(encomienda.volumenreal ?? encomienda.volumenestimado) != null && (
+              <DetalleCampo
+                label={m.volumen}
+                value={`${Number(encomienda.volumenreal ?? encomienda.volumenestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} m³`}
+                icon="view_in_ar"
+              />
+            )}
+            <DetalleCampo label={m.valorDeclarado} value={formatMoneda(encomienda.valordeclarado)} icon="shield" />
+            <DetalleCampo
+              label={labelValor}
+              value={formatMoneda(valorMostrado)}
+              icon="payments"
+              destacado
+            />
+          </div>
 
-        <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-6 leading-relaxed">
-          {m.instruccionQr}
-        </p>
+          {/* Footer instruction */}
+          <p className="text-xs text-slate-400 dark:text-slate-500 text-center leading-relaxed pt-1">
+            {m.instruccionQr}
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Componente Tarjeta de Encomienda (Compacto & Atractivo) ───────────────────
+
+function TarjetaEncomienda({
+  encomienda,
+  onVerDetalles,
+}: {
+  encomienda: EncomiendaAPI;
+  onVerDetalles: (enc: EncomiendaAPI) => void;
+}) {
+  const { tx, idioma } = usePreferencias();
+  const m = tx.misEncomiendas;
+  const [copiado, setCopiado] = useState(false);
+
+  const handleCopiar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(encomienda.referenciaencomienda);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 1800);
+  };
+
+  const estadoLabel: Record<string, string> = {
+    COTIZADA: m.cotizada,
+    REGISTRADA: m.registrada,
+    EN_TRANSITO: m.enTransito,
+    EN_DESTINO: m.enDestino,
+    ENTREGADA: m.entregada,
+    DEVUELTA: m.devuelta,
+  };
+
+  const st = estadoStyleMap[encomienda.estado] ?? estadoStyleMap.COTIZADA;
+  const origen = parseOficina(encomienda.nombreoficinaorigen, encomienda.idoficinaorigen);
+  const destino = parseOficina(encomienda.nombreoficinadestino, encomienda.idoficinadestino);
+
+  const valor = encomienda.valorcobrado ?? encomienda.valorcotizado;
+  const valorFormateado = valor != null
+    ? `$${Number(valor).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')}`
+    : null;
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-500/40 transition-all duration-200 group flex flex-col gap-4">
+      
+      {/* ── Fila Superior: Referencia + Estado + Fecha ── */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        
+        {/* Código de Referencia + Botón Copiar */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700/70 border border-slate-200/70 dark:border-slate-600/70 px-2.5 py-1 rounded-lg">
+            <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-sm">confirmation_number</span>
+            <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wider">
+              {encomienda.referenciaencomienda}
+            </span>
+            <button
+              onClick={handleCopiar}
+              title={m.copiarCodigo}
+              className="ml-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-0.5 rounded hover:bg-slate-200/60 dark:hover:bg-slate-600"
+            >
+              <span className="material-symbols-outlined text-[13px] block">
+                {copiado ? 'check' : 'content_copy'}
+              </span>
+            </button>
+          </div>
+          {copiado && (
+            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+              {m.codigoCopiado}
+            </span>
+          )}
+
+          {encomienda.esdomicilio ? (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/40 px-2.5 py-0.5 rounded-full">
+              <span className="material-symbols-outlined text-xs">home</span>
+              {m.domicilioBadge}
+            </span>
+          ) : (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+              <span className="material-symbols-outlined text-xs">store</span>
+              {m.enAgencia}
+            </span>
+          )}
+        </div>
+
+        {/* Estado + Fecha */}
+        <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+            <span className="material-symbols-outlined text-xs">calendar_month</span>
+            <span>{formatFecha(encomienda.fecharegistro, idioma)}</span>
+          </div>
+
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs ${st.bg} ${st.text} ${st.border}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+            <span className="material-symbols-outlined text-[13px]">{st.icon}</span>
+            <span>{estadoLabel[encomienda.estado] ?? encomienda.estado}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* ── Fila Central: Trayecto / Ruta de Envío ── */}
+      <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4 py-2 border-y border-slate-100 dark:border-slate-700/60">
+        
+        {/* Ruta: Origen -> Destino */}
+        <div className="md:col-span-7 flex items-center gap-3 sm:gap-4">
+          
+          {/* Origen */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#0e3a8c] dark:bg-blue-400 flex-shrink-0" />
+              <p className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-100 truncate" title={origen.ciudad}>
+                {origen.ciudad}
+              </p>
+            </div>
+            {origen.detalle && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate pl-3.5 mt-0.5" title={origen.detalle}>
+                {origen.detalle}
+              </p>
+            )}
+          </div>
+
+          {/* Conector Visual */}
+          <div className="flex flex-col items-center justify-center flex-shrink-0 px-1">
+            <div className="flex items-center gap-1">
+              <div className="w-4 sm:w-6 h-0.5 bg-slate-200 dark:bg-slate-700" />
+              <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center shadow-xs">
+                <span className="material-symbols-outlined text-xs">local_shipping</span>
+              </div>
+              <div className="w-4 sm:w-6 h-0.5 bg-slate-200 dark:bg-slate-700" />
+            </div>
+          </div>
+
+          {/* Destino */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+              <p className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-100 truncate" title={destino.ciudad}>
+                {destino.ciudad}
+              </p>
+            </div>
+            {destino.detalle && (
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate pl-3.5 mt-0.5" title={destino.detalle}>
+                {destino.detalle}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Destinatario y Detalles del paquete */}
+        <div className="md:col-span-5 flex flex-wrap md:flex-col justify-center gap-1.5 md:border-l md:border-slate-100 md:dark:border-slate-700/60 md:pl-4">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-sm">person</span>
+            <span className="text-slate-400 dark:text-slate-500 font-medium">{m.destinatario}:</span>
+            <span className="font-bold truncate max-w-[170px] sm:max-w-[200px]" title={encomienda.nombredestinatario}>
+              {encomienda.nombredestinatario}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+            <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-sm">package_2</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-200">
+              {Number(encomienda.pesoestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} kg
+            </span>
+            <span className="text-slate-300 dark:text-slate-600">·</span>
+            <span className="truncate max-w-[160px] text-slate-500 dark:text-slate-400" title={encomienda.contenidodeclarado}>
+              {encomienda.contenidodeclarado}
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── Fila Inferior: Valor + Botón Acción ── */}
+      <div className="flex items-center justify-between gap-4 pt-0.5">
+        <div>
+          {valorFormateado ? (
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                {encomienda.valorcobrado != null ? m.valorCobrado : m.valorCotizado}:
+              </span>
+              <span className="text-base sm:text-lg font-black text-[#0e3a8c] dark:text-blue-400">
+                {valorFormateado}
+              </span>
+            </div>
+          ) : (
+            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+              {m.sinDato}
+            </span>
+          )}
+        </div>
+
+        <button
+          onClick={() => onVerDetalles(encomienda)}
+          className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:gap-2 active:scale-98"
+        >
+          <span className="material-symbols-outlined text-sm">qr_code_2</span>
+          <span>{m.verInfoCompleta}</span>
+        </button>
+      </div>
+
+    </div>
+  );
+}
+
+// ─── Componente Principal ──────────────────────────────────────────────────────
 
 export function MisEncomiendasPage() {
   const { tx, idioma } = usePreferencias();
@@ -157,7 +602,11 @@ export function MisEncomiendasPage() {
   const handleVerInfoCompleta = (encomienda: EncomiendaAPI) => {
     setEncomiendaSeleccionada(encomienda);
     setQrDataUrl(null);
-    QRCode.toDataURL(encomienda.referenciaencomienda, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+    QRCode.toDataURL(encomienda.referenciaencomienda, {
+      width: 220,
+      margin: 1,
+      color: { dark: '#0a1c43', light: '#ffffff' },
+    })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
   };
@@ -178,15 +627,23 @@ export function MisEncomiendasPage() {
       .finally(() => setLoading(false));
   }, [idioma]);
 
+  // Contadores por estado
+  const conteoPorEstado = encomiendas.reduce<Record<string, number>>((acc, enc) => {
+    acc[enc.estado] = (acc[enc.estado] || 0) + 1;
+    return acc;
+  }, {});
+
   const encomiendasFiltradas = encomiendas.filter((e) => {
     const coincideCodigo = !codigoBusqueda ||
-      (e.referenciaencomienda ?? '').toLowerCase().includes(codigoBusqueda.toLowerCase());
+      (e.referenciaencomienda ?? '').toLowerCase().includes(codigoBusqueda.toLowerCase()) ||
+      (e.nombredestinatario ?? '').toLowerCase().includes(codigoBusqueda.toLowerCase()) ||
+      (e.contenidodeclarado ?? '').toLowerCase().includes(codigoBusqueda.toLowerCase());
     const coincideEstado = estadoFiltro === 'Todos' || e.estado === estadoFiltro;
     return coincideCodigo && coincideEstado;
   });
 
   return (
-    <div className="min-h-screen bg-[#f6f6f8] dark:bg-slate-900 pb-28 sm:pb-8 transition-colors duration-200">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-900 pb-28 sm:pb-12 transition-colors duration-200">
       <Navbar />
 
       {encomiendaSeleccionada && (
@@ -197,76 +654,125 @@ export function MisEncomiendasPage() {
         />
       )}
 
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-[1050px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* Breadcrumb */}
-        <nav className="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-8 flex items-center gap-2 mt-2">
-          <Link to={ROUTES.HOME} className="hover:text-[#1b367d] dark:hover:text-blue-400 transition-colors uppercase">{tx.navbar.home}</Link>
+        <nav className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-1.5">
+          <Link to={ROUTES.HOME} className="hover:text-[#0e3a8c] dark:hover:text-blue-400 transition-colors uppercase">
+            {tx.navbar.home}
+          </Link>
           <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <span className="text-[#1b2b4e] dark:text-slate-300 uppercase">{m.titulo}</span>
+          <span className="text-[#0e3a8c] dark:text-slate-200 uppercase font-extrabold">{m.titulo}</span>
         </nav>
 
-        {/* Encabezado */}
+        {/* Encabezado y Acciones */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-3 mb-2 flex-wrap">
-              <h1 className="text-2xl sm:text-[32px] font-extrabold text-[#1b2b4e] dark:text-slate-100 tracking-tight leading-none">{m.historial}</h1>
+            <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight">
+                {m.historial}
+              </h1>
               {!loading && (
-                <span className="bg-[#eef2f9] dark:bg-slate-800 text-[#1b367d] dark:text-blue-400 text-[11px] sm:text-[13px] font-bold px-3 sm:px-4 py-1 sm:py-1.5 rounded-full">
+                <span className="bg-blue-50 dark:bg-blue-950/60 text-[#0e3a8c] dark:text-blue-400 text-xs font-black px-3 py-1 rounded-full border border-blue-100 dark:border-blue-800/40">
                   {encomiendas.length} {encomiendas.length === 1 ? (idioma === 'es' ? 'Encomienda' : 'Parcel') : (idioma === 'es' ? 'Encomiendas' : 'Parcels')}
                 </span>
               )}
             </div>
-            <p className="text-sm sm:text-[15px] text-slate-400 dark:text-slate-500 font-medium">
-              {idioma === 'es' ? 'Revisa el estado y los códigos de tus envíos.' : 'Check the status and codes of your shipments.'}
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+              {idioma === 'es' ? 'Rastrea el estado, códigos y detalles de todas tus encomiendas.' : 'Track status, codes, and details of all your parcel shipments.'}
             </p>
           </div>
-        </div>
 
-        {/* Selector de pestañas para encomiendas (Mobile & Desktop) */}
-        <div className="flex bg-slate-200/60 dark:bg-slate-800/60 p-1 rounded-xl mb-8 max-w-md border border-slate-200/40 dark:border-slate-700/50 shadow-sm">
+          {/* Botón Cotizar Nueva */}
           <Link
             to={ROUTES.ENCOMIENDAS}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            className="inline-flex items-center justify-center gap-2 bg-[#0e3a8c] hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-extrabold px-5 py-3 rounded-xl transition-all uppercase tracking-wider shadow-sm hover:shadow-md active:scale-98 w-full sm:w-auto"
           >
             <span className="material-symbols-outlined text-base">local_shipping</span>
             {tx.navbar.cotizarEncomienda}
           </Link>
-          <Link
-            to={ROUTES.MIS_ENCOMIENDAS}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all bg-[#0e3a8c] dark:bg-blue-600 text-white shadow-sm"
-          >
-            <span className="material-symbols-outlined text-base">history</span>
-            {tx.navbar.misEncomiendas}
-          </Link>
         </div>
 
-        {/* Panel de filtros */}
-        <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 px-6 py-5 mb-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-colors">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="flex-1 min-w-0 w-full">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-2 tracking-wide">{m.codigoReferencia}</label>
-              <div className="flex items-center gap-2 border border-slate-200/60 dark:border-slate-700 rounded-full px-4 py-2.5 bg-[#f0f4fd]/60 dark:bg-slate-900/40">
-                <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-lg">confirmation_number</span>
+        {/* ── Filtros Rápidos por Estado (Chips / Tabs) ── */}
+        {!loading && encomiendas.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+            <button
+              onClick={() => setEstadoFiltro('Todos')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                estadoFiltro === 'Todos'
+                  ? 'bg-[#0e3a8c] dark:bg-blue-600 text-white border-[#0e3a8c] dark:border-blue-600 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60'
+              }`}
+            >
+              <span>{m.todosEstados}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                estadoFiltro === 'Todos' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+              }`}>
+                {encomiendas.length}
+              </span>
+            </button>
+
+            {Object.entries(estadoLabel).map(([key, label]) => {
+              const count = conteoPorEstado[key] || 0;
+              if (count === 0 && estadoFiltro !== key) return null;
+              const isSelected = estadoFiltro === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setEstadoFiltro(key)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                    isSelected
+                      ? 'bg-[#0e3a8c] dark:bg-blue-600 text-white border-[#0e3a8c] dark:border-blue-600 shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60'
+                  }`}
+                >
+                  <span>{label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Barra de Búsqueda y Filtros ── */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-4 mb-6 shadow-xs transition-colors">
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            
+            {/* Buscador */}
+            <div className="flex-1 w-full relative">
+              <div className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 bg-slate-50/60 dark:bg-slate-900/50 focus-within:border-[#0e3a8c] dark:focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
+                <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-lg">search</span>
                 <input
                   type="text"
-                  placeholder={m.buscarCodigo}
+                  placeholder={idioma === 'es' ? 'Buscar por código, destinatario o contenido...' : 'Search by code, recipient, or content...'}
                   value={codigoBusqueda}
                   onChange={(e) => setCodigoBusqueda(e.target.value)}
-                  className="flex-1 text-sm font-medium outline-none text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent min-w-0"
+                  className="flex-1 text-xs sm:text-sm font-medium outline-none text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent min-w-0"
                 />
+                {codigoBusqueda && (
+                  <button
+                    onClick={() => setCodigoBusqueda('')}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 rounded-full"
+                  >
+                    <span className="material-symbols-outlined text-base">close</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex-1 min-w-0 w-full">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-2 tracking-wide">{m.estado}</label>
-              <div className="flex items-center justify-between border border-slate-200/60 dark:border-slate-700 rounded-full px-4 py-2.5 bg-[#f0f4fd]/60 dark:bg-slate-900/40">
+            {/* Selector de Estado */}
+            <div className="w-full sm:w-56">
+              <div className="flex items-center justify-between border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 bg-slate-50/60 dark:bg-slate-900/50 focus-within:border-[#0e3a8c] dark:focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-lg">filter_list</span>
                   <select
                     value={estadoFiltro}
                     onChange={(e) => setEstadoFiltro(e.target.value)}
-                    className="flex-1 text-sm font-medium outline-none text-slate-700 dark:text-slate-200 bg-transparent appearance-none cursor-pointer min-w-0"
+                    className="flex-1 text-xs sm:text-sm font-medium outline-none text-slate-700 dark:text-slate-200 bg-transparent appearance-none cursor-pointer min-w-0"
                   >
                     <option value="Todos" className="dark:bg-slate-800">{m.todosEstados}</option>
                     {Object.entries(estadoLabel).map(([key, label]) => (
@@ -274,69 +780,77 @@ export function MisEncomiendasPage() {
                     ))}
                   </select>
                 </div>
-                <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-lg pointer-events-none">expand_more</span>
+                <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-base pointer-events-none">expand_more</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end mt-2 sm:mt-0">
+            {/* Limpiar Filtros */}
+            {(codigoBusqueda || estadoFiltro !== 'Todos') && (
               <button
                 onClick={() => { setCodigoBusqueda(''); setEstadoFiltro('Todos'); }}
-                className="text-xs font-extrabold text-[#1b367d] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700/50 px-4 py-3 rounded-full transition-colors uppercase tracking-wider whitespace-nowrap"
+                className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors whitespace-nowrap self-stretch sm:self-auto justify-center"
               >
+                <span className="material-symbols-outlined text-base">filter_alt_off</span>
                 {m.limpiar}
               </button>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Estados */}
+        {/* ── Estado de Carga ── */}
         {loading && (
-          <div className="flex items-center justify-center py-20 gap-3">
-            <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 animate-spin">progress_activity</span>
-            <p className="text-slate-400 dark:text-slate-500 font-medium">{m.cargando}</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-12 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
+            <span className="material-symbols-outlined text-4xl text-[#0e3a8c] dark:text-blue-400 animate-spin">progress_activity</span>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{m.cargando}</p>
           </div>
         )}
 
+        {/* ── Estado de Error ── */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-2xl p-6 text-center">
+          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-2xl p-6 text-center shadow-xs">
             <span className="material-symbols-outlined text-3xl mb-2 block">error_outline</span>
-            {error}
+            <p className="text-sm font-bold">{error}</p>
           </div>
         )}
 
+        {/* ── Estado Vacío (Sin Encomiendas o Sin Resultados) ── */}
         {!loading && !error && encomiendasFiltradas.length === 0 && (
-          <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 p-8 sm:p-16 text-center flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-colors">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-8 sm:p-14 text-center flex flex-col items-center justify-center shadow-xs transition-colors">
             {encomiendas.length === 0 ? (
               <>
-                <div className="w-20 h-20 rounded-full bg-[#e8f0fe] dark:bg-blue-955/40 flex items-center justify-center mb-6 shadow-sm">
-                  <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-[40px]">local_shipping</span>
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center mb-4 text-[#0e3a8c] dark:text-blue-400">
+                  <span className="material-symbols-outlined text-3xl">local_shipping</span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-[#1b2b4e] dark:text-slate-100 mb-2">{m.noEncomiendasRegistradas}</h3>
-                <p className="text-sm text-slate-400 dark:text-slate-500 font-medium max-w-sm sm:max-w-md mb-8 leading-relaxed">
+                <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 mb-1.5">
+                  {m.noEncomiendasRegistradas}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium max-w-md mb-6 leading-relaxed">
                   {m.infoFuturos}
                 </p>
                 <Link
                   to={ROUTES.ENCOMIENDAS}
-                  className="flex items-center gap-2 bg-[#0a1c43] dark:bg-blue-600 hover:bg-[#1b367d] dark:hover:bg-blue-700 text-white text-xs font-extrabold px-6 py-3.5 rounded-full transition-all uppercase tracking-wider shadow-sm hover:shadow-md"
+                  className="inline-flex items-center gap-2 bg-[#0e3a8c] hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-extrabold px-6 py-3 rounded-xl transition-all uppercase tracking-wider shadow-sm hover:shadow-md active:scale-98"
                 >
-                  <span className="material-symbols-outlined text-[18px]">local_shipping</span>
+                  <span className="material-symbols-outlined text-base">add_box</span>
                   {m.cotizarAhora}
                 </Link>
               </>
             ) : (
               <>
-                <div className="w-20 h-20 rounded-full bg-[#e8f0fe] dark:bg-blue-955/40 flex items-center justify-center mb-6 shadow-sm">
-                  <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-[40px]">search_off</span>
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center mb-4 text-slate-400">
+                  <span className="material-symbols-outlined text-3xl">search_off</span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-[#1b2b4e] dark:text-slate-100 mb-2">{m.noEncontrados}</h3>
-                <p className="text-sm text-slate-400 dark:text-slate-500 font-medium max-w-sm sm:max-w-md mb-8 leading-relaxed">
+                <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 mb-1.5">
+                  {m.noEncontrados}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium max-w-md mb-6 leading-relaxed">
                   {m.infoNoEncontrados}
                 </p>
                 <button
                   onClick={() => { setCodigoBusqueda(''); setEstadoFiltro('Todos'); }}
-                  className="flex items-center gap-2 bg-[#0a1c43] dark:bg-blue-600 hover:bg-[#1b367d] dark:hover:bg-blue-700 text-white text-xs font-extrabold px-6 py-3.5 rounded-full transition-all uppercase tracking-wider shadow-sm hover:shadow-md"
+                  className="inline-flex items-center gap-2 bg-slate-900 hover:bg-[#0e3a8c] dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl transition-all uppercase tracking-wider shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-[18px]">filter_alt_off</span>
+                  <span className="material-symbols-outlined text-base">filter_alt_off</span>
                   {m.limpiarFiltros}
                 </button>
               </>
@@ -344,79 +858,19 @@ export function MisEncomiendasPage() {
           </div>
         )}
 
-        {/* Lista de encomiendas */}
+        {/* ── Lista de Tarjetas de Encomiendas ── */}
         {!loading && !error && encomiendasFiltradas.length > 0 && (
-          <div className="relative">
-            <div className="absolute left-[1.125rem] top-10 bottom-12 w-px border-l-[1.5px] border-dotted border-slate-300 dark:border-slate-700 hidden sm:block" />
-            <div className="space-y-6">
-              {encomiendasFiltradas.map((enc) => {
-                return (
-                  <div key={enc.idencomienda} className="flex gap-4 sm:gap-8 items-start">
-                    <div className="hidden sm:flex flex-shrink-0 w-9 h-9 rounded-full border-[3px] border-[#f6f6f8] dark:border-slate-900 bg-[#3e5677] dark:bg-slate-800 items-center justify-center z-10 mt-6 shadow-sm">
-                      <span className="material-symbols-outlined text-white text-[17px]">local_shipping</span>
-                    </div>
-
-                    <div className="flex-1 bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 overflow-hidden shadow-[0_4px_24px_rgb(0,0,0,0.02)] hover:shadow-lg transition-all">
-                      <div className="flex flex-col sm:flex-row">
-
-                        {/* Panel izquierdo */}
-                        <div className="bg-[#0f2c73] text-white p-7 sm:w-[15.5rem] flex-shrink-0 flex flex-col justify-center">
-
-                          <div className="text-center sm:text-left mt-2 mb-4">
-                            <p className="text-[11px] font-medium lowercase tracking-wide opacity-80 mb-0.5">{m.codigoReferencia}</p>
-                            <p className="text-[15px] font-extrabold tracking-wide">{enc.referenciaencomienda}</p>
-                          </div>
-                          <button
-                            onClick={() => handleVerInfoCompleta(enc)}
-                            className="flex items-center justify-center gap-2 text-[10px] font-bold tracking-wide uppercase text-white border-[1.5px] border-white/30 rounded-full px-4 py-2.5 hover:bg-white/10 transition-all w-full"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">info</span>
-                            {m.verInfoCompleta}
-                          </button>
-                        </div>
-
-                        {/* Panel central */}
-                        <div className="flex-1 p-7 flex flex-col justify-center ml-0 sm:ml-2">
-                          <p className="text-[10px] font-extrabold tracking-widest uppercase text-slate-400 dark:text-slate-500 mb-2">{m.trayecto}</p>
-                          <div className="flex items-center gap-4 text-[22px] font-black text-[#1b2b4e] dark:text-slate-100">
-                            <span>{enc.nombreoficinaorigen ?? `#${enc.idoficinaorigen}`}</span>
-                            <span className="material-symbols-outlined text-[#28c76f] text-[28px]">arrow_right_alt</span>
-                            <span>{enc.nombreoficinadestino ?? `#${enc.idoficinadestino}`}</span>
-                          </div>
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-                            {m.destinatario}: {enc.nombredestinatario} · {m.contenido}: {enc.contenidodeclarado}
-                          </p>
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                            {m.peso}: {Number(enc.pesoestimado).toLocaleString(idioma === 'es' ? 'es-CO' : 'en-US')} kg
-                          </p>
-                        </div>
-
-                        {/* Panel derecho */}
-                        <div className="p-6 flex flex-col justify-between items-center sm:items-end gap-5 sm:w-64">
-                          <div className="bg-[#f8f9fc] dark:bg-slate-900/60 rounded-[1.25rem] p-5 w-full flex items-center gap-4">
-                            <span className="material-symbols-outlined text-[#7e95b9] text-[22px]">calendar_month</span>
-                            <div className="flex flex-col">
-                              <p className="text-[9px] font-extrabold tracking-widest uppercase text-[#8b9cb6] dark:text-slate-500 mb-0.5">{m.fecha}</p>
-                              <p className="text-[13px] font-bold text-[#1b2b4e] dark:text-slate-200">{formatFecha(enc.fecharegistro, idioma)}</p>
-                            </div>
-                          </div>
-
-                          <div className="mt-2">
-                            <span className={`text-[9px] font-extrabold px-3.5 py-1.5 rounded-full uppercase tracking-wider border flex items-center gap-1.5 ${estadoColor[enc.estado] ?? estadoColor.COTIZADA}`}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                              {estadoLabel[enc.estado] ?? enc.estado}
-                            </span>
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="flex flex-col gap-3.5">
+            {encomiendasFiltradas.map((enc) => (
+              <TarjetaEncomienda
+                key={enc.idencomienda}
+                encomienda={enc}
+                onVerDetalles={handleVerInfoCompleta}
+              />
+            ))}
           </div>
         )}
+
       </div>
     </div>
   );

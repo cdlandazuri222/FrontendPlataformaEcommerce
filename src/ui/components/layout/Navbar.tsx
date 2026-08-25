@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePreferencias } from '../../context/PreferenciasContext';
 import { ROUTES } from '../../../shared/constants';
 import { AvatarUsuario } from '../common/AvatarUsuario';
+import logoImg from '../../../assets/Logo.png.png';
 import type { Idioma } from '../../../shared/i18n/translations';
 
 export function Navbar() {
@@ -63,8 +64,12 @@ export function Navbar() {
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* Logo */}
-          <Link to={ROUTES.HOME} className="flex items-center select-none">
-            <span className="text-[#c01e2e] text-2xl font-black tracking-tight">Cootranar</span>
+          <Link to={ROUTES.HOME} className="flex items-center select-none py-1 group">
+            <img
+              src={logoImg}
+              alt="Cootranar"
+              className="h-9 sm:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+            />
           </Link>
 
           {/* Nav desktop */}

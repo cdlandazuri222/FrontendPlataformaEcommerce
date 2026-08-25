@@ -179,6 +179,10 @@ const translations = {
       entregada: 'Entregada',
       devuelta: 'Devuelta',
       instruccionQr: 'Presenta este código QR o la referencia en la oficina para gestionar tu encomienda.',
+      copiarCodigo: 'Copiar código',
+      codigoCopiado: '¡Copiado!',
+      enAgencia: 'En agencia',
+      domicilioBadge: 'A domicilio',
     },
     // Común
     comun: {
@@ -430,6 +434,10 @@ const translations = {
       instruccionQr: 'Present this QR code or the reference at the office to manage your parcel.',
       entregada: 'Delivered',
       devuelta: 'Returned',
+      copiarCodigo: 'Copy code',
+      codigoCopiado: 'Copied!',
+      enAgencia: 'At branch',
+      domicilioBadge: 'Home delivery',
     },
     // Común
     comun: {
