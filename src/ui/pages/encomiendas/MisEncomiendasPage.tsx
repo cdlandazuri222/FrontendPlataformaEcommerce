@@ -307,7 +307,9 @@ function InfoEncomiendaModal({
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm">
               <div className="flex-1">
-                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">{m.origen}</p>
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">
+                  {idioma === 'es' ? 'Origen' : 'Origin'}
+                </p>
                 <p className="font-extrabold text-slate-800 dark:text-slate-100">{origen.ciudad}</p>
                 {origen.detalle && (
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{origen.detalle}</p>
@@ -317,7 +319,9 @@ function InfoEncomiendaModal({
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </div>
               <div className="flex-1">
-                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">{m.destino}</p>
+                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">
+                  {idioma === 'es' ? 'Destino' : 'Destination'}
+                </p>
                 <p className="font-extrabold text-slate-800 dark:text-slate-100">{destino.ciudad}</p>
                 {destino.detalle && (
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{destino.detalle}</p>

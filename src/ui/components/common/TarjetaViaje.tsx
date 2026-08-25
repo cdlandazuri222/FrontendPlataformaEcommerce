@@ -19,19 +19,21 @@ export function TarjetaViaje({ viaje }: Props) {
   const origen = viaje.tramoBuscado?.origen ?? viaje.ruta.origen;
   const destino = viaje.tramoBuscado?.destino ?? viaje.ruta.destino;
 
-  const [y, m, d] = (viaje.fechasalida as string).slice(0, 10).split('-').map(Number);
+  const fechaRaw = String(viaje.fechasalida ?? '').slice(0, 10);
+  const [y, m, d] = fechaRaw.includes('-') ? fechaRaw.split('-').map(Number) : [2026, 1, 1];
   const fechaLocal = new Date(y, m - 1, d);
   const fecha = fechaLocal.toLocaleDateString(idioma === 'es' ? 'es-CO' : 'en-US', {
     day: '2-digit',
     month: 'short',
   });
 
-  const [hh, mm] = viaje.horasalida.split(':').map(Number);
+  const horaRaw = String(viaje.horasalida ?? '00:00');
+  const [hh, mm] = horaRaw.includes(':') ? horaRaw.split(':').map(Number) : [0, 0];
   const periodo = hh >= 12 ? 'p.m.' : 'a.m.';
   const hora12 = hh % 12 === 0 ? 12 : hh % 12;
   const hora = `${hora12}:${String(mm).padStart(2, '0')} ${periodo}`;
-  const asientos = viaje.asientos.libres;
-  const precio = viaje.precio.valor;
+  const asientos = viaje.asientos?.libres ?? 0;
+  const precio = viaje.precio?.valor ?? null;
   const esPocosAsientos = asientos > 0 && asientos <= 4;
   const esAgotado = asientos === 0;
 
