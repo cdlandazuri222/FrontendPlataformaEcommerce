@@ -185,6 +185,7 @@ function VistaDetalleEncomienda({
   const { tx, idioma } = usePreferencias();
   const m = tx.misEncomiendas;
   const [tabActiva, setTabActiva] = useState<TabDetalle>(tabInicial);
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copiadoRef, setCopiadoRef] = useState(false);
   const [copiadoDir, setCopiadoDir] = useState(false);
@@ -327,14 +328,14 @@ function VistaDetalleEncomienda({
   const wazeOficinaUrl = `https://waze.com/ul?q=${encodedQueryOficina}`;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-200">
       
       {/* ── Botón Volver y Barra Superior ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
         <div className="flex items-center gap-3">
           <button
             onClick={onVolver}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-[#0e3a8c] hover:text-white dark:hover:bg-blue-600 text-slate-600 dark:text-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
+            className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-slate-700/80 hover:bg-[#0e3a8c] hover:text-white dark:hover:bg-blue-600 text-[#0e3a8c] dark:text-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
             title="Volver a la lista"
           >
             <span className="material-symbols-outlined text-xl">arrow_back</span>
@@ -350,7 +351,7 @@ function VistaDetalleEncomienda({
               <button
                 onClick={handleCopiarRef}
                 title={m.copiarCodigo}
-                className="p-1 rounded-md bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 text-slate-500 dark:text-slate-300 transition-colors"
+                className="p-1 rounded-md bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 text-slate-500 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-xs">
                   {copiadoRef ? 'check' : 'content_copy'}
@@ -381,8 +382,101 @@ function VistaDetalleEncomienda({
         </div>
       </div>
 
-      {/* ── Pestañas de Navegación en la Misma Página (Estilo Minimalista Cootranar) ── */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-x-auto scrollbar-none">
+      {/* ── Selector Menú Hamburguesa para Móviles (sm:hidden) ── */}
+      <div className="sm:hidden relative">
+        <button
+          type="button"
+          onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
+          className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 shadow-xs text-left cursor-pointer transition-all active:scale-99"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/50">
+              <span className="material-symbols-outlined text-lg">
+                {tabActiva === 'GPS' ? 'radar' : tabActiva === 'INFO' ? 'qr_code_2' : 'store'}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block leading-tight">
+                {idioma === 'es' ? 'Vista activa' : 'Active view'}
+              </span>
+              <span className="text-xs font-black text-[#0e3a8c] dark:text-blue-400 truncate block mt-0.5">
+                {tabActiva === 'GPS'
+                  ? (m.rastreoGpsTitulo || 'Rastreo GPS en Tiempo Real')
+                  : tabActiva === 'INFO'
+                  ? (m.infoCompletaTitulo || 'Detalles y Código QR')
+                  : (m.mapaOficinaTitulo || 'Sedes y Oficinas')}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pl-2 shrink-0">
+            <span className="text-[11px] font-black text-[#0e3a8c] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/60 px-2.5 py-1 rounded-lg">
+              {idioma === 'es' ? 'Opciones' : 'Options'}
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-200">
+              <span className="material-symbols-outlined text-lg transition-transform duration-200" style={{ transform: menuMovilAbierto ? 'rotate(90deg)' : 'none' }}>
+                menu
+              </span>
+            </div>
+          </div>
+        </button>
+
+        {/* Dropdown flotante con las opciones del menú hamburguesa */}
+        {menuMovilAbierto && (
+          <>
+            {/* Backdrop invisible para cerrar al hacer clic afuera */}
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => setMenuMovilAbierto(false)}
+            />
+            <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-xl z-30 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+              <button
+                type="button"
+                onClick={() => { setTabActiva('GPS'); setMenuMovilAbierto(false); }}
+                className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  tabActiva === 'GPS'
+                    ? 'bg-[#0e3a8c] text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-base">radar</span>
+                  <span>{m.rastreoGpsTitulo || 'Rastreo GPS en Tiempo Real'}</span>
+                </div>
+                <span className={`w-2 h-2 rounded-full ${tabActiva === 'GPS' ? 'bg-emerald-300' : 'bg-emerald-500'} animate-ping`} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setTabActiva('INFO'); setMenuMovilAbierto(false); }}
+                className={`w-full flex items-center gap-2.5 p-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  tabActiva === 'INFO'
+                    ? 'bg-[#0e3a8c] text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700/60'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">qr_code_2</span>
+                <span>{m.infoCompletaTitulo || 'Detalles y Código QR'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setTabActiva('OFICINA_ORIGEN'); setMenuMovilAbierto(false); }}
+                className={`w-full flex items-center gap-2.5 p-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  tabActiva === 'OFICINA_ORIGEN' || tabActiva === 'OFICINA_DESTINO'
+                    ? 'bg-[#0e3a8c] text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700/60'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">store</span>
+                <span>{m.mapaOficinaTitulo || 'Sedes y Oficinas'}</span>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Pestañas Horizontales para Pantallas Medianas y Grandes (hidden sm:flex) ── */}
+      <div className="hidden sm:flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setTabActiva('GPS')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all whitespace-nowrap cursor-pointer ${
@@ -422,6 +516,7 @@ function VistaDetalleEncomienda({
       </div>
 
       {/* ── CONTENIDO: Pestaña 1 - Rastreo GPS ── */}
+
       {tabActiva === 'GPS' && (
         <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-5 sm:p-7 shadow-xs space-y-5 animate-in fade-in duration-200">
           
