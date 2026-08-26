@@ -93,7 +93,8 @@ export async function cifrarPayloadRsa(payload: Record<string, any> | string): P
   }
 }
 
-const RESPONSE_SECRET = 'cootranar_super_secure_cookie_key_2026_aes_gcm';
+const RESPONSE_SECRET = (import.meta as any).env?.VITE_RESPONSE_ENCRYPTION_KEY || 'cootranar_super_secure_cookie_key_2026_aes_gcm';
+
 
 function hexToUint8Array(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
