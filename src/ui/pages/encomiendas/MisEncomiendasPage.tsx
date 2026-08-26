@@ -381,14 +381,14 @@ function VistaDetalleEncomienda({
         </div>
       </div>
 
-      {/* ── Pestañas de Navegación en la Misma Página ── */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-x-auto scrollbar-none">
+      {/* ── Pestañas de Navegación en la Misma Página (Estilo Minimalista Cootranar) ── */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setTabActiva('GPS')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all whitespace-nowrap cursor-pointer ${
             tabActiva === 'GPS'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
+              ? 'bg-[#0e3a8c] text-white shadow-sm shadow-blue-900/10'
+              : 'text-slate-600 dark:text-slate-300 hover:text-[#0e3a8c] hover:bg-white/80 dark:hover:bg-slate-700/60'
           }`}
         >
           <span className="material-symbols-outlined text-base">radar</span>
@@ -400,8 +400,8 @@ function VistaDetalleEncomienda({
           onClick={() => setTabActiva('INFO')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all whitespace-nowrap cursor-pointer ${
             tabActiva === 'INFO'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
+              ? 'bg-[#0e3a8c] text-white shadow-sm shadow-blue-900/10'
+              : 'text-slate-600 dark:text-slate-300 hover:text-[#0e3a8c] hover:bg-white/80 dark:hover:bg-slate-700/60'
           }`}
         >
           <span className="material-symbols-outlined text-base">qr_code_2</span>
@@ -412,8 +412,8 @@ function VistaDetalleEncomienda({
           onClick={() => setTabActiva('OFICINA_ORIGEN')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all whitespace-nowrap cursor-pointer ${
             tabActiva === 'OFICINA_ORIGEN' || tabActiva === 'OFICINA_DESTINO'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/60'
+              ? 'bg-[#0e3a8c] text-white shadow-sm shadow-blue-900/10'
+              : 'text-slate-600 dark:text-slate-300 hover:text-[#0e3a8c] hover:bg-white/80 dark:hover:bg-slate-700/60'
           }`}
         >
           <span className="material-symbols-outlined text-base">store</span>
@@ -425,24 +425,24 @@ function VistaDetalleEncomienda({
       {tabActiva === 'GPS' && (
         <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-5 sm:p-7 shadow-xs space-y-5 animate-in fade-in duration-200">
           
-          {/* Header Satelital */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900 text-white">
+          {/* Header Satelital Minimalista Cootranar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-50/90 via-sky-50/50 to-indigo-50/40 dark:from-slate-800 dark:via-blue-950/40 dark:to-slate-800 border border-blue-100/90 dark:border-blue-900/40">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400 shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-white dark:bg-blue-950/80 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center text-[#0e3a8c] dark:text-blue-400 shrink-0 shadow-2xs">
                 <span className="material-symbols-outlined text-2xl animate-pulse">radar</span>
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm sm:text-base font-black tracking-tight">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 tracking-tight">
                     {m.rastreoGpsTitulo || 'Rastreo GPS en Tiempo Real'}
                   </h3>
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase bg-emerald-100/80 text-emerald-800 border border-emerald-300/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/50 px-2.5 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                     {m.sateliteActivo || 'GPS Satelital Activo'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">
-                  {geoOrigen.nombre} ➔ {geoDestino.nombre} · Monitoreo continuo 24/7
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                  {geoOrigen.nombre} ➔ {geoDestino.nombre} · Monitoreo satelital continuo
                 </p>
               </div>
             </div>
@@ -450,7 +450,7 @@ function VistaDetalleEncomienda({
             <button
               onClick={handleRefrescarGps}
               disabled={actualizandoGps}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-700 hover:bg-blue-50 text-[#0e3a8c] dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 active:scale-95"
             >
               <span className={`material-symbols-outlined text-sm ${actualizandoGps ? 'animate-spin' : ''}`}>sync</span>
               <span>{actualizandoGps ? 'Actualizando...' : (m.recalcularRuta || 'Actualizar GPS')}</span>
@@ -544,7 +544,7 @@ function VistaDetalleEncomienda({
             />
 
             <div className="absolute top-3 left-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-3.5 py-2.5 rounded-xl shadow-lg border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-2 max-w-[88%]">
-              <div className="w-3 h-3 rounded-full bg-blue-600 animate-ping shrink-0" />
+              <div className="w-3 h-3 rounded-full bg-[#0e3a8c] animate-ping shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">
                   {estadoDetalle}
@@ -562,7 +562,7 @@ function VistaDetalleEncomienda({
               href={gmapsRutaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-[#0e3a8c] hover:bg-blue-800 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+              className="inline-flex items-center justify-center gap-2 bg-[#0e3a8c] hover:bg-blue-900 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
             >
               <span className="material-symbols-outlined text-base sm:text-lg">directions</span>
               <span>{m.abrirGoogleMaps || 'Ver Ruta Completa en Google Maps'}</span>
@@ -573,7 +573,7 @@ function VistaDetalleEncomienda({
               href={wazeGpsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+              className="inline-flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-[#0e3a8c] dark:text-blue-300 border border-blue-200/80 dark:border-slate-600 font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
             >
               <span className="material-symbols-outlined text-base sm:text-lg">near_me</span>
               <span>{m.abrirWaze || 'Navegar hacia el Punto con Waze'}</span>
@@ -583,6 +583,7 @@ function VistaDetalleEncomienda({
 
         </div>
       )}
+
 
       {/* ── CONTENIDO: Pestaña 2 - Información y Código QR ── */}
       {tabActiva === 'INFO' && (
@@ -773,13 +774,14 @@ function VistaDetalleEncomienda({
               href={wazeOficinaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+              className="inline-flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-[#0e3a8c] dark:text-blue-300 border border-blue-200/80 dark:border-slate-600 font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
             >
               <span className="material-symbols-outlined text-base sm:text-lg">near_me</span>
               <span>{m.abrirWaze || 'Abrir en Waze'}</span>
               <span className="material-symbols-outlined text-xs">open_in_new</span>
             </a>
           </div>
+
 
         </div>
       )}
@@ -1012,11 +1014,12 @@ function TarjetaEncomienda({
           {/* Botón Ver Info Completa */}
           <button
             onClick={() => onVerDetalles(encomienda)}
-            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:gap-2 active:scale-98 cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-[#0e3a8c] hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:gap-2 active:scale-98 cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm">qr_code_2</span>
             <span>{m.verInfoCompleta}</span>
           </button>
+
         </div>
       </div>
 
