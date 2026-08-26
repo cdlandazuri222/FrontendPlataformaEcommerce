@@ -17,7 +17,12 @@ export const useAuth = () => {
 
   const getUsuario = (): Cliente | null => {
     const stored = localStorage.getItem('usuario');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored || stored === 'undefined' || stored === 'null') return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
   };
 
   const handleLogin = async (credentials: LoginCredentials) => {
@@ -25,8 +30,10 @@ export const useAuth = () => {
     setError('');
     try {
       const result = await loginCliente(authService, credentials);
-      localStorage.setItem('usuario', JSON.stringify(result.cliente));
-      if (result.token) localStorage.setItem('authToken', result.token);
+      if (result?.cliente) {
+        localStorage.setItem('usuario', JSON.stringify(result.cliente));
+      }
+      if (result?.token) localStorage.setItem('authToken', result.token);
       return result;
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string; data?: { message?: string } } } };
@@ -43,8 +50,10 @@ export const useAuth = () => {
     setError('');
     try {
       const result = await loginClienteGoogle(authService, credencial);
-      localStorage.setItem('usuario', JSON.stringify(result.cliente));
-      if (result.token) localStorage.setItem('authToken', result.token);
+      if (result?.cliente) {
+        localStorage.setItem('usuario', JSON.stringify(result.cliente));
+      }
+      if (result?.token) localStorage.setItem('authToken', result.token);
       return result;
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
@@ -55,6 +64,7 @@ export const useAuth = () => {
       setLoading(false);
     }
   };
+
 
   const handleRegistro = async (data: RegistroCredentials) => {
     setLoading(true);

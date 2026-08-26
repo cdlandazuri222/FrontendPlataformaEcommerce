@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { descifrarDataRecursivo } from '../../shared/utils/cryptoRsa';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -48,13 +49,17 @@ httpClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ─── Interceptor de RESPONSE: maneja 401 ─────────────────────────────────────
+// ─── Interceptor de RESPONSE: descifrado automático y maneja 401 ────────────
 httpClient.interceptors.response.use(
-  (response) => {
+  async (response) => {
+    if (response.data) {
+      response.data = await descifrarDataRecursivo(response.data);
+    }
     console.log('[httpClient] Response:', response.status, response.config?.url);
     return response;
   },
   async (error) => {
+
     console.log('[httpClient] Error:', error.response?.status, error.config?.url);
     if (error.response?.status === 401) {
       // No redirigir si estamos en la página de nueva contraseña o si es una llamada a restablecer-password

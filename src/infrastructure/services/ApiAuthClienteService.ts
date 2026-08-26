@@ -1,4 +1,5 @@
 import { httpClient } from '../api/httpClient';
+import { cifrarPayloadRsa, descifrarRespuesta } from '../../shared/utils/cryptoRsa';
 import type {
   AuthClienteService,
   LoginCredentials,
@@ -8,26 +9,44 @@ import type {
 
 export class ApiAuthClienteService implements AuthClienteService {
   async login(credentials: LoginCredentials): Promise<AuthClienteResult> {
-    const response = await httpClient.post('/auth/login/cliente', credentials);
-    const payload = response.data.data || response.data;
+    const secureData = await cifrarPayloadRsa(credentials);
+    const response = await httpClient.post('/auth/login/cliente', { data: secureData });
+    let payload = response.data?.data || response.data;
+
+    if (typeof payload === 'string' && payload.includes(':')) {
+      const dec = await descifrarRespuesta<any>(payload);
+      if (dec && typeof dec === 'object') {
+        payload = dec;
+      }
+    }
+
     // El backend retorna { token, usuario } — mapeamos a { token, cliente }
     return {
-      token: payload.token || payload.access_token,
-      cliente: payload.usuario ?? payload.cliente,
+      token: payload?.token || payload?.access_token || 'cookie-based-auth',
+      cliente: payload?.usuario ?? payload?.cliente,
     };
   }
 
   async loginGoogle(credencial: string): Promise<AuthClienteResult> {
     const response = await httpClient.post('/auth/loginGoogle/cliente', { credencial });
-    const payload = response.data.data || response.data;
+    let payload = response.data?.data || response.data;
+
+    if (typeof payload === 'string' && payload.includes(':')) {
+      const dec = await descifrarRespuesta<any>(payload);
+      if (dec && typeof dec === 'object') {
+        payload = dec;
+      }
+    }
+
     return {
-      token: payload.token || payload.access_token,
-      cliente: payload.usuario ?? payload.cliente,
+      token: payload?.token || payload?.access_token || 'cookie-based-auth',
+      cliente: payload?.usuario ?? payload?.cliente,
     };
   }
 
   async registrar(data: RegistroCredentials): Promise<void> {
-    await httpClient.post('/auth/registrar/cliente', data);
+    const secureData = await cifrarPayloadRsa(data);
+    await httpClient.post('/auth/registrar/cliente', { data: secureData });
   }
 
   async verificarEmail(token: string): Promise<{ message: string; result?: AuthClienteResult }> {
@@ -54,8 +73,8 @@ export class ApiAuthClienteService implements AuthClienteService {
 
   async refreshToken(): Promise<{ token: string }> {
     const response = await httpClient.post('/auth/refresh-token');
-    const payload = response.data.data || response.data;
-    return { token: payload.token || payload.access_token };
+    const payload = response.data?.data || response.data;
+    return { token: payload?.token || payload?.access_token };
   }
 
   async olvidoPassword(correo: string): Promise<void> {
@@ -63,6 +82,8 @@ export class ApiAuthClienteService implements AuthClienteService {
   }
 
   async restablecerPassword(token: string, password: string): Promise<void> {
-    await httpClient.post('/auth/restablecer-password', { token, password });
+    const secureData = await cifrarPayloadRsa({ token, password });
+    await httpClient.post('/auth/restablecer-password', { data: secureData });
   }
 }
+
