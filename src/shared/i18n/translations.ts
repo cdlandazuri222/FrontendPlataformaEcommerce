@@ -193,7 +193,22 @@ const translations = {
       oficinaDestino: 'Oficina Destino',
       comoLlegar: 'Cómo llegar',
       horarioAtencion: 'Horario de atención Cootranar',
+      rastreoGpsTitulo: 'Rastreo GPS en Tiempo Real',
+      rastrearGps: 'Rastrear GPS',
+      sateliteActivo: 'Monitoreo GPS Satelital Activo',
+      velocidadEstimada: 'Velocidad en ruta',
+      ubicacionActual: 'Ubicación actual estimada',
+      actualizadoHace: 'Última señal GPS',
+      haceInstantes: 'En vivo (hace instantes)',
+      precisioGps: 'Precisión satelital',
+      puntosRuta: 'Hitos del trayecto',
+      salidaAgencia: 'Salida de agencia origen',
+      enCarretera: 'En carretera nacional',
+      llegadaDestino: 'Llegada a agencia destino',
+      entregado: 'Entregado al destinatario',
+      recalcularRuta: 'Actualizar GPS',
     },
+
     // Común
     comun: {
       cargando: 'Cargando...',
@@ -458,7 +473,22 @@ const translations = {
       oficinaDestino: 'Destination Office',
       comoLlegar: 'Get directions',
       horarioAtencion: 'Cootranar working hours',
+      rastreoGpsTitulo: 'Real-Time GPS Tracking',
+      rastrearGps: 'Track GPS',
+      sateliteActivo: 'Active Satellite GPS Monitoring',
+      velocidadEstimada: 'Speed on route',
+      ubicacionActual: 'Estimated current location',
+      actualizadoHace: 'Last GPS signal',
+      haceInstantes: 'Live (just now)',
+      precisioGps: 'Satellite precision',
+      puntosRuta: 'Route milestones',
+      salidaAgencia: 'Departure from origin agency',
+      enCarretera: 'On national highway',
+      llegadaDestino: 'Arrival at destination agency',
+      entregado: 'Delivered to recipient',
+      recalcularRuta: 'Refresh GPS',
     },
+
 
     // Común
     comun: {

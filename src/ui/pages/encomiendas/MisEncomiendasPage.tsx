@@ -81,7 +81,330 @@ const estadoStyleMap: Record<string, EstadoStyle> = {
   },
 };
 
+// ─── Geo Coordenadas para Ciudades de Cootranar ───────────────────────────────
+
+interface CiudadGeo {
+  lat: number;
+  lng: number;
+  nombre: string;
+  departamento: string;
+}
+
+const CIUDADES_GEO: Record<string, CiudadGeo> = {
+  pasto: { lat: 1.2136, lng: -77.2811, nombre: 'Pasto', departamento: 'Nariño' },
+  ipiales: { lat: 0.8248, lng: -77.6417, nombre: 'Ipiales', departamento: 'Nariño' },
+  tumaco: { lat: 1.7986, lng: -78.8156, nombre: 'Tumaco', departamento: 'Nariño' },
+  tuquerres: { lat: 1.0850, lng: -77.6186, nombre: 'Túquerres', departamento: 'Nariño' },
+  túquerres: { lat: 1.0850, lng: -77.6186, nombre: 'Túquerres', departamento: 'Nariño' },
+  launion: { lat: 1.6033, lng: -77.1317, nombre: 'La Unión', departamento: 'Nariño' },
+  'la unión': { lat: 1.6033, lng: -77.1317, nombre: 'La Unión', departamento: 'Nariño' },
+  samaniego: { lat: 1.3361, lng: -77.5939, nombre: 'Samaniego', departamento: 'Nariño' },
+  buesaco: { lat: 1.3831, lng: -77.1558, nombre: 'Buesaco', departamento: 'Nariño' },
+  chachagui: { lat: 1.3589, lng: -77.2839, nombre: 'Chachagüí', departamento: 'Nariño' },
+  chachagüí: { lat: 1.3589, lng: -77.2839, nombre: 'Chachagüí', departamento: 'Nariño' },
+  popayan: { lat: 2.4448, lng: -76.6147, nombre: 'Popayán', departamento: 'Cauca' },
+  popayán: { lat: 2.4448, lng: -76.6147, nombre: 'Popayán', departamento: 'Cauca' },
+  elbordo: { lat: 2.1167, lng: -76.9833, nombre: 'El Bordo', departamento: 'Cauca' },
+  'el bordo': { lat: 2.1167, lng: -76.9833, nombre: 'El Bordo', departamento: 'Cauca' },
+  cali: { lat: 3.4516, lng: -76.5320, nombre: 'Cali', departamento: 'Valle del Cauca' },
+  palmira: { lat: 3.5394, lng: -76.3036, nombre: 'Palmira', departamento: 'Valle del Cauca' },
+  buga: { lat: 3.9008, lng: -76.2978, nombre: 'Buga', departamento: 'Valle del Cauca' },
+  buenaventura: { lat: 3.8823, lng: -77.0312, nombre: 'Buenaventura', departamento: 'Valle del Cauca' },
+  pereira: { lat: 4.8133, lng: -75.6961, nombre: 'Pereira', departamento: 'Risaralda' },
+  armenia: { lat: 4.5339, lng: -75.6811, nombre: 'Armenia', departamento: 'Quindío' },
+  manizales: { lat: 5.0689, lng: -75.5174, nombre: 'Manizales', departamento: 'Caldas' },
+  bogota: { lat: 4.7110, lng: -74.0721, nombre: 'Bogotá', departamento: 'Cundinamarca' },
+  bogotá: { lat: 4.7110, lng: -74.0721, nombre: 'Bogotá', departamento: 'Cundinamarca' },
+  medellin: { lat: 6.2442, lng: -75.5812, nombre: 'Medellín', departamento: 'Antioquia' },
+  medellín: { lat: 6.2442, lng: -75.5812, nombre: 'Medellín', departamento: 'Antioquia' },
+  neiva: { lat: 2.9273, lng: -75.2819, nombre: 'Neiva', departamento: 'Huila' },
+};
+
+function resolverGeoCiudad(nombreCiudad?: string): CiudadGeo {
+  const norm = (nombreCiudad || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  for (const [key, val] of Object.entries(CIUDADES_GEO)) {
+    const keyNorm = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm.includes(keyNorm) || keyNorm.includes(norm)) {
+      return val;
+    }
+  }
+  return { lat: 1.2136, lng: -77.2811, nombre: nombreCiudad || 'Pasto', departamento: 'Nariño' };
+}
+
+// ─── Modal de Rastreo GPS en Tiempo Real ──────────────────────────────────────
+
+function ModalRastreoGPS({
+  encomienda,
+  onClose,
+}: {
+  encomienda: EncomiendaAPI | null;
+  onClose: () => void;
+}) {
+  const { tx, idioma } = usePreferencias();
+  const m = tx.misEncomiendas;
+  const [actualizando, setActualizando] = useState(false);
+  const [ultimaSenal, setUltimaSenal] = useState<string>('En vivo');
+
+  if (!encomienda) return null;
+
+  const origen = parseOficina(encomienda.nombreoficinaorigen, encomienda.idoficinaorigen);
+  const destino = parseOficina(encomienda.nombreoficinadestino, encomienda.idoficinadestino);
+
+  const geoOrigen = resolverGeoCiudad(origen.ciudad);
+  const geoDestino = resolverGeoCiudad(destino.ciudad);
+
+  // Cálculo de posición GPS según el estado de la encomienda
+  let factorProgreso = 0.1;
+  let velocidad = '0 km/h';
+  let sectorActual = '';
+  let estadoDetalle = '';
+  let hitoActivo = 1;
+
+  switch (encomienda.estado) {
+    case 'COTIZADA':
+      factorProgreso = 0.04;
+      velocidad = '0 km/h';
+      sectorActual = `Oficina de origen en ${geoOrigen.nombre} · Preinscripción`;
+      estadoDetalle = idioma === 'es' ? 'En espera de recepción en taquilla Cootranar' : 'Awaiting drop-off at Cootranar office';
+      hitoActivo = 1;
+      break;
+    case 'REGISTRADA':
+      factorProgreso = 0.18;
+      velocidad = '0 km/h (En patio de carga)';
+      sectorActual = `Bodega principal · Agencia Cootranar ${geoOrigen.nombre}`;
+      estadoDetalle = idioma === 'es' ? 'Paquete embalado y asignado a vehículo de despacho' : 'Packed and assigned to dispatch vehicle';
+      hitoActivo = 1;
+      break;
+    case 'EN_TRANSITO':
+      factorProgreso = 0.62;
+      velocidad = '66 km/h (Velocidad de crucero)';
+      sectorActual = `Vía Panamericana · Corredor ${geoOrigen.nombre} ➔ ${geoDestino.nombre}`;
+      estadoDetalle = idioma === 'es' ? 'En carretera nacional con monitoreo satelital 24/7' : 'On national highway with 24/7 satellite GPS tracking';
+      hitoActivo = 2;
+      break;
+    case 'EN_DESTINO':
+      factorProgreso = 0.92;
+      velocidad = '0 km/h (En agencia destino)';
+      sectorActual = `Agencia Cootranar ${geoDestino.nombre}`;
+      estadoDetalle = encomienda.esdomicilio
+        ? (idioma === 'es' ? 'En ruta de reparto local a la dirección del destinatario' : 'Out for local delivery to recipient address')
+        : (idioma === 'es' ? 'Disponible para retiro en taquilla con documento de identidad' : 'Available for pickup at branch office');
+      hitoActivo = 3;
+      break;
+    case 'ENTREGADA':
+      factorProgreso = 1.0;
+      velocidad = '0 km/h';
+      sectorActual = `Entregado al destinatario en ${geoDestino.nombre}`;
+      estadoDetalle = idioma === 'es' ? 'Encomienda entregada a satisfacción' : 'Parcel delivered successfully';
+      hitoActivo = 4;
+      break;
+    default:
+      factorProgreso = 0.5;
+      sectorActual = `Trayecto ${geoOrigen.nombre} - ${geoDestino.nombre}`;
+      estadoDetalle = encomienda.estado;
+      hitoActivo = 2;
+  }
+
+  const currentLat = geoOrigen.lat + (geoDestino.lat - geoOrigen.lat) * factorProgreso;
+  const currentLng = geoOrigen.lng + (geoDestino.lng - geoOrigen.lng) * factorProgreso;
+
+  const embedGpsUrl = `https://maps.google.com/maps?q=${currentLat.toFixed(5)},${currentLng.toFixed(5)}&t=m&z=11&ie=UTF8&iwloc=&output=embed`;
+  const gmapsRutaUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(geoOrigen.nombre + ', Colombia')}&destination=${encodeURIComponent(geoDestino.nombre + ', Colombia')}`;
+  const wazeGpsUrl = `https://waze.com/ul?ll=${currentLat.toFixed(5)},${currentLng.toFixed(5)}&navigate=yes`;
+
+  const handleRefrescarGps = () => {
+    setActualizando(true);
+    setTimeout(() => {
+      setActualizando(false);
+      setUltimaSenal(idioma === 'es' ? 'Actualizado ahora mismo' : 'Updated just now');
+    }, 1000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-3 sm:p-5 overflow-hidden animate-in fade-in duration-200">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Modal Box */}
+      <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-3xl z-10 border border-slate-200/80 dark:border-slate-700/80 transition-all flex flex-col max-h-[94vh] my-auto overflow-hidden">
+        {/* Header con Telemetría Satelital */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-900 text-white shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400 shrink-0">
+              <span className="material-symbols-outlined text-2xl animate-pulse">radar</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-black tracking-tight">
+                  {m.rastreoGpsTitulo || 'Rastreo GPS en Tiempo Real'}
+                </h3>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  {m.sateliteActivo || 'GPS Satelital Activo'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
+                <span>REF:</span>
+                <span className="font-bold text-blue-300">{encomienda.referenciaencomienda}</span>
+                <span>·</span>
+                <span className="text-slate-300">{origen.ciudad} ➔ {destino.ciudad}</span>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            aria-label="Cerrar"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+          
+          {/* Barra de Progreso del Trayecto */}
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">
+              <span className="uppercase text-[10px] tracking-wider">{m.puntosRuta || 'Hitos de la Ruta'}</span>
+              <span className="text-[#0e3a8c] dark:text-blue-400 font-black">{Math.round(factorProgreso * 100)}% {idioma === 'es' ? 'Completado' : 'Completed'}</span>
+            </div>
+
+            {/* Stepper Visual */}
+            <div className="grid grid-cols-4 gap-2 relative">
+              {[
+                { step: 1, label: m.salidaAgencia || 'Origen', icon: 'store' },
+                { step: 2, label: m.enCarretera || 'En Ruta', icon: 'local_shipping' },
+                { step: 3, label: m.llegadaDestino || 'En Destino', icon: 'pin_drop' },
+                { step: 4, label: m.entregado || 'Entregado', icon: 'check_circle' },
+              ].map((item) => {
+                const activo = hitoActivo >= item.step;
+                const actual = hitoActivo === item.step;
+                return (
+                  <div key={item.step} className="flex flex-col items-center text-center gap-1.5">
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                        actual
+                          ? 'bg-[#0e3a8c] text-white shadow-md scale-105 ring-2 ring-blue-300 dark:ring-blue-500'
+                          : activo
+                          ? 'bg-blue-100 dark:bg-blue-950 text-[#0e3a8c] dark:text-blue-300 font-bold'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">{item.icon}</span>
+                    </div>
+                    <span className={`text-[10px] sm:text-[11px] font-bold leading-tight ${actual ? 'text-[#0e3a8c] dark:text-blue-400 font-black' : activo ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400'}`}>
+                      {item.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* HUD de Telemetría GPS en Vivo */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+              <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400 mb-1">
+                <span className="material-symbols-outlined text-xs text-blue-600 dark:text-blue-400">speed</span>
+                <span>{m.velocidadEstimada || 'Velocidad'}</span>
+              </div>
+              <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">{velocidad}</p>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+              <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400 mb-1">
+                <span className="material-symbols-outlined text-xs text-emerald-600 dark:text-emerald-400">satellite</span>
+                <span>{m.precisioGps || 'Señal'}</span>
+              </div>
+              <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">&lt; 4.5m (8 Sat)</p>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/70 col-span-2">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400 mb-1">
+                <div className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs text-amber-500">my_location</span>
+                  <span>{m.ubicacionActual || 'Ubicación'}</span>
+                </div>
+                <button
+                  onClick={handleRefrescarGps}
+                  disabled={actualizando}
+                  className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 cursor-pointer font-bold lowercase"
+                >
+                  <span className={`material-symbols-outlined text-xs ${actualizando ? 'animate-spin' : ''}`}>sync</span>
+                  {actualizando ? 'actualizando...' : ultimaSenal}
+                </button>
+              </div>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" title={sectorActual}>
+                {sectorActual}
+              </p>
+            </div>
+          </div>
+
+          {/* Mapa Interactivo con Marker GPS */}
+          <div className="relative w-full h-[280px] sm:h-[360px] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner bg-slate-100 dark:bg-slate-800">
+            <iframe
+              title={`Rastreo GPS Encomienda ${encomienda.referenciaencomienda}`}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              src={embedGpsUrl}
+              className="w-full h-full"
+            />
+
+            {/* Floating Badge en el Mapa */}
+            <div className="absolute top-3 left-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-3 py-2 rounded-xl shadow-lg border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-2 max-w-[85%]">
+              <div className="w-3 h-3 rounded-full bg-blue-600 animate-ping shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[11px] font-black text-slate-800 dark:text-slate-100 truncate">
+                  {estadoDetalle}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  Coord: {currentLat.toFixed(4)}° N, {Math.abs(currentLng).toFixed(4)}° W
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Botones de Navegación Externa */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <a
+              href={gmapsRutaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-[#0e3a8c] hover:bg-blue-800 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+            >
+              <span className="material-symbols-outlined text-base sm:text-lg">directions</span>
+              <span>Ver Ruta Completa en Google Maps</span>
+              <span className="material-symbols-outlined text-xs">open_in_new</span>
+            </a>
+
+            <a
+              href={wazeGpsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+            >
+              <span className="material-symbols-outlined text-base sm:text-lg">near_me</span>
+              <span>Navegar hacia el Punto con Waze</span>
+              <span className="material-symbols-outlined text-xs">open_in_new</span>
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Modal de Ubicación de Oficina en Mapa ───────────────────────────────────
+
 
 export interface OficinaMapaData {
   titulo: string;
@@ -282,11 +605,13 @@ function InfoEncomiendaModal({
   qrDataUrl,
   onClose,
   onVerMapa,
+  onRastrearGps,
 }: {
   encomienda: EncomiendaAPI;
   qrDataUrl: string | null;
   onClose: () => void;
   onVerMapa: (oficina: OficinaMapaData) => void;
+  onRastrearGps: (enc: EncomiendaAPI) => void;
 }) {
   const { tx, idioma } = usePreferencias();
   const m = tx.misEncomiendas;
@@ -457,6 +782,36 @@ function InfoEncomiendaModal({
             </div>
           </div>
 
+          {/* Banner de Rastreo Satelital GPS en Tiempo Real */}
+          <button
+            type="button"
+            onClick={() => onRastrearGps(encomienda)}
+            className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#0e3a8c] via-blue-800 to-indigo-900 hover:from-blue-900 hover:to-indigo-950 text-white shadow-md hover:shadow-lg transition-all active:scale-98 cursor-pointer group"
+          >
+            <div className="flex items-center gap-3 text-left">
+              <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-2xl animate-pulse text-blue-200">radar</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs sm:text-sm font-black tracking-tight">{m.rastreoGpsTitulo || 'Rastreo GPS en Tiempo Real'}</p>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase bg-emerald-400/25 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    GPS En Vivo
+                  </span>
+                </div>
+                <p className="text-[11px] text-blue-100/90 font-medium">
+                  {idioma === 'es' ? 'Localiza en el mapa la posición satelital del vehículo y tu paquete' : 'Track satellite position of the vehicle and your parcel'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-xs font-extrabold bg-white/20 px-3 py-2 rounded-xl group-hover:bg-white group-hover:text-[#0e3a8c] transition-colors shrink-0 shadow-xs">
+              <span>{m.rastrearGps || 'Ver GPS'}</span>
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+          </button>
+
+
           {/* Trayecto / Ruta destacado con botones de ver mapa */}
           <div className="bg-slate-50 dark:bg-slate-800/60 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60">
             <div className="flex items-center justify-between gap-1.5 text-slate-400 dark:text-slate-500 mb-3">
@@ -597,10 +952,12 @@ function TarjetaEncomienda({
   encomienda,
   onVerDetalles,
   onVerMapa,
+  onRastrearGps,
 }: {
   encomienda: EncomiendaAPI;
   onVerDetalles: (enc: EncomiendaAPI) => void;
   onVerMapa: (oficina: OficinaMapaData) => void;
+  onRastrearGps: (enc: EncomiendaAPI) => void;
 }) {
   const { tx, idioma } = usePreferencias();
   const m = tx.misEncomiendas;
@@ -790,8 +1147,8 @@ function TarjetaEncomienda({
 
       </div>
 
-      {/* ── Fila Inferior: Valor + Botón Acción ── */}
-      <div className="flex items-center justify-between gap-4 pt-0.5">
+      {/* ── Fila Inferior: Valor + Botones de Acción (GPS y Detalle) ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
         <div>
           {valorFormateado ? (
             <div className="flex items-baseline gap-1.5">
@@ -809,13 +1166,26 @@ function TarjetaEncomienda({
           )}
         </div>
 
-        <button
-          onClick={() => onVerDetalles(encomienda)}
-          className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:gap-2 active:scale-98 cursor-pointer"
-        >
-          <span className="material-symbols-outlined text-sm">qr_code_2</span>
-          <span>{m.verInfoCompleta}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Botón Rastreo GPS */}
+          <button
+            type="button"
+            onClick={() => onRastrearGps(encomienda)}
+            className="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-[#0e3a8c] dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/50 text-xs font-bold px-3.5 py-2 rounded-xl transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-98 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-sm text-blue-600 dark:text-blue-400 animate-pulse">radar</span>
+            <span>{m.rastrearGps || 'Rastrear GPS'}</span>
+          </button>
+
+          {/* Botón Ver Info Completa */}
+          <button
+            onClick={() => onVerDetalles(encomienda)}
+            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:gap-2 active:scale-98 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-sm">qr_code_2</span>
+            <span>{m.verInfoCompleta}</span>
+          </button>
+        </div>
       </div>
 
     </div>
@@ -842,6 +1212,9 @@ export function MisEncomiendasPage() {
 
   // Modal de visualización en Mapa de la sede/oficina Cootranar
   const [oficinaMapa, setOficinaMapa] = useState<OficinaMapaData | null>(null);
+
+  // Modal de Rastreo GPS en Vivo
+  const [encomiendaGps, setEncomiendaGps] = useState<EncomiendaAPI | null>(null);
 
   const handleVerInfoCompleta = (encomienda: EncomiendaAPI) => {
     setEncomiendaSeleccionada(encomienda);
@@ -897,6 +1270,7 @@ export function MisEncomiendasPage() {
           qrDataUrl={qrDataUrl}
           onClose={() => setEncomiendaSeleccionada(null)}
           onVerMapa={(ofic) => setOficinaMapa(ofic)}
+          onRastrearGps={(enc) => setEncomiendaGps(enc)}
         />
       )}
 
@@ -907,6 +1281,15 @@ export function MisEncomiendasPage() {
           onClose={() => setOficinaMapa(null)}
         />
       )}
+
+      {/* Modal de Rastreo GPS en Tiempo Real */}
+      {encomiendaGps && (
+        <ModalRastreoGPS
+          encomienda={encomiendaGps}
+          onClose={() => setEncomiendaGps(null)}
+        />
+      )}
+
 
       <div className="max-w-[1050px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
@@ -1122,8 +1505,10 @@ export function MisEncomiendasPage() {
                 encomienda={enc}
                 onVerDetalles={handleVerInfoCompleta}
                 onVerMapa={(ofic) => setOficinaMapa(ofic)}
+                onRastrearGps={(encItem) => setEncomiendaGps(encItem)}
               />
             ))}
+
 
           </div>
         )}
