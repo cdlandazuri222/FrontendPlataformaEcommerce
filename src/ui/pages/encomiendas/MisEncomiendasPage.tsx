@@ -81,6 +81,162 @@ const estadoStyleMap: Record<string, EstadoStyle> = {
   },
 };
 
+// ─── Modal de Ubicación de Oficina en Mapa ───────────────────────────────────
+
+export interface OficinaMapaData {
+  titulo: string;
+  ciudad: string;
+  direccion: string;
+  tipo: 'ORIGEN' | 'DESTINO' | 'OFICINA';
+}
+
+function ModalMapaOficina({
+  oficina,
+  onClose,
+}: {
+  oficina: OficinaMapaData | null;
+  onClose: () => void;
+}) {
+  const { tx, idioma } = usePreferencias();
+  const m = tx.misEncomiendas;
+  const [copiado, setCopiado] = useState(false);
+
+  if (!oficina) return null;
+
+  // Consulta optimizada para ubicar la sede de Cootranar
+  const consultaUbicacion = `Cootranar Encomiendas ${oficina.direccion ? oficina.direccion + ', ' : ''}${oficina.ciudad}, Colombia`.trim();
+  const encodedQuery = encodeURIComponent(consultaUbicacion);
+  const embedUrl = `https://maps.google.com/maps?q=${encodedQuery}&t=&z=16&ie=UTF8&iwloc=&output=embed`;
+  const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+  const wazeUrl = `https://waze.com/ul?q=${encodedQuery}`;
+
+  const handleCopiarDireccion = () => {
+    const texto = `${oficina.direccion ? oficina.direccion + ', ' : ''}${oficina.ciudad}, Colombia`;
+    navigator.clipboard.writeText(texto);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[95] flex items-center justify-center p-3 sm:p-5 overflow-hidden animate-in fade-in duration-200">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Modal Box */}
+      <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl z-10 border border-slate-200/80 dark:border-slate-700/80 transition-all flex flex-col max-h-[92vh] my-auto overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#0e3a8c] dark:text-blue-400 shrink-0">
+              <span className="material-symbols-outlined text-2xl">location_on</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 leading-tight">
+                  {m.mapaOficinaTitulo || 'Ubicación de Oficina de Encomiendas'}
+                </h3>
+                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                  oficina.tipo === 'ORIGEN'
+                    ? 'bg-blue-100 dark:bg-blue-950 text-[#0e3a8c] dark:text-blue-300'
+                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                }`}>
+                  {oficina.tipo === 'ORIGEN' ? (m.oficinaOrigen || 'Origen') : (m.oficinaDestino || 'Destino')}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1 mt-0.5">
+                <span>Cootranar · {oficina.ciudad}</span>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+            aria-label="Cerrar"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+          {/* Info Card con dirección */}
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <span className="material-symbols-outlined text-xl text-blue-600 dark:text-blue-400 mt-0.5 shrink-0">
+                store
+              </span>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  {idioma === 'es' ? 'Dirección de la Agencia Cootranar' : 'Cootranar Branch Address'}
+                </p>
+                <p className="text-sm font-black text-slate-800 dark:text-slate-100 mt-0.5">
+                  {oficina.direccion || (idioma === 'es' ? `Terminal / Oficina Principal de ${oficina.ciudad}` : `Main Terminal / Office of ${oficina.ciudad}`)}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  {oficina.ciudad}, Colombia
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCopiarDireccion}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-2xs cursor-pointer shrink-0 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-sm">
+                {copiado ? 'check' : 'content_copy'}
+              </span>
+              <span>{copiado ? (m.direccionCopiada || 'Copiada') : (m.copiarDireccion || 'Copiar dirección')}</span>
+            </button>
+          </div>
+
+          {/* Map Embed Iframe */}
+          <div className="relative w-full h-[260px] sm:h-[320px] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner bg-slate-100 dark:bg-slate-800">
+            <iframe
+              title={`Mapa Oficina Cootranar ${oficina.ciudad}`}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              src={embedUrl}
+              className="w-full h-full"
+            />
+          </div>
+
+          {/* Botones de Acción de Navegación */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <a
+              href={gmapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-[#0e3a8c] hover:bg-blue-800 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+            >
+              <span className="material-symbols-outlined text-base sm:text-lg">explore</span>
+              <span>{m.abrirGoogleMaps || 'Abrir en Google Maps'}</span>
+              <span className="material-symbols-outlined text-xs">open_in_new</span>
+            </a>
+
+            <a
+              href={wazeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
+            >
+              <span className="material-symbols-outlined text-base sm:text-lg">near_me</span>
+              <span>{m.abrirWaze || 'Abrir en Waze'}</span>
+              <span className="material-symbols-outlined text-xs">open_in_new</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Modal de información completa ─────────────────────────────────────────────
 
 function DetalleCampo({
@@ -125,10 +281,12 @@ function InfoEncomiendaModal({
   encomienda,
   qrDataUrl,
   onClose,
+  onVerMapa,
 }: {
   encomienda: EncomiendaAPI;
   qrDataUrl: string | null;
   onClose: () => void;
+  onVerMapa: (oficina: OficinaMapaData) => void;
 }) {
   const { tx, idioma } = usePreferencias();
   const m = tx.misEncomiendas;
@@ -299,36 +457,83 @@ function InfoEncomiendaModal({
             </div>
           </div>
 
-          {/* Trayecto / Ruta destacado (Full width) */}
-          <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/60">
-            <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 mb-2">
-              <span className="material-symbols-outlined text-sm">route</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider">{m.trayecto}</span>
+          {/* Trayecto / Ruta destacado con botones de ver mapa */}
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60">
+            <div className="flex items-center justify-between gap-1.5 text-slate-400 dark:text-slate-500 mb-3">
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm">route</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider">{m.trayecto}</span>
+              </div>
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full">
+                Sedes Cootranar
+              </span>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm">
-              <div className="flex-1">
-                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">
-                  {idioma === 'es' ? 'Origen' : 'Origin'}
-                </p>
-                <p className="font-extrabold text-slate-800 dark:text-slate-100">{origen.ciudad}</p>
-                {origen.detalle && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{origen.detalle}</p>
-                )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Origen */}
+              <div className="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between gap-2.5 shadow-2xs">
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      {m.oficinaOrigen || 'Oficina Origen'}
+                    </span>
+                    <span className="w-2 h-2 rounded-full bg-[#0e3a8c] dark:bg-blue-400" />
+                  </div>
+                  <p className="font-extrabold text-slate-800 dark:text-slate-100 text-sm sm:text-base leading-tight">
+                    {origen.ciudad}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                    {origen.detalle || (idioma === 'es' ? 'Oficina Principal de Encomiendas' : 'Main Parcel Office')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onVerMapa({
+                    titulo: `${idioma === 'es' ? 'Oficina de Encomiendas' : 'Parcel Office'} - ${origen.ciudad}`,
+                    ciudad: origen.ciudad,
+                    direccion: origen.detalle,
+                    tipo: 'ORIGEN'
+                  })}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-[#0e3a8c] dark:text-blue-300 text-xs font-bold transition-all border border-blue-200/60 dark:border-blue-800/50 cursor-pointer shadow-2xs active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">map</span>
+                  <span>{m.verEnMapa || 'Ver en mapa'}</span>
+                </button>
               </div>
-              <div className="hidden sm:flex items-center justify-center text-slate-400 px-2">
-                <span className="material-symbols-outlined text-lg">arrow_forward</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">
-                  {idioma === 'es' ? 'Destino' : 'Destination'}
-                </p>
-                <p className="font-extrabold text-slate-800 dark:text-slate-100">{destino.ciudad}</p>
-                {destino.detalle && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{destino.detalle}</p>
-                )}
+
+              {/* Destino */}
+              <div className="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between gap-2.5 shadow-2xs">
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      {m.oficinaDestino || 'Oficina Destino'}
+                    </span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  </div>
+                  <p className="font-extrabold text-slate-800 dark:text-slate-100 text-sm sm:text-base leading-tight">
+                    {destino.ciudad}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                    {destino.detalle || (idioma === 'es' ? 'Oficina Principal de Encomiendas' : 'Main Parcel Office')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onVerMapa({
+                    titulo: `${idioma === 'es' ? 'Oficina de Encomiendas' : 'Parcel Office'} - ${destino.ciudad}`,
+                    ciudad: destino.ciudad,
+                    direccion: destino.detalle,
+                    tipo: 'DESTINO'
+                  })}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold transition-all border border-emerald-200/60 dark:border-emerald-800/50 cursor-pointer shadow-2xs active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-sm">map</span>
+                  <span>{m.verEnMapa || 'Ver en mapa'}</span>
+                </button>
               </div>
             </div>
           </div>
+
 
           {/* Datos en Grilla Responsive (2 Columnas ordenadas) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -391,9 +596,11 @@ function InfoEncomiendaModal({
 function TarjetaEncomienda({
   encomienda,
   onVerDetalles,
+  onVerMapa,
 }: {
   encomienda: EncomiendaAPI;
   onVerDetalles: (enc: EncomiendaAPI) => void;
+  onVerMapa: (oficina: OficinaMapaData) => void;
 }) {
   const { tx, idioma } = usePreferencias();
   const m = tx.misEncomiendas;
@@ -489,11 +696,26 @@ function TarjetaEncomienda({
           
           {/* Origen */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#0e3a8c] dark:bg-blue-400 flex-shrink-0" />
-              <p className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-100 truncate" title={origen.ciudad}>
-                {origen.ciudad}
-              </p>
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-[#0e3a8c] dark:bg-blue-400 flex-shrink-0" />
+                <p className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-100 truncate" title={origen.ciudad}>
+                  {origen.ciudad}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onVerMapa({
+                  titulo: `${idioma === 'es' ? 'Oficina Origen' : 'Origin Office'} - ${origen.ciudad}`,
+                  ciudad: origen.ciudad,
+                  direccion: origen.detalle,
+                  tipo: 'ORIGEN'
+                })}
+                title={`${m.verEnMapa || 'Ver en mapa'}: ${origen.ciudad}`}
+                className="p-1 rounded-md text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition-colors flex-shrink-0 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px] block">pin_drop</span>
+              </button>
             </div>
             {origen.detalle && (
               <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate pl-3.5 mt-0.5" title={origen.detalle}>
@@ -515,11 +737,26 @@ function TarjetaEncomienda({
 
           {/* Destino */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-              <p className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-100 truncate" title={destino.ciudad}>
-                {destino.ciudad}
-              </p>
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+                <p className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-100 truncate" title={destino.ciudad}>
+                  {destino.ciudad}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onVerMapa({
+                  titulo: `${idioma === 'es' ? 'Oficina Destino' : 'Destination Office'} - ${destino.ciudad}`,
+                  ciudad: destino.ciudad,
+                  direccion: destino.detalle,
+                  tipo: 'DESTINO'
+                })}
+                title={`${m.verEnMapa || 'Ver en mapa'}: ${destino.ciudad}`}
+                className="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors flex-shrink-0 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px] block">pin_drop</span>
+              </button>
             </div>
             {destino.detalle && (
               <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate pl-3.5 mt-0.5" title={destino.detalle}>
@@ -574,7 +811,7 @@ function TarjetaEncomienda({
 
         <button
           onClick={() => onVerDetalles(encomienda)}
-          className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:gap-2 active:scale-98"
+          className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-[#0e3a8c] dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:gap-2 active:scale-98 cursor-pointer"
         >
           <span className="material-symbols-outlined text-sm">qr_code_2</span>
           <span>{m.verInfoCompleta}</span>
@@ -602,6 +839,9 @@ export function MisEncomiendasPage() {
   // Modal de información completa (incluye QR)
   const [encomiendaSeleccionada, setEncomiendaSeleccionada] = useState<EncomiendaAPI | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  // Modal de visualización en Mapa de la sede/oficina Cootranar
+  const [oficinaMapa, setOficinaMapa] = useState<OficinaMapaData | null>(null);
 
   const handleVerInfoCompleta = (encomienda: EncomiendaAPI) => {
     setEncomiendaSeleccionada(encomienda);
@@ -650,15 +890,26 @@ export function MisEncomiendasPage() {
     <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-900 pb-28 sm:pb-12 transition-colors duration-200">
       <Navbar />
 
+      {/* Modal de Información Completa de la Encomienda */}
       {encomiendaSeleccionada && (
         <InfoEncomiendaModal
           encomienda={encomiendaSeleccionada}
           qrDataUrl={qrDataUrl}
           onClose={() => setEncomiendaSeleccionada(null)}
+          onVerMapa={(ofic) => setOficinaMapa(ofic)}
+        />
+      )}
+
+      {/* Modal Interactivo de Mapa de Oficinas Cootranar */}
+      {oficinaMapa && (
+        <ModalMapaOficina
+          oficina={oficinaMapa}
+          onClose={() => setOficinaMapa(null)}
         />
       )}
 
       <div className="max-w-[1050px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
 
         {/* Breadcrumb */}
         <nav className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-1.5">
@@ -870,8 +1121,10 @@ export function MisEncomiendasPage() {
                 key={enc.idencomienda}
                 encomienda={enc}
                 onVerDetalles={handleVerInfoCompleta}
+                onVerMapa={(ofic) => setOficinaMapa(ofic)}
               />
             ))}
+
           </div>
         )}
 

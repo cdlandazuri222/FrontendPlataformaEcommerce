@@ -183,6 +183,16 @@ const translations = {
       codigoCopiado: '¡Copiado!',
       enAgencia: 'En agencia',
       domicilioBadge: 'A domicilio',
+      verEnMapa: 'Ver en mapa',
+      mapaOficinaTitulo: 'Ubicación de Oficina de Encomiendas',
+      abrirGoogleMaps: 'Abrir en Google Maps',
+      abrirWaze: 'Abrir en Waze',
+      copiarDireccion: 'Copiar dirección',
+      direccionCopiada: 'Dirección copiada',
+      oficinaOrigen: 'Oficina Origen',
+      oficinaDestino: 'Oficina Destino',
+      comoLlegar: 'Cómo llegar',
+      horarioAtencion: 'Horario de atención Cootranar',
     },
     // Común
     comun: {
@@ -438,7 +448,18 @@ const translations = {
       codigoCopiado: 'Copied!',
       enAgencia: 'At branch',
       domicilioBadge: 'Home delivery',
+      verEnMapa: 'View on map',
+      mapaOficinaTitulo: 'Parcel Office Location',
+      abrirGoogleMaps: 'Open in Google Maps',
+      abrirWaze: 'Open in Waze',
+      copiarDireccion: 'Copy address',
+      direccionCopiada: 'Address copied',
+      oficinaOrigen: 'Origin Office',
+      oficinaDestino: 'Destination Office',
+      comoLlegar: 'Get directions',
+      horarioAtencion: 'Cootranar working hours',
     },
+
     // Común
     comun: {
       cargando: 'Loading...',
