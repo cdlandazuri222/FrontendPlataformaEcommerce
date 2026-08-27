@@ -240,8 +240,11 @@ function VistaDetalleEncomienda({
   const valorMostrado = encomienda.valorcobrado ?? encomienda.valorcotizado;
   const labelValor = encomienda.valorcobrado != null ? m.valorCobrado : m.valorCotizado;
 
-  // Mapeo de los 6 pasos idénticos a la imagen de referencia
-  // 1: En Preparación | 2: Admisión Punto Cootranar | 3: Retiro | 4: En Tránsito | 5: En Reparto | 6: Entregado
+  const tieneDomicilio = Boolean(encomienda.esdomicilio);
+
+  // Estados según si es domicilio o taquilla:
+  // Si tiene domicilio: 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: En Reparto | 5: Entregado
+  // Si NO tiene domicilio: 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: Entregado
   let pasoActivo = 1;
   let factorProgreso = 0.1;
   let velocidad = '0 km/h';
@@ -251,7 +254,7 @@ function VistaDetalleEncomienda({
   switch (encomienda.estado) {
     case 'COTIZADA':
       pasoActivo = 1;
-      factorProgreso = 0.08;
+      factorProgreso = 0.1;
       velocidad = '0 km/h';
       sectorActual = `Oficina de origen en ${geoOrigen.nombre} · Preinscripción`;
       mensajeEstadoPrincipal = idioma === 'es'
@@ -260,15 +263,15 @@ function VistaDetalleEncomienda({
       break;
     case 'REGISTRADA':
       pasoActivo = 2;
-      factorProgreso = 0.25;
-      velocidad = '0 km/h (En patio de carga)';
-      sectorActual = `Bodega principal · Agencia Cootranar ${geoOrigen.nombre}`;
+      factorProgreso = tieneDomicilio ? 0.28 : 0.35;
+      velocidad = '0 km/h (En patio de despacho)';
+      sectorActual = `Bodega de despacho · Agencia Cootranar ${geoOrigen.nombre}`;
       mensajeEstadoPrincipal = idioma === 'es'
-        ? `Tu paquete ha sido admitido en la agencia Cootranar ${geoOrigen.nombre}. Está en preparación para asignación de ruta.`
-        : `Your parcel was admitted at Cootranar branch ${geoOrigen.nombre}. Ready for route assignment.`;
+        ? `Tu paquete ha sido admitido en la agencia Cootranar ${geoOrigen.nombre} y se encuentra en proceso de despacho.`
+        : `Your parcel was admitted at Cootranar branch ${geoOrigen.nombre} and is currently in dispatch.`;
       break;
     case 'EN_TRANSITO':
-      pasoActivo = 4;
+      pasoActivo = 3;
       factorProgreso = 0.65;
       velocidad = '68 km/h (En carretera)';
       sectorActual = `Vía Panamericana · Corredor ${geoOrigen.nombre} ➔ ${geoDestino.nombre}`;
@@ -277,11 +280,11 @@ function VistaDetalleEncomienda({
         : `Your shipment is in transit from ${geoOrigen.nombre} to ${geoDestino.nombre} with continuous GPS monitoring.`;
       break;
     case 'EN_DESTINO':
-      pasoActivo = 5;
+      pasoActivo = tieneDomicilio ? 4 : 3;
       factorProgreso = 0.88;
       velocidad = '0 km/h';
       sectorActual = `Agencia Cootranar ${geoDestino.nombre}`;
-      mensajeEstadoPrincipal = encomienda.esdomicilio
+      mensajeEstadoPrincipal = tieneDomicilio
         ? (idioma === 'es'
             ? `Tu envío está en reparto local hacia la dirección del destinatario ${encomienda.nombredestinatario} en ${geoDestino.nombre}.`
             : `Your parcel is out for local delivery to recipient ${encomienda.nombredestinatario} in ${geoDestino.nombre}.`)
@@ -290,7 +293,7 @@ function VistaDetalleEncomienda({
             : `Your parcel has arrived at the Cootranar branch in ${geoDestino.nombre} and is ready for pick-up.`);
       break;
     case 'ENTREGADA':
-      pasoActivo = 6;
+      pasoActivo = tieneDomicilio ? 5 : 4;
       factorProgreso = 1.0;
       velocidad = '0 km/h';
       sectorActual = `Entregado en ${geoDestino.nombre}`;
@@ -299,7 +302,7 @@ function VistaDetalleEncomienda({
         : `Your order was successfully delivered to ${encomienda.nombredestinatario} on ${formatFecha(encomienda.fecharegistro, idioma)}. Enjoy your package!`;
       break;
     case 'DEVUELTA':
-      pasoActivo = 3;
+      pasoActivo = 2;
       factorProgreso = 0.5;
       sectorActual = `Proceso de devolución`;
       mensajeEstadoPrincipal = idioma === 'es'
@@ -307,7 +310,7 @@ function VistaDetalleEncomienda({
         : `The parcel is in return process. Please contact Cootranar customer service for assistance.`;
       break;
     default:
-      pasoActivo = 3;
+      pasoActivo = 2;
       factorProgreso = 0.5;
       sectorActual = `En proceso`;
       mensajeEstadoPrincipal = `Estado actual: ${encomienda.estado}`;
@@ -341,14 +344,20 @@ function VistaDetalleEncomienda({
     setTimeout(() => setCompartidoTracking(false), 2500);
   };
 
-  const pasosTracking = [
-    { step: 1, label: m.paso1Preparacion || 'En Preparación', icon: 'inventory_2' },
-    { step: 2, label: m.paso2Admision || 'Admisión Punto Cootranar', icon: 'store' },
-    { step: 3, label: m.paso3Retiro || 'Retiro', icon: 'outbox' },
-    { step: 4, label: m.paso4Transito || 'En Tránsito', icon: 'local_shipping' },
-    { step: 5, label: m.paso5Reparto || 'En Reparto', icon: 'pin_drop' },
-    { step: 6, label: m.paso6Entregado || 'Entregado', icon: 'task_alt' },
-  ];
+  const pasosTracking = tieneDomicilio
+    ? [
+        { step: 1, label: m.pasoPreparacion || 'En Preparación', icon: 'inventory_2' },
+        { step: 2, label: m.pasoDespacho || 'Despacho', icon: 'outbox' },
+        { step: 3, label: m.pasoTransito || 'En Tránsito', icon: 'local_shipping' },
+        { step: 4, label: m.pasoReparto || 'En Reparto', icon: 'pin_drop' },
+        { step: 5, label: m.pasoEntregado || 'Entregado', icon: 'task_alt' },
+      ]
+    : [
+        { step: 1, label: m.pasoPreparacion || 'En Preparación', icon: 'inventory_2' },
+        { step: 2, label: m.pasoDespacho || 'Despacho', icon: 'outbox' },
+        { step: 3, label: m.pasoTransito || 'En Tránsito', icon: 'local_shipping' },
+        { step: 4, label: m.pasoEntregado || 'Entregado', icon: 'task_alt' },
+      ];
 
   // Oficina seleccionada para la pestaña de Oficinas
   const oficinaActual = tabActiva === 'OFICINA_ORIGEN'
