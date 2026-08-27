@@ -190,8 +190,6 @@ function VistaDetalleEncomienda({
   const [copiadoRef, setCopiadoRef] = useState(false);
   const [copiadoDir, setCopiadoDir] = useState(false);
   const [compartidoTracking, setCompartidoTracking] = useState(false);
-  const [mostrarMapaDetallado, setMostrarMapaDetallado] = useState(false);
-  const [ultimaSenalGps] = useState<string>('En vivo');
 
   useEffect(() => {
     QRCode.toDataURL(encomienda.referenciaencomienda, {
@@ -246,44 +244,29 @@ function VistaDetalleEncomienda({
   // Si tiene domicilio (6 pasos): 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: En Oficina Destino | 5: En Reparto | 6: Entregado
   // Si NO tiene domicilio (5 pasos): 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: En Oficina Destino | 5: Entregado
   let pasoActivo = 1;
-  let factorProgreso = 0.08;
-  let velocidad = '0 km/h';
-  let sectorActual = '';
   let mensajeEstadoPrincipal = '';
 
   switch (encomienda.estado) {
     case 'COTIZADA':
       pasoActivo = 1;
-      factorProgreso = 0.08;
-      velocidad = '0 km/h';
-      sectorActual = `Oficina de origen en ${geoOrigen.nombre} · Preinscripción`;
       mensajeEstadoPrincipal = idioma === 'es'
         ? `Tu orden de servicio ha sido preinscrita con éxito. Presenta el código ${encomienda.referenciaencomienda} en la taquilla de Cootranar ${geoOrigen.nombre} para despachar tu paquete.`
         : `Your shipment order has been pre-registered. Present reference ${encomienda.referenciaencomienda} at the Cootranar office in ${geoOrigen.nombre} to dispatch.`;
       break;
     case 'REGISTRADA':
       pasoActivo = 2;
-      factorProgreso = 0.25;
-      velocidad = '0 km/h (En patio de despacho)';
-      sectorActual = `Bodega de despacho · Agencia Cootranar ${geoOrigen.nombre}`;
       mensajeEstadoPrincipal = idioma === 'es'
         ? `Tu paquete ha sido admitido en la agencia Cootranar ${geoOrigen.nombre} y se encuentra en proceso de despacho.`
         : `Your parcel was admitted at Cootranar branch ${geoOrigen.nombre} and is currently in dispatch.`;
       break;
     case 'EN_TRANSITO':
       pasoActivo = 3;
-      factorProgreso = 0.6;
-      velocidad = '68 km/h (En carretera)';
-      sectorActual = `Vía Panamericana · Corredor ${geoOrigen.nombre} ➔ ${geoDestino.nombre}`;
       mensajeEstadoPrincipal = idioma === 'es'
-        ? `Tu envío se encuentra en tránsito desde ${geoOrigen.nombre} hacia ${geoDestino.nombre} con monitoreo satelital continuo.`
-        : `Your shipment is in transit from ${geoOrigen.nombre} to ${geoDestino.nombre} with continuous GPS monitoring.`;
+        ? `Tu envío se encuentra en tránsito desde ${geoOrigen.nombre} hacia ${geoDestino.nombre} con monitoreo continuo.`
+        : `Your shipment is in transit from ${geoOrigen.nombre} to ${geoDestino.nombre} with continuous monitoring.`;
       break;
     case 'EN_DESTINO':
       pasoActivo = tieneDomicilio ? 5 : 4;
-      factorProgreso = 0.88;
-      velocidad = '0 km/h';
-      sectorActual = `Agencia Cootranar ${geoDestino.nombre}`;
       mensajeEstadoPrincipal = tieneDomicilio
         ? (idioma === 'es'
             ? `Tu envío ha llegado a la oficina destino en ${geoDestino.nombre} y se encuentra en reparto hacia la dirección del destinatario ${encomienda.nombredestinatario}.`
@@ -294,34 +277,20 @@ function VistaDetalleEncomienda({
       break;
     case 'ENTREGADA':
       pasoActivo = tieneDomicilio ? 6 : 5;
-      factorProgreso = 1.0;
-      velocidad = '0 km/h';
-      sectorActual = `Entregado en ${geoDestino.nombre}`;
       mensajeEstadoPrincipal = idioma === 'es'
         ? `Tu pedido ha sido entregado exitosamente a ${encomienda.nombredestinatario} el ${formatFecha(encomienda.fecharegistro, idioma)}. ¡Que disfrutes tu compra!`
         : `Your order was successfully delivered to ${encomienda.nombredestinatario} on ${formatFecha(encomienda.fecharegistro, idioma)}. Enjoy your package!`;
       break;
     case 'DEVUELTA':
       pasoActivo = 2;
-      factorProgreso = 0.5;
-      sectorActual = `Proceso de devolución`;
       mensajeEstadoPrincipal = idioma === 'es'
         ? `La encomienda se encuentra en proceso de devolución. Para más información acércate a la oficina de Cootranar.`
         : `The parcel is in return process. Please contact Cootranar customer service for assistance.`;
       break;
     default:
       pasoActivo = 2;
-      factorProgreso = 0.5;
-      sectorActual = `En proceso`;
       mensajeEstadoPrincipal = `Estado actual: ${encomienda.estado}`;
   }
-
-  const currentLat = geoOrigen.lat + (geoDestino.lat - geoOrigen.lat) * factorProgreso;
-  const currentLng = geoOrigen.lng + (geoDestino.lng - geoOrigen.lng) * factorProgreso;
-
-  const embedGpsUrl = `https://maps.google.com/maps?q=${currentLat.toFixed(5)},${currentLng.toFixed(5)}&t=m&z=11&ie=UTF8&iwloc=&output=embed`;
-  const gmapsRutaUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(geoOrigen.nombre + ', Colombia')}&destination=${encodeURIComponent(geoDestino.nombre + ', Colombia')}`;
-  const wazeGpsUrl = `https://waze.com/ul?ll=${currentLat.toFixed(5)},${currentLng.toFixed(5)}&navigate=yes`;
 
   const handleCompartirTracking = async () => {
     const textoShare = `Seguimiento de Envío Cootranar OS ${encomienda.referenciaencomienda} (${origen.ciudad} ➔ ${destino.ciudad}): ${window.location.origin}${ROUTES.MIS_ENCOMIENDAS}?ref=${encomienda.referenciaencomienda}`;
@@ -753,116 +722,17 @@ function VistaDetalleEncomienda({
             </div>
           </div>
 
-          {/* ── Mensaje Descriptivo Contextual del Estado Actual (Burbuja inferior) ── */}
-          <div className="bg-slate-50 dark:bg-slate-900/70 p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-blue-100/80 dark:bg-blue-950/90 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                <span className="material-symbols-outlined text-xl">info</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 leading-relaxed">
-                  {mensajeEstadoPrincipal}
-                </p>
-                <div className="flex items-center gap-3 pt-1 text-xs">
-                  <button
-                    onClick={() => setTabActiva('INFO')}
-                    className="text-[#0e3a8c] dark:text-blue-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                  >
-                    <span>{m.verPruebaEntrega || 'Ver comprobante / código QR'}</span>
-                    <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                  </button>
-                </div>
-              </div>
+          {/* ── Mensaje Descriptivo Contextual del Estado Actual (Solo en Pantallas Medianas/Grandes) ── */}
+          <div className="hidden sm:flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40">
+            <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-[#0e3a8c] dark:text-blue-300 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-lg">info</span>
             </div>
-
-            {/* Toggle Mapa Satelital GPS */}
-            <button
-              type="button"
-              onClick={() => setMostrarMapaDetallado(!mostrarMapaDetallado)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700 shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-auto"
-            >
-              <span className="material-symbols-outlined text-sm text-blue-600 dark:text-blue-400">
-                {mostrarMapaDetallado ? 'visibility_off' : 'map'}
-              </span>
-              <span>{mostrarMapaDetallado ? (idioma === 'es' ? 'Ocultar mapa satelital' : 'Hide satellite map') : (idioma === 'es' ? 'Ver mapa satelital GPS' : 'View live GPS map')}</span>
-            </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 leading-relaxed">
+                {mensajeEstadoPrincipal}
+              </p>
+            </div>
           </div>
-
-          {/* ── Mapa y Telemetría Satelital Opcional Desplegable ── */}
-          {mostrarMapaDetallado && (
-            <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-3 duration-200">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/70">
-                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400 mb-1">
-                    <span className="material-symbols-outlined text-xs text-blue-600 dark:text-blue-400">speed</span>
-                    <span>{m.velocidadEstimada || 'Velocidad'}</span>
-                  </div>
-                  <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">{velocidad}</p>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/70">
-                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400 mb-1">
-                    <span className="material-symbols-outlined text-xs text-emerald-600 dark:text-emerald-400">satellite</span>
-                    <span>{m.precisioGps || 'Señal Satelital'}</span>
-                  </div>
-                  <p className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100">&lt; 4.5m (8 Sat)</p>
-                </div>
-
-                <div className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 col-span-2">
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400 mb-1">
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs text-amber-500">my_location</span>
-                      <span>{m.ubicacionActual || 'Ubicación'}</span>
-                    </div>
-                    <span className="text-slate-400 dark:text-slate-500 font-medium">{ultimaSenalGps}</span>
-                  </div>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate" title={sectorActual}>
-                    {sectorActual}
-                  </p>
-                </div>
-              </div>
-
-              {/* Mapa Iframe */}
-              <div className="relative w-full h-[300px] sm:h-[380px] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-inner bg-slate-100 dark:bg-slate-900">
-                <iframe
-                  title={`Rastreo GPS ${encomienda.referenciaencomienda}`}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={embedGpsUrl}
-                  className="w-full h-full"
-                />
-              </div>
-
-              {/* Botones externos */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <a
-                  href={gmapsRutaUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 bg-[#0e3a8c] hover:bg-blue-900 text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-                >
-                  <span className="material-symbols-outlined text-base">directions</span>
-                  <span>{m.abrirGoogleMaps || 'Ver Ruta Completa en Google Maps'}</span>
-                  <span className="material-symbols-outlined text-xs">open_in_new</span>
-                </a>
-
-                <a
-                  href={wazeGpsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-[#0e3a8c] dark:text-blue-300 border border-blue-200/80 dark:border-slate-600 font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-98"
-                >
-                  <span className="material-symbols-outlined text-base">near_me</span>
-                  <span>{m.abrirWaze || 'Navegar hacia el Punto con Waze'}</span>
-                  <span className="material-symbols-outlined text-xs">open_in_new</span>
-                </a>
-              </div>
-            </div>
-          )}
 
         </div>
       )}
