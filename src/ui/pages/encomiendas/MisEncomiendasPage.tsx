@@ -243,10 +243,10 @@ function VistaDetalleEncomienda({
   const tieneDomicilio = Boolean(encomienda.esdomicilio);
 
   // Estados según si es domicilio o taquilla:
-  // Si tiene domicilio: 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: En Reparto | 5: Entregado
-  // Si NO tiene domicilio: 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: Entregado
+  // Si tiene domicilio (6 pasos): 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: En Oficina Destino | 5: En Reparto | 6: Entregado
+  // Si NO tiene domicilio (5 pasos): 1: En Preparación | 2: Despacho | 3: En Tránsito | 4: En Oficina Destino | 5: Entregado
   let pasoActivo = 1;
-  let factorProgreso = 0.1;
+  let factorProgreso = 0.08;
   let velocidad = '0 km/h';
   let sectorActual = '';
   let mensajeEstadoPrincipal = '';
@@ -254,7 +254,7 @@ function VistaDetalleEncomienda({
   switch (encomienda.estado) {
     case 'COTIZADA':
       pasoActivo = 1;
-      factorProgreso = 0.1;
+      factorProgreso = 0.08;
       velocidad = '0 km/h';
       sectorActual = `Oficina de origen en ${geoOrigen.nombre} · Preinscripción`;
       mensajeEstadoPrincipal = idioma === 'es'
@@ -263,7 +263,7 @@ function VistaDetalleEncomienda({
       break;
     case 'REGISTRADA':
       pasoActivo = 2;
-      factorProgreso = tieneDomicilio ? 0.28 : 0.35;
+      factorProgreso = 0.25;
       velocidad = '0 km/h (En patio de despacho)';
       sectorActual = `Bodega de despacho · Agencia Cootranar ${geoOrigen.nombre}`;
       mensajeEstadoPrincipal = idioma === 'es'
@@ -272,7 +272,7 @@ function VistaDetalleEncomienda({
       break;
     case 'EN_TRANSITO':
       pasoActivo = 3;
-      factorProgreso = 0.65;
+      factorProgreso = 0.6;
       velocidad = '68 km/h (En carretera)';
       sectorActual = `Vía Panamericana · Corredor ${geoOrigen.nombre} ➔ ${geoDestino.nombre}`;
       mensajeEstadoPrincipal = idioma === 'es'
@@ -280,20 +280,20 @@ function VistaDetalleEncomienda({
         : `Your shipment is in transit from ${geoOrigen.nombre} to ${geoDestino.nombre} with continuous GPS monitoring.`;
       break;
     case 'EN_DESTINO':
-      pasoActivo = tieneDomicilio ? 4 : 3;
+      pasoActivo = tieneDomicilio ? 5 : 4;
       factorProgreso = 0.88;
       velocidad = '0 km/h';
       sectorActual = `Agencia Cootranar ${geoDestino.nombre}`;
       mensajeEstadoPrincipal = tieneDomicilio
         ? (idioma === 'es'
-            ? `Tu envío está en reparto local hacia la dirección del destinatario ${encomienda.nombredestinatario} en ${geoDestino.nombre}.`
-            : `Your parcel is out for local delivery to recipient ${encomienda.nombredestinatario} in ${geoDestino.nombre}.`)
+            ? `Tu envío ha llegado a la oficina destino en ${geoDestino.nombre} y se encuentra en reparto hacia la dirección del destinatario ${encomienda.nombredestinatario}.`
+            : `Your parcel has arrived at the destination office in ${geoDestino.nombre} and is out for delivery to recipient ${encomienda.nombredestinatario}.`)
         : (idioma === 'es'
             ? `Tu envío ha llegado a la agencia de Cootranar ${geoDestino.nombre} y está listo para retiro en taquilla.`
             : `Your parcel has arrived at the Cootranar branch in ${geoDestino.nombre} and is ready for pick-up.`);
       break;
     case 'ENTREGADA':
-      pasoActivo = tieneDomicilio ? 5 : 4;
+      pasoActivo = tieneDomicilio ? 6 : 5;
       factorProgreso = 1.0;
       velocidad = '0 km/h';
       sectorActual = `Entregado en ${geoDestino.nombre}`;
@@ -349,14 +349,16 @@ function VistaDetalleEncomienda({
         { step: 1, label: m.pasoPreparacion || 'En Preparación', icon: 'inventory_2' },
         { step: 2, label: m.pasoDespacho || 'Despacho', icon: 'outbox' },
         { step: 3, label: m.pasoTransito || 'En Tránsito', icon: 'local_shipping' },
-        { step: 4, label: m.pasoReparto || 'En Reparto', icon: 'pin_drop' },
-        { step: 5, label: m.pasoEntregado || 'Entregado', icon: 'task_alt' },
+        { step: 4, label: m.pasoOficinaDestino || 'En Oficina Destino', icon: 'store' },
+        { step: 5, label: m.pasoReparto || 'En Reparto', icon: 'pin_drop' },
+        { step: 6, label: m.pasoEntregado || 'Entregado', icon: 'task_alt' },
       ]
     : [
         { step: 1, label: m.pasoPreparacion || 'En Preparación', icon: 'inventory_2' },
         { step: 2, label: m.pasoDespacho || 'Despacho', icon: 'outbox' },
         { step: 3, label: m.pasoTransito || 'En Tránsito', icon: 'local_shipping' },
-        { step: 4, label: m.pasoEntregado || 'Entregado', icon: 'task_alt' },
+        { step: 4, label: m.pasoOficinaDestino || 'En Oficina Destino', icon: 'store' },
+        { step: 5, label: m.pasoEntregado || 'Entregado', icon: 'task_alt' },
       ];
 
   // Oficina seleccionada para la pestaña de Oficinas
