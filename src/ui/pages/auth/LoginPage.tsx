@@ -275,8 +275,8 @@ export function LoginPage() {
               );
             })}
           </div>
-          <div className="relative z-10 flex flex-col justify-end p-8 pt-32 pb-8 lg:p-20 text-white w-full h-full">
-            <div className="space-y-8 max-w-lg">
+          <div className="relative z-10 flex flex-col justify-end p-6 sm:p-8 pt-28 pb-8 lg:p-20 text-white w-full h-full">
+            <div className="space-y-6 sm:space-y-8 max-w-lg w-full mx-auto lg:mx-0">
               <div className="space-y-4">
                 <h2 className="text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight">
                   Tu viaje seguro<span className="text-brand-blue-light block">empieza aquí.</span>
@@ -285,7 +285,7 @@ export function LoginPage() {
                   Accede a tu cuenta para gestionar tus reservas, acumular kilómetros y viajar con la comodidad que mereces.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-6 lg:pt-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-4 lg:pt-10">
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-3xl text-blue-200">security</span>
                   <div className="text-sm"><p className="font-bold">Seguridad Total</p><p className="text-blue-200/80">Monitoreo GPS 24/7</p></div>
@@ -295,10 +295,13 @@ export function LoginPage() {
                   <div className="text-sm"><p className="font-bold">Puntualidad</p><p className="text-blue-200/80">Horarios garantizados</p></div>
                 </div>
               </div>
-              <div className="flex lg:hidden w-full pt-8 pb-4">
-                <a href="#form-section" className="flex items-center justify-center gap-2 bg-white text-brand-blue font-bold px-8 py-4 rounded-xl w-full hover:bg-slate-50 transition-colors shadow-lg shadow-black/10">
+              <div className="flex lg:hidden w-full pt-6 pb-2 justify-center items-center">
+                <a
+                  href="#form-section"
+                  className="flex items-center justify-center gap-2 bg-white text-brand-blue font-bold px-8 py-3.5 rounded-full w-full max-w-[280px] sm:max-w-xs mx-auto hover:bg-slate-50 transition-all shadow-xl shadow-black/20 text-center active:scale-95 cursor-pointer"
+                >
                   <span>Comenzar</span>
-                  <span className="material-symbols-outlined">arrow_downward</span>
+                  <span className="material-symbols-outlined text-xl">arrow_downward</span>
                 </a>
               </div>
             </div>
