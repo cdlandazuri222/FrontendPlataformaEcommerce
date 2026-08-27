@@ -588,8 +588,100 @@ function VistaDetalleEncomienda({
             </div>
           </div>
 
-          {/* ── Línea de Tiempo / Stepper de 6 Hitos Idéntica a la Imagen ── */}
-          <div className="py-4 overflow-x-auto scrollbar-none">
+          {/* ── Línea de Tiempo para Móviles: Vertical (sm:hidden) ── */}
+          <div className="sm:hidden py-2 px-1">
+            <div className="relative pl-1">
+              {pasosTracking.map((paso, index) => {
+                const esCompletado = paso.step < pasoActivo;
+                const esActual = paso.step === pasoActivo;
+                const esUltimo = index === pasosTracking.length - 1;
+
+                return (
+                  <div key={paso.step} className="relative flex items-start gap-4 pb-6 last:pb-1">
+                    
+                    {/* Columna Izquierda: Icono + Línea Vertical Conectora */}
+                    <div className="flex flex-col items-center relative shrink-0">
+                      {/* Círculo con Icono */}
+                      <div
+                        className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 relative z-10 ${
+                          esActual
+                            ? 'bg-[#0e3a8c] dark:bg-blue-600 text-white shadow-lg ring-4 ring-blue-100 dark:ring-blue-900/60 scale-105'
+                            : esCompletado
+                            ? 'bg-blue-50 dark:bg-blue-950/80 border-2 border-blue-200 dark:border-blue-800 text-[#0e3a8c] dark:text-blue-400'
+                            : 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600'
+                        }`}
+                      >
+                        <span className={`material-symbols-outlined ${esActual ? 'text-xl animate-pulse' : 'text-lg'}`}>
+                          {paso.icon}
+                        </span>
+                      </div>
+
+                      {/* Línea vertical conectora al siguiente paso */}
+                      {!esUltimo && (
+                        <div
+                          className={`w-[3px] absolute top-11 bottom-0 z-0 transition-colors duration-300 ${
+                            esCompletado
+                              ? 'bg-gradient-to-b from-[#0e3a8c] to-[#f26522] dark:from-blue-500 dark:to-orange-400'
+                              : esActual
+                              ? 'bg-gradient-to-b from-[#f26522] to-slate-200 dark:from-orange-500 dark:to-slate-700'
+                              : 'bg-slate-200 dark:bg-slate-700'
+                          }`}
+                          style={{ height: 'calc(100% - 20px)' }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Columna Derecha: Información del Paso */}
+                    <div className="flex-1 min-w-0 pt-1">
+                      <div className="flex items-center justify-between gap-2 flex-wrap mb-0.5">
+                        <span
+                          className={`text-sm font-bold leading-tight ${
+                            esActual
+                              ? 'text-slate-900 dark:text-slate-100 font-extrabold'
+                              : esCompletado
+                              ? 'text-slate-700 dark:text-slate-300 font-semibold'
+                              : 'text-slate-400 dark:text-slate-500 font-medium'
+                          }`}
+                        >
+                          {paso.label}
+                        </span>
+
+                        {/* Tag de estado */}
+                        {esActual && (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-950/80 text-[#f26522] dark:text-orange-300 border border-orange-200 dark:border-orange-800/50 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#f26522] animate-ping" />
+                            <span>{idioma === 'es' ? 'En curso' : 'Active'}</span>
+                          </span>
+                        )}
+                        {esCompletado && (
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
+                            <span className="material-symbols-outlined text-xs">check</span>
+                            <span>{idioma === 'es' ? 'Listo' : 'Done'}</span>
+                          </span>
+                        )}
+                        {!esActual && !esCompletado && (
+                          <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                            {idioma === 'es' ? 'Pendiente' : 'Pending'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Mensaje contextual si este paso es el actual */}
+                      {esActual && (
+                        <div className="mt-2 p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 text-xs font-semibold text-slate-700 dark:text-slate-200 leading-relaxed animate-in fade-in duration-200">
+                          {mensajeEstadoPrincipal}
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Línea de Tiempo para Pantallas Medianas/Grandes: Horizontal (hidden sm:block) ── */}
+          <div className="hidden sm:block py-4 overflow-x-auto scrollbar-none">
             <div className="min-w-[640px] px-4">
               
               {/* Contenedor relativo para la línea horizontal y los círculos */}
