@@ -547,7 +547,7 @@ function VistaDetalleEncomienda({
             <div>
               <h2 className="text-base sm:text-xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2 flex-wrap">
                 <span>{m.infoEnvioOS || 'Información del envío'}</span>
-                <span className="font-mono text-[#f26522] dark:text-orange-400 font-black">
+                <span className="font-mono text-[#0e3a8c] dark:text-blue-400 font-black">
                   OS {encomienda.referenciaencomienda}
                 </span>
               </h2>
@@ -560,7 +560,7 @@ function VistaDetalleEncomienda({
               <button
                 type="button"
                 onClick={handleCompartirTracking}
-                className="inline-flex items-center justify-center gap-2 bg-[#f26522] hover:bg-[#ea580c] text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-95 shrink-0"
+                className="inline-flex items-center justify-center gap-2 bg-[#0e3a8c] hover:bg-[#0a2862] dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer active:scale-95 shrink-0"
               >
                 <span className="material-symbols-outlined text-base">share</span>
                 <span>{compartidoTracking ? (m.trackingCopiado || '¡Enlace copiado!') : (m.compartirTracking || 'Compartir tracking')}</span>
@@ -601,9 +601,9 @@ function VistaDetalleEncomienda({
                         <div
                           className={`w-[3px] absolute top-11 bottom-0 z-0 transition-colors duration-300 ${
                             esCompletado
-                              ? 'bg-gradient-to-b from-[#0e3a8c] to-[#f26522] dark:from-blue-500 dark:to-orange-400'
+                              ? 'bg-[#0e3a8c] dark:bg-blue-500'
                               : esActual
-                              ? 'bg-gradient-to-b from-[#f26522] to-slate-200 dark:from-orange-500 dark:to-slate-700'
+                              ? 'bg-gradient-to-b from-[#0e3a8c] to-slate-200 dark:from-blue-500 dark:to-slate-700'
                               : 'bg-slate-200 dark:bg-slate-700'
                           }`}
                           style={{ height: 'calc(100% - 20px)' }}
@@ -628,8 +628,8 @@ function VistaDetalleEncomienda({
 
                         {/* Tag de estado */}
                         {esActual && (
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-950/80 text-[#f26522] dark:text-orange-300 border border-orange-200 dark:border-orange-800/50 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#f26522] animate-ping" />
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/80 text-[#0e3a8c] dark:text-blue-300 border border-blue-200 dark:border-blue-800/50 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#0e3a8c] dark:bg-blue-400 animate-ping" />
                             <span>{idioma === 'es' ? 'En curso' : 'Active'}</span>
                           </span>
                         )}
@@ -670,9 +670,9 @@ function VistaDetalleEncomienda({
                 {/* Línea horizontal base de fondo */}
                 <div className="absolute top-[28px] left-[35px] right-[35px] h-[3px] bg-slate-200 dark:bg-slate-700 z-0" />
                 
-                {/* Línea horizontal de progreso activo (naranja / azul) */}
+                {/* Línea horizontal de progreso activo (azul corporativo) */}
                 <div
-                  className="absolute top-[28px] left-[35px] h-[3px] bg-gradient-to-r from-[#f26522] to-[#0e3a8c] dark:from-orange-500 dark:to-blue-400 z-0 transition-all duration-500"
+                  className="absolute top-[28px] left-[35px] h-[3px] bg-[#0e3a8c] dark:bg-blue-500 z-0 transition-all duration-500"
                   style={{
                     width: `${Math.max(0, Math.min(100, ((pasoActivo - 1) / (pasosTracking.length - 1)) * 100))}%`,
                   }}
@@ -1360,12 +1360,12 @@ export function MisEncomiendasPage() {
                         setTrackingInput(e.target.value);
                         setErrorTrackingDirecto('');
                       }}
-                      className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/60 dark:bg-slate-900/60 text-slate-800 dark:text-slate-100 font-mono text-sm sm:text-base font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-[#f26522] focus:border-[#f26522] outline-none transition-all"
+                      className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50/60 dark:bg-slate-900/60 text-slate-800 dark:text-slate-100 font-mono text-sm sm:text-base font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-[#0e3a8c] focus:border-[#0e3a8c] dark:focus:ring-blue-400 dark:focus:border-blue-400 outline-none transition-all"
                     />
                   </div>
                   <button
                     type="submit"
-                    className="h-12 px-7 rounded-xl bg-[#f26522] hover:bg-[#ea580c] text-white font-black text-sm transition-all shadow-md hover:shadow-lg active:scale-98 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                    className="h-12 px-7 rounded-xl bg-[#0e3a8c] hover:bg-[#0a2862] dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-black text-sm transition-all shadow-md hover:shadow-lg active:scale-98 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-lg">search</span>
                     <span>{m.buscarEnvio || 'Buscar envío'}</span>
@@ -1373,7 +1373,7 @@ export function MisEncomiendasPage() {
                 </form>
 
                 {errorTrackingDirecto && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 font-bold mt-2.5 flex items-center gap-1.5 animate-fadeIn">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-bold mt-2.5 flex items-center gap-1.5 animate-fadeIn">
                     <span className="material-symbols-outlined text-sm">info</span>
                     <span>{errorTrackingDirecto}</span>
                   </p>
