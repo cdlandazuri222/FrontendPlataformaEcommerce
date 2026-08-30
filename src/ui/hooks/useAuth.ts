@@ -17,10 +17,17 @@ export const useAuth = () => {
 
   const getUsuario = (): Cliente | null => {
     const stored = localStorage.getItem('usuario');
-    if (!stored || stored === 'undefined' || stored === 'null') return null;
+    // Blindaje: si el valor no existe o quedó corrupto (p. ej. el string "undefined"
+    // o "null" guardado por un JSON.stringify de un valor inválido), no reventar el
+    // render. Se limpia la entrada corrupta y se devuelve null.
+    if (!stored || stored === 'undefined' || stored === 'null') {
+      if (stored) localStorage.removeItem('usuario');
+      return null;
+    }
     try {
-      return JSON.parse(stored);
+      return JSON.parse(stored) as Cliente;
     } catch {
+      localStorage.removeItem('usuario');
       return null;
     }
   };
@@ -30,10 +37,11 @@ export const useAuth = () => {
     setError('');
     try {
       const result = await loginCliente(authService, credentials);
-      if (result?.cliente) {
-        localStorage.setItem('usuario', JSON.stringify(result.cliente));
+      if (!result?.cliente) {
+        throw new Error('No se recibió la información del usuario. Intenta de nuevo.');
       }
-      if (result?.token) localStorage.setItem('authToken', result.token);
+      localStorage.setItem('usuario', JSON.stringify(result.cliente));
+      if (result.token) localStorage.setItem('authToken', result.token);
       return result;
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string; data?: { message?: string } } } };
@@ -50,10 +58,11 @@ export const useAuth = () => {
     setError('');
     try {
       const result = await loginClienteGoogle(authService, credencial);
-      if (result?.cliente) {
-        localStorage.setItem('usuario', JSON.stringify(result.cliente));
+      if (!result?.cliente) {
+        throw new Error('No se recibió la información del usuario. Intenta de nuevo.');
       }
-      if (result?.token) localStorage.setItem('authToken', result.token);
+      localStorage.setItem('usuario', JSON.stringify(result.cliente));
+      if (result.token) localStorage.setItem('authToken', result.token);
       return result;
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
@@ -95,7 +104,7 @@ export const useAuth = () => {
     setError('');
     try {
       const res = await verificarEmail(authService, token);
-      if (res.result) {
+      if (res.result?.cliente) {
         localStorage.setItem('usuario', JSON.stringify(res.result.cliente));
         if (res.result.token) localStorage.setItem('authToken', res.result.token);
       }

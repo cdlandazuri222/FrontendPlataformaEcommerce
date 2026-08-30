@@ -8,6 +8,9 @@ export interface ClienteDTO {
   telefono: string;
   direccion: string;
   activo: boolean;
+  roles?: string[];
+  rolActivo?: string;
+  estadousuario?: string;
 }
 
 export interface RegistroClienteDTO {

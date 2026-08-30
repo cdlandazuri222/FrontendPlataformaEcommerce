@@ -10,4 +10,7 @@ export interface Cliente {
   activo: boolean;
   fotoperfil?: string;
   proveedor?: string;
+  roles?: string[];
+  rolActivo?: string;
+  estadousuario?: string;
 }

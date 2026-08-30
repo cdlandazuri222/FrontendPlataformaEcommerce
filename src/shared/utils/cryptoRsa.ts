@@ -147,11 +147,27 @@ export async function cifrarPayloadAes(data: any): Promise<string> {
 }
 
 /**
+ * ¿La cadena tiene la forma de un payload cifrado `ivHex:ciphertextConTagHex`?
+ * Se valida que ambas partes sean hexadecimales y con la longitud esperada para
+ * evitar falsos positivos (p. ej. una hora "08:00" o una URL con ':').
+ *  - iv: 12 bytes => 24 chars hex.
+ *  - ciphertext: incluye al menos el authTag de 16 bytes => >= 32 chars hex.
+ */
+export function pareceCifrado(value: unknown): value is string {
+  if (typeof value !== 'string' || !value.includes(':')) return false;
+  const partes = value.split(':');
+  if (partes.length !== 2) return false;
+  const [ivHex, cipherHex] = partes;
+  const esHex = (s: string) => s.length > 0 && s.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(s);
+  return ivHex.length === 24 && esHex(ivHex) && cipherHex.length >= 32 && esHex(cipherHex);
+}
+
+/**
  * Descifra datos de respuesta cifrados con AES-256-GCM
  * @param encryptedString Cadena en formato ivHex:ciphertextHex
  */
 export async function descifrarRespuesta<T = any>(encryptedString: string): Promise<T> {
-  if (!encryptedString || typeof encryptedString !== 'string' || !encryptedString.includes(':')) {
+  if (!pareceCifrado(encryptedString)) {
     return encryptedString as any;
   }
   try {
@@ -195,7 +211,7 @@ export async function descifrarDataRecursivo(body: any): Promise<any> {
   }
 
   // Si data es directamente un string con formato iv:cipher
-  if (body.data && typeof body.data === 'string' && body.data.includes(':')) {
+  if (pareceCifrado(body.data)) {
     const decrypted = await descifrarRespuesta(body.data);
     return {
       ...body,
