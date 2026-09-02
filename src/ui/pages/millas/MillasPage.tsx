@@ -33,6 +33,11 @@ export function MillasPage() {
   } | null>(null);
   const [mensajeCanje, setMensajeCanje] = useState<string | null>(null);
 
+  const formatNum = (val: number | null | undefined): string => {
+    if (val === null || val === undefined || !isFinite(val)) return '0';
+    return Number(val).toLocaleString('es-CO');
+  };
+
   useEffect(() => {
     if (!usuario) {
       navigate(ROUTES.LOGIN);
@@ -149,8 +154,8 @@ export function MillasPage() {
     if (!resumen || !recompensaSeleccionada) return;
     if (resumen.saldoMillas < recompensaSeleccionada.millasRequeridas) {
       alert(idioma === 'es' 
-        ? `Saldo insuficiente. Tienes ${resumen.saldoMillas.toLocaleString('es-CO')} millas y requieres ${recompensaSeleccionada.millasRequeridas.toLocaleString('es-CO')} millas.`
-        : `Insufficient miles. You have ${resumen.saldoMillas.toLocaleString('en-US')} miles and need ${recompensaSeleccionada.millasRequeridas.toLocaleString('en-US')} miles.`
+        ? `Saldo insuficiente. Tienes ${formatNum(resumen.saldoMillas)} millas y requieres ${formatNum(recompensaSeleccionada.millasRequeridas)} millas.`
+        : `Insufficient miles. You have ${formatNum(resumen.saldoMillas)} miles and need ${formatNum(recompensaSeleccionada.millasRequeridas)} miles.`
       );
       return;
     }
@@ -241,19 +246,19 @@ export function MillasPage() {
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 dark:text-slate-400">{idioma === 'es' ? 'Millas requeridas:' : 'Required miles:'}</span>
                 <span className="font-extrabold text-blue-600 dark:text-blue-400 text-sm">
-                  {recompensaSeleccionada.millasRequeridas.toLocaleString('es-CO')} pts
+                  {formatNum(recompensaSeleccionada.millasRequeridas)} pts
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 dark:text-slate-400">{idioma === 'es' ? 'Tu saldo disponible:' : 'Your available balance:'}</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {resumen?.saldoMillas.toLocaleString('es-CO')} pts
+                  {formatNum(resumen?.saldoMillas)} pts
                 </span>
               </div>
               <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between items-center text-xs">
                 <span className="text-slate-500 dark:text-slate-400">{idioma === 'es' ? 'Saldo restante estimado:' : 'Estimated remaining:'}</span>
                 <span className="font-black text-emerald-600 dark:text-emerald-400">
-                  {Math.max((resumen?.saldoMillas || 0) - recompensaSeleccionada.millasRequeridas, 0).toLocaleString('es-CO')} pts
+                  {formatNum(Math.max((resumen?.saldoMillas || 0) - recompensaSeleccionada.millasRequeridas, 0))} pts
                 </span>
               </div>
             </div>
@@ -358,7 +363,7 @@ export function MillasPage() {
                     {m.saldoActual}
                   </span>
                   <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                    {resumen?.saldoMillas.toLocaleString('es-CO')} <span className="text-base sm:text-lg font-bold opacity-80">pts</span>
+                    {formatNum(resumen?.saldoMillas)} <span className="text-base sm:text-lg font-bold opacity-80">pts</span>
                   </span>
                 </div>
               </div>
@@ -405,7 +410,7 @@ export function MillasPage() {
                 </div>
 
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 text-center">
-                  {m.faltanMillas} <strong className="text-slate-800 dark:text-slate-200">{resumen.siguienteNivel.millasFaltantes.toLocaleString('es-CO')}</strong> {m.paraAlcanzar} <strong className="text-[#0e3a8c] dark:text-blue-400">{resumen.siguienteNivel.nombre}</strong>.
+                  {m.faltanMillas} <strong className="text-slate-800 dark:text-slate-200">{formatNum(resumen.siguienteNivel.millasFaltantes)}</strong> {m.paraAlcanzar} <strong className="text-[#0e3a8c] dark:text-blue-400">{resumen.siguienteNivel.nombre}</strong>.
                 </p>
               </div>
             ) : (
@@ -432,7 +437,7 @@ export function MillasPage() {
 
               <div>
                 <span className="text-2xl sm:text-3xl font-black text-[#131b3e] dark:text-white tracking-tight">
-                  ${resumen?.valorEquivalenteCop.toLocaleString('es-CO')} <span className="text-xs font-bold text-slate-400">COP</span>
+                  ${formatNum(resumen?.valorEquivalenteCop)} <span className="text-xs font-bold text-slate-400">COP</span>
                 </span>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {idioma === 'es' ? 'Disponibles para descontar en tu próxima reserva' : 'Available for discounts on your next trip'}
@@ -456,7 +461,7 @@ export function MillasPage() {
                   {resumen?.estadisticas.totalViajes || 0} <span className="text-xs font-bold text-slate-400">{idioma === 'es' ? 'viajes' : 'trips'}</span>
                 </span>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  +{resumen?.estadisticas.millasPorViajes.toLocaleString('es-CO')} {idioma === 'es' ? 'millas acumuladas en ruta' : 'miles earned in routes'}
+                  +{formatNum(resumen?.estadisticas?.millasPorViajes)} {idioma === 'es' ? 'millas acumuladas en ruta' : 'miles earned in routes'}
                 </p>
               </div>
             </div>
@@ -582,7 +587,7 @@ export function MillasPage() {
                   </div>
 
                   <div className="pt-2 mt-2 border-t border-white/10 text-[10px] text-emerald-300 font-bold">
-                    -${calculandoSimulador ? '...' : item.descuentoFuturoCop.toLocaleString('es-CO')} COP
+                    -${calculandoSimulador ? '...' : formatNum(item.descuentoFuturoCop)} COP
                   </div>
                 </div>
               ))}
@@ -660,7 +665,7 @@ export function MillasPage() {
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase font-bold block">Costo</span>
                       <span className="text-base font-black text-blue-600 dark:text-blue-400">
-                        {rec.millasRequeridas.toLocaleString('es-CO')} pts
+                        {formatNum(rec.millasRequeridas)} pts
                       </span>
                     </div>
 
@@ -865,7 +870,7 @@ export function MillasPage() {
 
                     <div className="mb-4">
                       <span className="text-xs text-slate-400 block font-semibold">
-                        {nv.minMillas.toLocaleString('es-CO')} {nv.maxMillas === Infinity ? '+' : `- ${nv.maxMillas.toLocaleString('es-CO')}`} millas
+                        {formatNum(nv.minMillas)} {!nv.maxMillas || !isFinite(nv.maxMillas) ? '+' : `- ${formatNum(nv.maxMillas)}`} millas
                       </span>
                       <span className="text-xl font-black text-[#131b3e] dark:text-white">
                         {nv.multiplicador}x <span className="text-xs font-semibold text-slate-400">acumulación</span>
