@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#fbfdff"/>
+    </linearGradient>
+    <filter id="paperShadow" x="-25%" y="-15%" width="155%" height="135%">
+      <feDropShadow dx="-12" dy="2" stdDeviation="14" flood-color="#001238" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Panel blanco orgánico limpio sin contorno azul -->
+  <path
+    d="M720 18C660 74 688 165 651 255C612 348 520 445 529 527C536 592 555 645 578 682H1161C1173 682 1182 673 1182 661V39C1182 27 1173 18 1161 18Z"
+    fill="url(#paper)"
+    filter="url(#paperShadow)"
+  />
+</svg>
