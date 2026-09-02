@@ -9,7 +9,6 @@ import { ROUTES } from '../../../shared/constants';
 export function MillasPage() {
   const navigate = useNavigate();
   const { getUsuario } = useAuth();
-  const usuario = getUsuario();
   const { idioma, tx } = usePreferencias();
   const m = tx.millas;
 
