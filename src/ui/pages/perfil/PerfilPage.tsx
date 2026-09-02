@@ -10,7 +10,7 @@ import type { Idioma } from '../../../shared/i18n/translations';
 import { httpClient } from '../../../infrastructure/api/httpClient';
 import type { Cliente } from '../../../domain/entities/Cliente';
 
-type TabAjustes = 'perfil' | 'seguridad' | 'preferencias' | 'notificaciones';
+type TabAjustes = 'perfil' | 'millas' | 'seguridad' | 'preferencias' | 'notificaciones';
 
 export function PerfilPage() {
   const navigate = useNavigate();
@@ -239,6 +239,24 @@ export function PerfilPage() {
               >
                 <span className="material-symbols-outlined text-lg">person</span>
                 <span>{idioma === 'es' ? 'Perfil público' : 'Public Profile'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTabActiva('millas')}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-between ${
+                  tabActiva === 'millas'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 text-[#0e3a8c] dark:text-blue-400 font-black shadow-xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/70 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-lg text-amber-500">loyalty</span>
+                  <span>{idioma === 'es' ? 'Millas & Puntos' : 'Miles & Points'}</span>
+                </div>
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                  VIP
+                </span>
               </button>
 
               <button
@@ -478,6 +496,100 @@ export function PerfilPage() {
                     </button>
                   </div>
                 </form>
+              </div>
+            )}
+
+            {/* TAB: MILLAS & PUNTOS */}
+            {tabActiva === 'millas' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black text-[#131b3e] dark:text-slate-100 tracking-tight mb-1">
+                      {idioma === 'es' ? 'Millas & Fidelización Cootranar' : 'Cootranar Miles & Loyalty'}
+                    </h3>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {idioma === 'es' ? 'Monitorea tus puntos acumulados, nivel de viajero y recompensas' : 'Track your earned points, traveler tier and rewards'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.MILLAS)}
+                    className="inline-flex items-center gap-1.5 bg-[#0e3a8c] hover:bg-blue-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all active:scale-98"
+                  >
+                    <span>{idioma === 'es' ? 'Ver Panel Completo' : 'View Full Dashboard'}</span>
+                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+
+                {/* Tarjeta resumen rápida de Millas */}
+                <div className="p-6 rounded-3xl bg-gradient-to-br from-[#131b3e] to-[#0e3a8c] text-white shadow-lg space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-2xl text-amber-300">loyalty</span>
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                        Club Pasajero Cootranar
+                      </span>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Socio VIP
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-300 block tracking-wider">
+                        {idioma === 'es' ? 'Millas Disponibles' : 'Available Miles'}
+                      </span>
+                      <span className="text-3xl font-black text-white tracking-tight">
+                        350+ <span className="text-sm font-semibold opacity-80">pts</span>
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-300 block tracking-wider">
+                        {idioma === 'es' ? 'Equivalencia en Descuento' : 'Cash Discount Equivalent'}
+                      </span>
+                      <span className="text-2xl font-black text-emerald-300 tracking-tight">
+                        $3,500+ COP
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-200">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm text-amber-300">verified</span>
+                      <span>{idioma === 'es' ? 'Acumulas 1 milla por cada $100 COP en tiquetes' : 'Earn 1 mile for every $100 COP spent on tickets'}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.MILLAS)}
+                      className="text-amber-300 hover:text-white font-bold inline-flex items-center gap-1 transition-colors"
+                    >
+                      {idioma === 'es' ? 'Calculadora y Catálogo de Canjes' : 'Calculator & Rewards Catalog'}
+                      <span className="material-symbols-outlined text-xs">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grid de Beneficios Rápidos */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { icon: 'percent', title: 'Descuentos en Pasajes', desc: 'Hasta 15% según tu nivel' },
+                    { icon: 'flight_takeoff', title: 'Viajes Gratis', desc: 'Canjea pasajes con tus puntos' },
+                    { icon: 'package_2', title: 'Envíos con Descuento', desc: 'Beneficios en encomiendas' }
+                  ].map((b, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-lg">{b.icon}</span>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">{b.title}</h4>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500">{b.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

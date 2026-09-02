@@ -11,6 +11,7 @@ import { SeleccionAsientosPage } from '../pages/seleccion-asientos/SeleccionAsie
 import { MisViajesPage } from '../pages/mis-viajes/MisViajesPage';
 import { CotizarEncomiendaPage } from '../pages/encomiendas/CotizarEncomiendaPage';
 import { MisEncomiendasPage } from '../pages/encomiendas/MisEncomiendasPage';
+import { MillasPage } from '../pages/millas/MillasPage';
 import { PerfilPage } from '../pages/perfil/PerfilPage';
 import { PagoResultadoPage } from '../pages/pago/PagoResultadoPage';
 import { PrivateRoute } from './PrivateRoute';
@@ -37,6 +38,7 @@ export const AppRouter = () => {
 
         <Route path={ROUTES.ENCOMIENDAS} element={<CotizarEncomiendaPage />} />
         <Route path={ROUTES.MIS_ENCOMIENDAS} element={<MisEncomiendasPage />} />
+        <Route path={ROUTES.MILLAS} element={<MillasPage />} />
         <Route path={ROUTES.PERFIL} element={<PerfilPage />} />
         <Route path={ROUTES.PAGO_RESULTADO} element={<PagoResultadoPage />} />
       </Route>
