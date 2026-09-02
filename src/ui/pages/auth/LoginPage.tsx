@@ -59,7 +59,7 @@ export function LoginPage() {
   const dragOriginIndex = useRef<number>(-1);
 
   const googleContainerRef = useRef<HTMLDivElement>(null);
-  const [googleWidth, setGoogleWidth] = useState<string>("340");
+  const [googleWidth, setGoogleWidth] = useState<string>("360");
 
   /* ── GSAP ANIMATIONS ── */
   useEffect(() => {
@@ -74,7 +74,7 @@ export function LoginPage() {
         ease: 'power2.out',
       }, 0);
 
-      // 2. Social icons wrapper pop in with stagger (animating wrapper prevents style conflicts)
+      // 2. Social icons wrapper pop in with stagger
       tl.from('.g-social-item', {
         opacity: 0,
         y: -22,
@@ -182,7 +182,7 @@ export function LoginPage() {
     const updateWidth = () => {
       if (googleContainerRef.current) {
         const parentWidth = googleContainerRef.current.offsetWidth;
-        const widthVal = Math.max(240, Math.min(360, parentWidth));
+        const widthVal = Math.max(260, Math.min(390, parentWidth));
         setGoogleWidth(String(widthVal));
       }
     };
@@ -266,7 +266,7 @@ export function LoginPage() {
 
         {/* ─── PANEL IZQUIERDO: HERO CONTENT ─── */}
         <div className="relative z-20 flex flex-col justify-between p-6 sm:p-10 lg:p-10 xl:p-14 w-full lg:w-[52%] h-[40vh] lg:h-full shrink-0 pointer-events-none">
-          {/* Redes Sociales - Esquina superior izquierda (con alto contraste y efectos fluidos) */}
+          {/* Redes Sociales - Esquina superior izquierda */}
           <div className="flex items-center gap-3 pointer-events-auto">
             {socialButtons.map((btn, index) => {
               const isDragging = draggedId === btn.id;
@@ -414,8 +414,8 @@ export function LoginPage() {
         </div>
 
         {/* ─── PANEL DERECHO: FORMULARIO DE LOGIN ─── */}
-        <div className="relative z-20 w-full lg:w-[45%] xl:w-[42%] lg:ml-auto flex flex-col justify-between bg-white lg:bg-transparent rounded-t-[2.5rem] lg:rounded-none px-6 py-6 sm:px-10 lg:pl-14 lg:pr-10 xl:pl-18 xl:pr-16 lg:py-6 h-auto lg:h-full overflow-y-auto lg:overflow-hidden flex-grow">
-          <div className="max-w-[370px] w-full mx-auto my-auto flex flex-col justify-center">
+        <div className="relative z-20 w-full lg:w-[45%] xl:w-[42%] lg:ml-auto flex flex-col justify-between bg-white lg:bg-transparent rounded-t-[2.5rem] lg:rounded-none px-6 py-6 sm:px-10 lg:pl-12 lg:pr-10 xl:pl-16 xl:pr-14 lg:py-6 h-auto lg:h-full overflow-y-auto lg:overflow-hidden flex-grow">
+          <div className="max-w-[390px] w-full mx-auto my-auto flex flex-col justify-center">
 
             {/* Logo */}
             <div className="g-form-logo flex justify-center mb-2">
@@ -423,7 +423,7 @@ export function LoginPage() {
             </div>
 
             {/* Header */}
-            <header className="g-form-header mb-3 text-center">
+            <header className="g-form-header mb-3.5 text-center">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Bienvenido de nuevo</h1>
               <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Inicia sesión para gestionar tus viajes.</p>
             </header>
@@ -436,7 +436,7 @@ export function LoginPage() {
             )}
 
             {/* Google Login Button */}
-            <div ref={googleContainerRef} className="g-google-wrap mb-3 flex justify-center google-login-wrapper w-full">
+            <div ref={googleContainerRef} className="g-google-wrap mb-3.5 flex justify-center google-login-wrapper w-full">
               {import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'TU_GOOGLE_CLIENT_ID_AQUI' && (
                 <GoogleLogin
                   key={googleWidth}
@@ -454,86 +454,86 @@ export function LoginPage() {
             </div>
 
             {/* Divider */}
-            <div className="g-divider-row relative flex items-center mb-3">
+            <div className="g-divider-row relative flex items-center mb-3.5">
               <div className="flex-grow border-t border-slate-200" />
-              <span className="flex-shrink mx-3 text-slate-400 text-[10px] font-bold uppercase tracking-widest">O con tu correo electrónico</span>
+              <span className="flex-shrink mx-3 text-slate-400 text-[10.5px] font-bold uppercase tracking-wider">O con tu correo electrónico</span>
               <div className="flex-grow border-t border-slate-200" />
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-2.5">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Correo Electrónico */}
-              <div className="g-input-field space-y-1">
-                <label className="text-xs font-bold text-slate-700 ml-1">Correo Electrónico</label>
+              <div className="g-input-field space-y-1.5">
+                <label className="text-[13px] font-bold text-slate-700 ml-1">Correo Electrónico</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">mail</span>
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none">mail</span>
                   <input
                     type="email"
                     name="correo"
                     value={formData.correo}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-3.5 rounded-xl h-10 transition-all placeholder:text-slate-400 text-sm bg-slate-50/70 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                    style={{ borderColor: fieldErrors.correo ? '#f87171' : '#e2e8f0' }}
+                    className="w-full pl-12 pr-4 rounded-2xl h-12 transition-all placeholder:text-slate-400 text-[14.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                    style={{ borderColor: fieldErrors.correo ? '#f87171' : '#cbd5e1' }}
                     placeholder="usuario@ejemplo.com"
                   />
                 </div>
-                {fieldErrors.correo && <p className="text-[11px] ml-1 text-red-600">{fieldErrors.correo}</p>}
+                {fieldErrors.correo && <p className="text-[11.5px] ml-1 text-red-600">{fieldErrors.correo}</p>}
               </div>
 
               {/* Contraseña */}
-              <div className="g-input-field space-y-1">
+              <div className="g-input-field space-y-1.5">
                 <div className="flex justify-between items-center ml-1">
-                  <label className="text-xs font-bold text-slate-700">Contraseña</label>
-                  <Link to={ROUTES.RECUPERAR_PASSWORD} className="text-[11px] font-bold text-brand-blue hover:text-brand-blue-light">¿Olvidaste tu contraseña?</Link>
+                  <label className="text-[13px] font-bold text-slate-700">Contraseña</label>
+                  <Link to={ROUTES.RECUPERAR_PASSWORD} className="text-xs font-bold text-brand-blue hover:text-brand-blue-light transition-colors">¿Olvidaste tu contraseña?</Link>
                 </div>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">lock</span>
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none">lock</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-10 rounded-xl h-10 transition-all placeholder:text-slate-400 text-sm bg-slate-50/70 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                    style={{ borderColor: fieldErrors.password ? '#f87171' : '#e2e8f0' }}
+                    className="w-full pl-12 pr-12 rounded-2xl h-12 transition-all placeholder:text-slate-400 text-[14.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                    style={{ borderColor: fieldErrors.password ? '#f87171' : '#cbd5e1' }}
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-lg"
+                    className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-xl cursor-pointer"
                   >
                     {showPassword ? 'visibility_off' : 'visibility'}
                   </button>
                 </div>
-                {fieldErrors.password && <p className="text-[11px] ml-1 text-red-600">{fieldErrors.password}</p>}
+                {fieldErrors.password && <p className="text-[11.5px] ml-1 text-red-600">{fieldErrors.password}</p>}
               </div>
 
               {/* Mantener sesión iniciada */}
-              <div className="g-input-field flex items-center gap-2 ml-1">
+              <div className="g-input-field flex items-center gap-2.5 ml-1 pt-0.5">
                 <input
                   type="checkbox"
                   name="remember"
                   id="remember"
                   checked={formData.remember}
                   onChange={handleChange}
-                  className="w-3.5 h-3.5 text-brand-blue border-slate-300 rounded focus:ring-brand-blue"
+                  className="w-4 h-4 text-brand-blue border-slate-300 rounded focus:ring-brand-blue cursor-pointer"
                 />
-                <label htmlFor="remember" className="text-xs text-slate-600 font-medium cursor-pointer">Mantener sesión iniciada</label>
+                <label htmlFor="remember" className="text-xs text-slate-600 font-medium cursor-pointer select-none">Mantener sesión iniciada</label>
               </div>
 
-              {/* Botón Iniciar Sesión */}
-              <div className="g-submit-btn pt-1">
+              {/* Botón Iniciar Sesión (con altura robusta y proporciones armónicas) */}
+              <div className="g-submit-btn pt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-brand-blue hover:bg-brand-blue-light text-white font-bold h-10.5 rounded-xl shadow-md shadow-brand-blue/25 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-[#082b71] hover:bg-[#061d4e] active:scale-[0.99] text-white font-bold h-12 rounded-full shadow-lg shadow-[#082b71]/25 transition-all duration-200 text-[15px] flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>{loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}</span>
-                  {!loading && <span className="material-symbols-outlined text-base">arrow_forward</span>}
+                  {!loading && <span className="material-symbols-outlined text-lg">arrow_forward</span>}
                 </button>
-                <p className="text-center text-slate-500 text-xs mt-2.5">
+                <p className="text-center text-slate-500 text-xs mt-3">
                   ¿No tienes cuenta? <Link to={ROUTES.REGISTRO} className="text-brand-blue font-bold hover:underline">Regístrate</Link>
                 </p>
               </div>
