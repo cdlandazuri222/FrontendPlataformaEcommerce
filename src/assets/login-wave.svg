@@ -4,14 +4,14 @@
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="1" stop-color="#fbfdff"/>
     </linearGradient>
-    <filter id="paperShadow" x="-25%" y="-15%" width="155%" height="135%">
-      <feDropShadow dx="-12" dy="2" stdDeviation="14" flood-color="#001238" flood-opacity="0.35"/>
+    <filter id="paperShadow" x="-30%" y="-15%" width="160%" height="135%">
+      <feDropShadow dx="-16" dy="0" stdDeviation="18" flood-color="#001238" flood-opacity="0.38"/>
     </filter>
   </defs>
 
-  <!-- Panel blanco orgánico limpio sin contorno azul -->
+  <!-- Panel blanco orgánico optimizado para dejar visible el bus completo en la izquierda -->
   <path
-    d="M720 18C660 74 688 165 651 255C612 348 520 445 529 527C536 592 555 645 578 682H1161C1173 682 1182 673 1182 661V39C1182 27 1173 18 1161 18Z"
+    d="M770 0 C705 70 735 170 695 260 C655 355 575 450 585 535 C593 595 612 648 638 700 H1200 V0 Z"
     fill="url(#paper)"
     filter="url(#paperShadow)"
   />
