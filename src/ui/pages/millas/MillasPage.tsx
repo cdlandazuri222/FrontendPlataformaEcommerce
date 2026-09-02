@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePreferencias } from '../../context/PreferenciasContext';
 import { millasApi, type MillasResumen, type MovimientoMilla, type NivelBeneficio, type EstimadoMillas } from '../../../infrastructure/api/millasApi';
 import { ROUTES } from '../../../shared/constants';
+import logoImg from '../../../assets/Logo.png.png';
 
 export function MillasPage() {
   const navigate = useNavigate();
@@ -168,40 +169,48 @@ export function MillasPage() {
     setTimeout(() => setMensajeCanje(null), 5000);
   };
 
-  // Determinar estilos visuales de la tarjeta VIP según nivel
+  // Determinar estilos visuales de la tarjeta VIP con la paleta oficial de Cootranar (Rojo #c62828 y Azul #0e3a8c)
   const getCardTheme = (nivelId: string = 'BRONCE') => {
     switch (nivelId) {
       case 'PLATINO':
         return {
-          gradient: 'from-slate-900 via-blue-950 to-indigo-950',
-          border: 'border-blue-400/40',
+          gradient: 'from-[#050c1e] via-[#0a1e45] to-[#040915]',
+          border: 'border-blue-400/50 shadow-xl shadow-blue-950/40',
           accent: 'text-blue-300',
-          badge: 'bg-blue-500/20 text-blue-200 border border-blue-400/30',
-          chip: 'from-amber-200 to-yellow-400'
+          badge: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-[#c62828] text-white border border-white/30 shadow-xs',
+          chip: 'from-amber-200 to-yellow-400',
+          glow1: 'bg-blue-500/25',
+          glow2: 'bg-[#c62828]/25'
         };
       case 'ORO':
         return {
-          gradient: 'from-[#382606] via-[#63470d] to-[#241703]',
-          border: 'border-amber-400/50',
+          gradient: 'from-[#0e172a] via-[#1a233d] to-[#0a1224]',
+          border: 'border-amber-400/70 shadow-xl shadow-amber-950/30',
           accent: 'text-amber-300',
-          badge: 'bg-amber-500/20 text-amber-200 border border-amber-400/40',
-          chip: 'from-amber-200 to-yellow-500'
+          badge: 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black border border-amber-300/80 shadow-xs',
+          chip: 'from-amber-200 to-yellow-500',
+          glow1: 'bg-amber-500/20',
+          glow2: 'bg-[#c62828]/25'
         };
       case 'PLATA':
         return {
-          gradient: 'from-slate-800 via-slate-700 to-slate-900',
-          border: 'border-slate-300/40',
+          gradient: 'from-[#0d182b] via-[#162744] to-[#091222]',
+          border: 'border-slate-300/60 shadow-xl shadow-slate-950/30',
           accent: 'text-slate-200',
-          badge: 'bg-slate-500/20 text-slate-200 border border-slate-400/30',
-          chip: 'from-slate-200 to-slate-400'
+          badge: 'bg-gradient-to-r from-slate-200 to-slate-300 text-slate-900 font-black border border-white/70 shadow-xs',
+          chip: 'from-slate-200 to-slate-400',
+          glow1: 'bg-slate-300/20',
+          glow2: 'bg-[#0e3a8c]/40'
         };
-      default: // BRONCE
+      default: // BRONCE (Identidad Institucional Cootranar: Azul Marino y Rojo Corporativo)
         return {
-          gradient: 'from-[#3a1d12] via-[#592d19] to-[#251109]',
-          border: 'border-amber-600/40',
-          accent: 'text-amber-400',
-          badge: 'bg-amber-700/20 text-amber-300 border border-amber-600/30',
-          chip: 'from-amber-400 to-yellow-600'
+          gradient: 'from-[#0a1c3d] via-[#102b5c] to-[#07152f]',
+          border: 'border-red-500/40 shadow-xl shadow-red-950/20',
+          accent: 'text-red-300',
+          badge: 'bg-gradient-to-r from-[#c62828] to-[#b71c1c] text-white font-black border border-red-400/60 shadow-xs',
+          chip: 'from-amber-300 to-yellow-500',
+          glow1: 'bg-[#c62828]/25',
+          glow2: 'bg-[#0e3a8c]/40'
         };
     }
   };
@@ -293,14 +302,14 @@ export function MillasPage() {
           </div>
         )}
 
-        {/* ── Encabezado Principal ── */}
+        {/* ── Encabezado Principal con Colores Corporativos ── */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/80 text-[#0e3a8c] dark:text-blue-300 text-xs font-black tracking-wider uppercase mb-2">
-              <span className="material-symbols-outlined text-sm">stars</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-50 dark:bg-red-950/60 text-[#c62828] dark:text-red-400 border border-red-200/80 dark:border-red-900/60 text-xs font-black tracking-wider uppercase mb-2 shadow-2xs">
+              <span className="material-symbols-outlined text-sm text-[#c62828] dark:text-red-400">stars</span>
               <span>Club Cootranar</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-[#131b3e] dark:text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-black text-[#0e3a8c] dark:text-white tracking-tight">
               {m.titulo}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
@@ -311,7 +320,7 @@ export function MillasPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(ROUTES.HOME)}
-              className="inline-flex items-center gap-2 bg-[#0e3a8c] hover:bg-blue-900 text-white text-xs font-black px-5 py-3 rounded-2xl shadow-md transition-all active:scale-98"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#c62828] to-[#b71c1c] hover:from-[#b71c1c] hover:to-[#8e0000] text-white text-xs font-black px-6 py-3.5 rounded-2xl shadow-lg shadow-red-900/25 transition-all active:scale-98"
             >
               <span className="material-symbols-outlined text-base">airplane_ticket</span>
               <span>{idioma === 'es' ? 'Comprar Viaje y Acumular' : 'Book Trip & Earn'}</span>
@@ -319,26 +328,31 @@ export function MillasPage() {
           </div>
         </div>
 
-        {/* ── Grid Principal: Tarjeta VIP + Estadísticas Clave ── */}
+        {/* ── Grid Principal: Tarjeta VIP Cootranar + Estadísticas Clave ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
-          {/* ── Columna Izquierda: Tarjeta de Membresía Digital VIP ── */}
+          {/* ── Columna Izquierda: Tarjeta de Membresía Digital VIP Cootranar ── */}
           <div className="lg:col-span-5 flex flex-col">
-            <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-7 bg-gradient-to-br ${cardTheme.gradient} border ${cardTheme.border} text-white shadow-xl shadow-slate-900/10 flex flex-col justify-between min-h-[250px] sm:min-h-[270px]`}>
+            <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-7 bg-gradient-to-br ${cardTheme.gradient} border ${cardTheme.border} text-white shadow-2xl shadow-slate-900/20 flex flex-col justify-between min-h-[250px] sm:min-h-[270px]`}>
               
-              {/* Efectos de brillo de fondo */}
-              <div className="absolute -top-24 -right-24 w-60 h-60 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -left-24 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+              {/* Efectos de brillo de fondo en Rojo Cootranar y Azul Institucional */}
+              <div className={`absolute -top-24 -right-24 w-64 h-64 ${cardTheme.glow1} rounded-full blur-3xl pointer-events-none`} />
+              <div className={`absolute -bottom-24 -left-24 w-64 h-64 ${cardTheme.glow2} rounded-full blur-3xl pointer-events-none`} />
               
-              {/* Header de la tarjeta */}
+              {/* Franja decorativa sutil en la tarjeta */}
+              <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
+
+              {/* Header de la tarjeta con Logo Oficial Cootranar */}
               <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-3xl text-amber-300">loyalty</span>
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/95 rounded-xl px-2.5 py-1.5 shadow-md flex items-center justify-center">
+                    <img src={logoImg} alt="Cootranar" className="h-6 sm:h-7 w-auto object-contain" />
+                  </div>
                   <div>
-                    <span className="text-[10px] tracking-widest font-black uppercase text-slate-300 block">
+                    <span className="text-[10px] tracking-widest font-black uppercase text-red-300 block drop-shadow-xs">
                       COOTRANAR FREQUENT TRAVELER
                     </span>
-                    <span className="text-xs font-bold text-white/90">
+                    <span className="text-xs font-bold text-white/95 tracking-wide">
                       Club Pasajero VIP
                     </span>
                   </div>
@@ -351,10 +365,10 @@ export function MillasPage() {
 
               {/* Chip virtual e Info Central */}
               <div className="my-6 relative z-10 flex items-center justify-between">
-                <div className={`w-12 h-9 rounded-md bg-gradient-to-br ${cardTheme.chip} p-1 shadow-inner flex items-center justify-center opacity-90`}>
-                  <div className="w-full h-full border border-black/20 rounded-xs grid grid-cols-2 gap-0.5 opacity-60">
-                    <div className="border-r border-black/20" />
-                    <div className="border-l border-black/20" />
+                <div className={`w-12 h-9 rounded-md bg-gradient-to-br ${cardTheme.chip} p-1 shadow-inner flex items-center justify-center opacity-95 border border-amber-200/50`}>
+                  <div className="w-full h-full border border-black/25 rounded-xs grid grid-cols-2 gap-0.5 opacity-60">
+                    <div className="border-r border-black/25" />
+                    <div className="border-l border-black/25" />
                   </div>
                 </div>
 
@@ -363,13 +377,13 @@ export function MillasPage() {
                     {m.saldoActual}
                   </span>
                   <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                    {formatNum(resumen?.saldoMillas)} <span className="text-base sm:text-lg font-bold opacity-80">pts</span>
+                    {formatNum(resumen?.saldoMillas)} <span className="text-base sm:text-lg font-black text-amber-300">pts</span>
                   </span>
                 </div>
               </div>
 
               {/* Footer de la tarjeta */}
-              <div className="relative z-10 pt-2 border-t border-white/10 flex items-end justify-between">
+              <div className="relative z-10 pt-2 border-t border-white/15 flex items-end justify-between">
                 <div>
                   <span className="text-[10px] uppercase font-semibold text-slate-300 block tracking-wider">
                     {idioma === 'es' ? 'Titular de la Membresía' : 'Cardholder'}
@@ -404,18 +418,18 @@ export function MillasPage() {
 
                 <div className="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden p-0.5">
                   <div
-                    className="h-full bg-gradient-to-r from-[#0e3a8c] to-blue-500 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-[#c62828] via-[#e53935] to-[#0e3a8c] rounded-full transition-all duration-500"
                     style={{ width: `${resumen.siguienteNivel.progreso}%` }}
                   />
                 </div>
 
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 text-center">
-                  {m.faltanMillas} <strong className="text-slate-800 dark:text-slate-200">{formatNum(resumen.siguienteNivel.millasFaltantes)}</strong> {m.paraAlcanzar} <strong className="text-[#0e3a8c] dark:text-blue-400">{resumen.siguienteNivel.nombre}</strong>.
+                  {m.faltanMillas} <strong className="text-slate-800 dark:text-slate-200">{formatNum(resumen.siguienteNivel.millasFaltantes)}</strong> {m.paraAlcanzar} <strong className="text-[#c62828] dark:text-red-400">{resumen.siguienteNivel.nombre}</strong>.
                 </p>
               </div>
             ) : (
-              <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg">workspace_premium</span>
+              <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-blue-50 dark:from-red-950/40 dark:to-blue-950/40 border border-red-200 dark:border-red-800 text-xs font-bold text-[#0e3a8c] dark:text-blue-200 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#c62828] text-lg">workspace_premium</span>
                 <span>{m.maximoNivel}</span>
               </div>
             )}
@@ -472,7 +486,7 @@ export function MillasPage() {
                 <span className="text-xs font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider">
                   Multiplicador Activo
                 </span>
-                <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center">
                   <span className="material-symbols-outlined text-xl">bolt</span>
                 </div>
               </div>
@@ -487,13 +501,13 @@ export function MillasPage() {
               </div>
             </div>
 
-            {/* Card 4: Bono de Registro */}
+            {/* Card 4: Bono de Registro (Acento Rojo Cootranar) */}
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider">
                   {m.bonos}
                 </span>
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/60 text-[#c62828] dark:text-red-400 flex items-center justify-center">
                   <span className="material-symbols-outlined text-xl">card_giftcard</span>
                 </div>
               </div>
@@ -511,11 +525,12 @@ export function MillasPage() {
           </div>
         </div>
 
-        {/* ── SECCIÓN: CALCULADORA INTERACTIVA DE MILLAS ── */}
-        <div className="bg-gradient-to-br from-blue-900 via-[#0e3a8c] to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-white/15">
+        {/* ── SECCIÓN: CALCULADORA INTERACTIVA DE MILLAS CON IDENTIDAD COOTRANAR ── */}
+        <div className="bg-gradient-to-br from-[#0e3a8c] via-[#092257] to-[#06163a] rounded-3xl p-6 sm:p-8 text-white shadow-2xl border border-blue-800/40 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 w-80 h-80 bg-[#c62828]/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-white/15 relative z-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold mb-2">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-600/30 text-red-100 border border-red-500/40 text-xs font-black mb-2 shadow-xs">
                 <span className="material-symbols-outlined text-sm">calculate</span>
                 <span>{m.simulador}</span>
               </div>
@@ -534,7 +549,7 @@ export function MillasPage() {
                   onClick={() => setMontoSimulado(val)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
                     montoSimulado === val
-                      ? 'bg-white text-[#0e3a8c] shadow-sm'
+                      ? 'bg-[#c62828] text-white shadow-md'
                       : 'bg-white/10 hover:bg-white/20 text-white'
                   }`}
                 >
@@ -645,10 +660,10 @@ export function MillasPage() {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/60 text-[#c62828] dark:text-red-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <span className="material-symbols-outlined text-2xl">{rec.icono}</span>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-[#0e3a8c] dark:text-blue-300">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-50 dark:bg-red-950/80 text-[#c62828] dark:text-red-300 border border-red-200/60 dark:border-red-900/60">
                         {rec.tag}
                       </span>
                     </div>
@@ -664,7 +679,7 @@ export function MillasPage() {
                   <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-slate-400 uppercase font-bold block">Costo</span>
-                      <span className="text-base font-black text-blue-600 dark:text-blue-400">
+                      <span className="text-base font-black text-[#c62828] dark:text-red-400">
                         {formatNum(rec.millasRequeridas)} pts
                       </span>
                     </div>
@@ -675,7 +690,7 @@ export function MillasPage() {
                       disabled={!puedeCanjear}
                       className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                         puedeCanjear
-                          ? 'bg-[#0e3a8c] hover:bg-blue-900 text-white shadow-xs active:scale-95 cursor-pointer'
+                          ? 'bg-gradient-to-r from-[#c62828] to-[#b71c1c] hover:from-[#b71c1c] hover:to-[#8e0000] text-white shadow-md shadow-red-900/20 active:scale-95 cursor-pointer'
                           : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60'
                       }`}
                     >
@@ -688,11 +703,11 @@ export function MillasPage() {
           </div>
         </div>
 
-        {/* ── SECCIÓN: HISTORIAL DE MOVIMIENTOS ── */}
+        {/* ── SECCIÓN: HISTORIAL DE MOVIMIENTOS CON ESTILO COOTRANAR ── */}
         <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-xl font-black text-[#131b3e] dark:text-white tracking-tight">
+              <h2 className="text-xl font-black text-[#0e3a8c] dark:text-white tracking-tight">
                 {m.historial}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -709,7 +724,7 @@ export function MillasPage() {
                   onClick={() => setFiltroHistorial(filtro)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     filtroHistorial === filtro
-                      ? 'bg-[#0e3a8c] dark:bg-blue-600 text-white shadow-xs'
+                      ? 'bg-[#c62828] text-white shadow-xs font-black'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
@@ -851,7 +866,7 @@ export function MillasPage() {
                   key={nv.id}
                   className={`rounded-3xl p-6 border flex flex-col justify-between transition-all ${
                     esNivelActual
-                      ? 'bg-gradient-to-b from-blue-50/70 to-white dark:from-blue-950/40 dark:to-slate-800 border-blue-400 dark:border-blue-500 shadow-md ring-2 ring-blue-400/20'
+                      ? 'bg-gradient-to-b from-red-50/80 to-white dark:from-red-950/30 dark:to-slate-800 border-2 border-[#c62828] dark:border-red-500 shadow-lg ring-4 ring-red-500/15 scale-[1.02]'
                       : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700/80 shadow-xs opacity-90'
                   }`}
                 >
@@ -861,7 +876,7 @@ export function MillasPage() {
                         {nv.nombre}
                       </span>
                       {esNivelActual && (
-                        <span className="flex items-center gap-1 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                        <span className="flex items-center gap-1 text-[10px] font-black text-[#c62828] dark:text-red-400 uppercase tracking-wider bg-red-50 dark:bg-red-950 px-2.5 py-0.5 rounded-full border border-red-200/80 dark:border-red-900/60 shadow-2xs">
                           <span className="material-symbols-outlined text-xs">check_circle</span>
                           Tu Nivel
                         </span>
