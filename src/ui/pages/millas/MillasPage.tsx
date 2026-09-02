@@ -39,7 +39,8 @@ export function MillasPage() {
   };
 
   useEffect(() => {
-    if (!usuario) {
+    const user = getUsuario();
+    if (!user) {
       navigate(ROUTES.LOGIN);
       return;
     }
@@ -58,18 +59,18 @@ export function MillasPage() {
       } catch (error) {
         console.error('Error cargando datos de millas:', error);
         // Fallback datos locales si el endpoint responde error temporal
-        if (usuario) {
+        if (user) {
           const fallbackResumen: MillasResumen = {
             usuario: {
-              idUsuario: Number(usuario.id) || 1,
-              nombre: usuario.nombre || 'Viajero',
-              apellido: usuario.apellido || '',
-              correo: usuario.correo || '',
-              documento: usuario.documento || '',
-              numeroSocio: `CTN-${String(usuario.id || '1').padStart(6, '0')}`
+              idUsuario: Number(user.id) || 1,
+              nombre: user.nombre || 'Viajero',
+              apellido: user.apellido || '',
+              correo: user.correo || '',
+              documento: user.documento || '',
+              numeroSocio: `CTN-${String(user.id || '1').padStart(6, '0')}`
             },
-            saldoMillas: 350,
-            valorEquivalenteCop: 3500,
+            saldoMillas: 150,
+            valorEquivalenteCop: 1500,
             nivel: {
               id: 'BRONCE',
               nombre: 'Bronce',
@@ -87,16 +88,16 @@ export function MillasPage() {
               id: 'PLATA',
               nombre: 'Plata',
               minMillas: 1000,
-              millasFaltantes: 650,
-              progreso: 35
+              millasFaltantes: 850,
+              progreso: 15
             },
             estadisticas: {
-              totalViajes: 1,
-              millasPorViajes: 200,
+              totalViajes: 0,
+              millasPorViajes: 0,
               bonoBienvenida: 150,
-              millasAcumuladasTotal: 350,
+              millasAcumuladasTotal: 150,
               millasCanjeadas: 0,
-              ahorroTotalCop: 3500
+              ahorroTotalCop: 1500
             }
           };
           setResumen(fallbackResumen);
@@ -107,7 +108,7 @@ export function MillasPage() {
     };
 
     cargarDatos();
-  }, [usuario, navigate]);
+  }, [navigate]);
 
   // Ejecutar cálculo al cambiar el monto simulado
   useEffect(() => {
