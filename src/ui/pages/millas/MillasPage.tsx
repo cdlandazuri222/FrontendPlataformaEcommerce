@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../../components/layout/Navbar';
 import { useAuth } from '../../hooks/useAuth';
 import { usePreferencias } from '../../context/PreferenciasContext';
-import { millasApi, type MillasResumen, type MovimientoMilla, type NivelBeneficio, type EstimadoMillas } from '../../../infrastructure/api/millasApi';
+import { millasApi, type MillasResumen, type MovimientoMilla, type NivelBeneficio, type EstimadoMillas, type RecompensaCatalogo, type ConfiguracionPublicaMillas } from '../../../infrastructure/api/millasApi';
 import { ROUTES } from '../../../shared/constants';
 import logoImg from '../../../assets/Logo.png.png';
 
@@ -18,6 +18,11 @@ export function MillasPage() {
   const [historial, setHistorial] = useState<MovimientoMilla[]>([]);
   const [niveles, setNiveles] = useState<NivelBeneficio[]>([]);
   const [filtroHistorial, setFiltroHistorial] = useState<'TODOS' | 'ACUMULACION' | 'CANJE'>('TODOS');
+
+  // Catálogo y textos configurados desde el sistema interno
+  const [recompensas, setRecompensas] = useState<RecompensaCatalogo[]>([]);
+  const [configPrograma, setConfigPrograma] = useState<ConfiguracionPublicaMillas | null>(null);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   // Estados de la calculadora interactiva
   const [montoSimulado, setMontoSimulado] = useState<number>(45000);
@@ -48,67 +53,35 @@ export function MillasPage() {
     const cargarDatos = async () => {
       setCargando(true);
       try {
-        const [dataResumen, dataHistorial, dataNiveles] = await Promise.all([
+        const [dataResumen, dataHistorial, dataNiveles, dataRecompensas, dataConfig] = await Promise.all([
           millasApi.obtenerResumen(),
           millasApi.obtenerHistorial(),
-          millasApi.obtenerNiveles()
+          millasApi.obtenerNiveles(),
+          millasApi.obtenerRecompensas(),
+          millasApi.obtenerConfiguracionPublica()
         ]);
         setResumen(dataResumen);
         setHistorial(dataHistorial);
         setNiveles(dataNiveles);
+        setRecompensas(dataRecompensas);
+        setConfigPrograma(dataConfig);
+        setErrorCarga(null);
       } catch (error) {
+        // Antes se mostraba un resumen inventado de 150 millas, lo que hacía que
+        // un fallo de API se viera igual que "no tengo millas". Ahora se avisa.
         console.error('Error cargando datos de millas:', error);
-        // Fallback datos locales si el endpoint responde error temporal
-        if (user) {
-          const fallbackResumen: MillasResumen = {
-            usuario: {
-              idUsuario: Number(user.id) || 1,
-              nombre: user.nombre || 'Viajero',
-              apellido: user.apellido || '',
-              correo: user.correo || '',
-              documento: user.documento || '',
-              numeroSocio: `CTN-${String(user.id || '1').padStart(6, '0')}`
-            },
-            saldoMillas: 150,
-            valorEquivalenteCop: 1500,
-            nivel: {
-              id: 'BRONCE',
-              nombre: 'Bronce',
-              multiplicador: 1.0,
-              descuentoTiquetes: '0%',
-              color: '#cd7f32',
-              badgeBg: 'bg-amber-100 text-amber-900',
-              beneficios: [
-                'Acumulación base (1 milla por cada $100 COP)',
-                'Acceso a promociones y tarifas especiales por temporada',
-                'Gestión digital de viajes y descarga de tiquetes'
-              ]
-            },
-            siguienteNivel: {
-              id: 'PLATA',
-              nombre: 'Plata',
-              minMillas: 1000,
-              millasFaltantes: 850,
-              progreso: 15
-            },
-            estadisticas: {
-              totalViajes: 0,
-              millasPorViajes: 0,
-              bonoBienvenida: 150,
-              millasAcumuladasTotal: 150,
-              millasCanjeadas: 0,
-              ahorroTotalCop: 1500
-            }
-          };
-          setResumen(fallbackResumen);
-        }
+        setErrorCarga(
+          idioma === 'es'
+            ? 'No pudimos cargar tu información de millas. Intenta de nuevo en unos minutos.'
+            : 'We could not load your miles information. Please try again in a few minutes.'
+        );
       } finally {
         setCargando(false);
       }
     };
 
     cargarDatos();
-  }, [navigate]);
+  }, [navigate, idioma]);
 
   // Ejecutar cálculo al cambiar el monto simulado
   useEffect(() => {
@@ -146,6 +119,22 @@ export function MillasPage() {
     if (filtroHistorial === 'TODOS') return true;
     return item.tipo === filtroHistorial;
   });
+
+  // Catálogo y textos administrables. Si la configuración no llega, se usan los
+  // textos de i18n y los montos por defecto para no dejar la página vacía.
+  const tituloPrograma = configPrograma?.nombrePrograma || m.titulo;
+  const subtituloPrograma = configPrograma?.subtitulo || m.subtitulo;
+  const montosRapidos = configPrograma?.montosRapidos?.length
+    ? configPrograma.montosRapidos
+    : [25000, 45000, 70000, 110000];
+
+  const recompensasCatalogo = recompensas.map((r) => ({
+    titulo: r.titulo,
+    millasRequeridas: r.millasRequeridas,
+    beneficio: r.descripcion ?? '',
+    icono: r.icono,
+    tag: r.destacado ? (idioma === 'es' ? 'Popular' : 'Popular') : r.categoria,
+  }));
 
   const handleCanjear = (recompensa: { titulo: string; millasRequeridas: number; beneficio: string; icono: string }) => {
     setRecompensaSeleccionada(recompensa);
@@ -235,6 +224,35 @@ export function MillasPage() {
     <div className="min-h-screen bg-[#f8fafd] dark:bg-slate-900 transition-colors duration-200 pb-28 sm:pb-16">
       <Navbar />
 
+      {/* ── Aviso de error de carga ── */}
+      {errorCarga && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60">
+            <span className="material-symbols-outlined text-[#c62828] dark:text-red-400">error</span>
+            <div>
+              <p className="text-sm font-bold text-[#c62828] dark:text-red-300">
+                {idioma === 'es' ? 'No pudimos cargar tus millas' : 'We could not load your miles'}
+              </p>
+              <p className="text-xs text-red-700/80 dark:text-red-300/80 mt-0.5">{errorCarga}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Programa desactivado por el administrador ── */}
+      {configPrograma && !configPrograma.programaActivo && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60">
+            <span className="material-symbols-outlined text-amber-600 dark:text-amber-400">pause_circle</span>
+            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+              {idioma === 'es'
+                ? 'El programa de millas está temporalmente suspendido. Tu saldo se conserva.'
+                : 'The miles program is temporarily paused. Your balance is preserved.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Modal de Confirmación de Canje ── */}
       {recompensaSeleccionada && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
@@ -310,10 +328,10 @@ export function MillasPage() {
               <span>Club Cootranar</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-[#0e3a8c] dark:text-white tracking-tight">
-              {m.titulo}
+              {tituloPrograma}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-              {m.subtitulo}
+              {subtituloPrograma}
             </p>
           </div>
 
@@ -542,7 +560,7 @@ export function MillasPage() {
             {/* Presets rápidos */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-blue-200">{idioma === 'es' ? 'Montos rápidos:' : 'Quick prices:'}</span>
-              {[25000, 45000, 70000, 110000].map((val) => (
+              {montosRapidos.map((val) => (
                 <button
                   key={val}
                   type="button"
@@ -621,37 +639,19 @@ export function MillasPage() {
             </p>
           </div>
 
+          {recompensasCatalogo.length === 0 && (
+            <div className="p-8 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-center">
+              <span className="material-symbols-outlined text-3xl text-slate-300 dark:text-slate-600 block mb-2">redeem</span>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {idioma === 'es'
+                  ? 'Por ahora no hay recompensas disponibles para canjear.'
+                  : 'There are no rewards available to redeem right now.'}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              {
-                titulo: 'Descuento $10.000 COP',
-                millasRequeridas: 1000,
-                beneficio: 'Cupón de descuento directo para cualquier viaje Cootranar',
-                icono: 'confirmation_number',
-                tag: 'Popular'
-              },
-              {
-                titulo: 'Envío Encomienda Gratis (hasta 5kg)',
-                millasRequeridas: 1500,
-                beneficio: 'Envía un paquete sin costo en cualquier ruta intermunicipal',
-                icono: 'package_2',
-                tag: 'Encomiendas'
-              },
-              {
-                titulo: 'Pasaje Regional Gratis',
-                millasRequeridas: 2500,
-                beneficio: 'Tiquete 100% gratuito para rutas de corta y mediana distancia',
-                icono: 'directions_bus',
-                tag: 'Viaje Gratis'
-              },
-              {
-                titulo: '50% Descuento Ruta Larga',
-                millasRequeridas: 4000,
-                beneficio: 'Mitad de precio en rutas interdepartamentales e intermunicipales',
-                icono: 'stars',
-                tag: 'VIP'
-              },
-            ].map((rec, i) => {
+            {recompensasCatalogo.map((rec, i) => {
               const puedeCanjear = (resumen?.saldoMillas || 0) >= rec.millasRequeridas;
               return (
                 <div
@@ -789,7 +789,9 @@ export function MillasPage() {
               {m.niveles}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {idioma === 'es' ? 'Conoce los 4 escalones del Club Cootranar y sus beneficios exclusivos' : 'Discover the 4 Cootranar Club tiers and their exclusive perks'}
+              {idioma === 'es'
+                ? `Conoce los ${niveles.length || 4} escalones del Club Cootranar y sus beneficios exclusivos`
+                : `Discover the ${niveles.length || 4} Cootranar Club tiers and their exclusive perks`}
             </p>
           </div>
 

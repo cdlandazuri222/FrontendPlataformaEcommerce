@@ -81,7 +81,60 @@ export interface EstimadoMillas {
   }>;
 }
 
+/** Recompensa del catálogo configurado por el administrador. */
+export interface RecompensaCatalogo {
+  idRecompensa: number;
+  titulo: string;
+  descripcion: string | null;
+  millasRequeridas: number;
+  valorDescuentoCop: number;
+  categoria: string;
+  icono: string;
+  destacado: boolean;
+  orden: number;
+}
+
+export interface PromocionVigente {
+  idPromocion: number;
+  nombre: string;
+  descripcion: string | null;
+  tipo: 'MULTIPLICADOR' | 'MILLAS_EXTRA' | 'PORCENTAJE_EXTRA';
+  valor: number;
+  fechaInicio: string;
+  fechaFin: string;
+  origenAplicable: string;
+  nombreRuta: string | null;
+  montoMinimo: number;
+  topeMillas: number | null;
+  icono: string;
+  color: string;
+}
+
+/** Textos y reglas del programa, administrables desde el sistema interno. */
+export interface ConfiguracionPublicaMillas {
+  programaActivo: boolean;
+  nombrePrograma: string;
+  subtitulo: string;
+  pesosPorMilla: number;
+  valorMillaCop: number;
+  bonoBienvenida: number;
+  montosRapidos: number[];
+  aplicaMultiplicadorNivel: boolean;
+  totalNiveles: number;
+  promocionesVigentes: PromocionVigente[];
+}
+
 export const millasApi = {
+  async obtenerRecompensas(): Promise<RecompensaCatalogo[]> {
+    const res = await httpClient.get<{ success: boolean; data: RecompensaCatalogo[] }>('/millas/recompensas');
+    return res.data.data;
+  },
+
+  async obtenerConfiguracionPublica(): Promise<ConfiguracionPublicaMillas> {
+    const res = await httpClient.get<{ success: boolean; data: ConfiguracionPublicaMillas }>('/millas/configuracion-publica');
+    return res.data.data;
+  },
+
   async obtenerResumen(): Promise<MillasResumen> {
     const res = await httpClient.get<{ success: boolean; data: MillasResumen }>('/millas/resumen');
     return res.data.data;
