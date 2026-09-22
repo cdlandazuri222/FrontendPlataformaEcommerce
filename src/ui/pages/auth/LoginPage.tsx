@@ -63,6 +63,15 @@ export function LoginPage() {
   const googleContainerRef = useRef<HTMLDivElement>(null);
   const [googleWidth, setGoogleWidth] = useState<string>("360");
 
+  // Si ya tiene sesión activa, no mostrar formulario de login, redirigir directamente
+  useEffect(() => {
+    const user = localStorage.getItem('usuario');
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (user && token) {
+      navigate(returnTo !== ROUTES.LOGIN ? returnTo : ROUTES.HOME, { replace: true });
+    }
+  }, [navigate, returnTo]);
+
   /* ── GSAP ANIMATIONS ── */
   useEffect(() => {
     const ctx = gsap.context(() => {

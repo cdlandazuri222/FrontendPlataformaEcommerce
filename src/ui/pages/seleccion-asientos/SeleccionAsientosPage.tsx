@@ -740,7 +740,7 @@ export function SeleccionAsientosPage() {
       asientosReservadosRef.current.clear();
       asientosPendientesRef.current.clear();
 
-      navigate(`/pago/resultado?status=APPROVED&reference=${res.referencia}`);
+      navigate(`${ROUTES.PAGO_RESULTADO}?status=APPROVED&reference=${res.referencia}`);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Error al procesar el canje de millas.';
       setErrorMsg(msg);

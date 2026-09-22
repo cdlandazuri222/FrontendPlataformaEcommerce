@@ -41,6 +41,7 @@ export const AppRouter = () => {
         <Route path={ROUTES.MILLAS} element={<MillasPage />} />
         <Route path={ROUTES.PERFIL} element={<PerfilPage />} />
         <Route path={ROUTES.PAGO_RESULTADO} element={<PagoResultadoPage />} />
+        <Route path="/pago/resultado" element={<PagoResultadoPage />} />
       </Route>
 
       <Route path="/" element={<Navigate to={ROUTES.LOGIN} replace />} />
