@@ -124,6 +124,60 @@ export interface ConfiguracionPublicaMillas {
   promocionesVigentes: PromocionVigente[];
 }
 
+export interface CuponMillas {
+  idCanje: number;
+  codigoCupon: string;
+  titulo: string;
+  descripcion: string;
+  millasCanjeadas: number;
+  valorDescuentoCop: number;
+  estado: 'ACTIVO' | 'USADO' | 'VENCIDO' | 'CANCELADO';
+  fechaCreacion: string;
+  fechaVencimiento: string;
+  fechaUso?: string | null;
+  categoria: string;
+  icono: string;
+}
+
+export interface ValidarCuponResponse {
+  valido: boolean;
+  idCanje?: number;
+  codigoCupon?: string;
+  titulo?: string;
+  valorDescuentoCop?: number;
+  categoria?: string;
+  fechaVencimiento?: string;
+  mensaje?: string;
+}
+
+export interface AsientoCompraMillasDTO {
+  idAsientoViaje: number;
+  idPuntoOrigen: number;
+  idPuntoDestino: number;
+  monto: number;
+  nombrePasajero: string;
+  apellidoPasajero: string;
+  tipoDocumento: string;
+  documento: string;
+  telefono?: string;
+  correoPasajero?: string;
+  esComprador?: boolean;
+}
+
+export interface ResultadoCompraMillas {
+  success: boolean;
+  referencia: string;
+  tiquetes: Array<{
+    idTiquete: number;
+    codigoTiquete: string;
+    numeroAsiento: number;
+  }>;
+  montoTotalCop: number;
+  descuentoCuponCop: number;
+  millasDebitadas: number;
+  saldoRestante: number;
+}
+
 export const millasApi = {
   async obtenerRecompensas(): Promise<RecompensaCatalogo[]> {
     const res = await httpClient.get<{ success: boolean; data: RecompensaCatalogo[] }>('/millas/recompensas');
@@ -154,4 +208,38 @@ export const millasApi = {
     const res = await httpClient.post<{ success: boolean; data: EstimadoMillas }>('/millas/calcular-estimado', { monto });
     return res.data.data;
   },
+
+  async canjearRecompensa(idRecompensa: number): Promise<{
+    idCanje: number;
+    codigoCupon: string;
+    titulo: string;
+    millasCanjeadas: number;
+    valorDescuentoCop: number;
+    fechaVencimiento: string;
+    saldoRestante: number;
+  }> {
+    const res = await httpClient.post<{ success: boolean; data: any }>('/millas/canjear-recompensa', { idRecompensa });
+    return res.data.data;
+  },
+
+  async obtenerMisCupones(): Promise<CuponMillas[]> {
+    const res = await httpClient.get<{ success: boolean; data: CuponMillas[] }>('/millas/mis-cupones');
+    return res.data.data;
+  },
+
+  async validarCupon(codigoCupon: string): Promise<ValidarCuponResponse> {
+    const res = await httpClient.post<{ success: boolean; data: ValidarCuponResponse }>('/millas/validar-cupon', { codigoCupon });
+    return res.data.data;
+  },
+
+  async comprarViajeConMillas(payload: {
+    idViaje: number;
+    asientos: AsientoCompraMillasDTO[];
+    codigoCupon?: string;
+    usarDescuentoMillas?: boolean;
+  }): Promise<ResultadoCompraMillas> {
+    const res = await httpClient.post<{ success: boolean; data: ResultadoCompraMillas }>('/millas/comprar-viaje', payload);
+    return res.data.data;
+  },
 };
+

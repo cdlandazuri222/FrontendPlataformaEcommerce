@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../../components/layout/Navbar';
 import { useAuth } from '../../hooks/useAuth';
 import { usePreferencias } from '../../context/PreferenciasContext';
-import { millasApi, type MillasResumen, type MovimientoMilla, type NivelBeneficio, type EstimadoMillas, type RecompensaCatalogo, type ConfiguracionPublicaMillas } from '../../../infrastructure/api/millasApi';
+import { millasApi, type MillasResumen, type MovimientoMilla, type NivelBeneficio, type EstimadoMillas, type RecompensaCatalogo, type ConfiguracionPublicaMillas, type CuponMillas } from '../../../infrastructure/api/millasApi';
 import { ROUTES } from '../../../shared/constants';
 import logoImg from '../../../assets/Logo.png.png';
 
@@ -24,19 +24,26 @@ export function MillasPage() {
   const [configPrograma, setConfigPrograma] = useState<ConfiguracionPublicaMillas | null>(null);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
+  // Cupones y Canjes del Usuario
+  const [misCupones, setMisCupones] = useState<CuponMillas[]>([]);
+  const [procesandoCanje, setProcesandoCanje] = useState(false);
+  const [cuponGenerado, setCuponGenerado] = useState<{
+    codigoCupon: string;
+    titulo: string;
+    millasCanjeadas: number;
+    valorDescuentoCop: number;
+    fechaVencimiento: string;
+    saldoRestante: number;
+  } | null>(null);
+  const [copiadoId, setCopiadoId] = useState<string | null>(null);
+
   // Estados de la calculadora interactiva
   const [montoSimulado, setMontoSimulado] = useState<number>(45000);
   const [estimado, setEstimado] = useState<EstimadoMillas | null>(null);
   const [calculandoSimulador, setCalculandoSimulador] = useState(false);
 
   // Estado para modal de canje
-  const [recompensaSeleccionada, setRecompensaSeleccionada] = useState<{
-    titulo: string;
-    millasRequeridas: number;
-    beneficio: string;
-    icono: string;
-  } | null>(null);
-  const [mensajeCanje, setMensajeCanje] = useState<string | null>(null);
+  const [recompensaSeleccionada, setRecompensaSeleccionada] = useState<RecompensaCatalogo | null>(null);
 
   const formatNum = (val: number | null | undefined): string => {
     if (val === null || val === undefined || !isFinite(val)) return '0';
@@ -53,18 +60,20 @@ export function MillasPage() {
     const cargarDatos = async () => {
       setCargando(true);
       try {
-        const [dataResumen, dataHistorial, dataNiveles, dataRecompensas, dataConfig] = await Promise.all([
+        const [dataResumen, dataHistorial, dataNiveles, dataRecompensas, dataConfig, dataCupones] = await Promise.all([
           millasApi.obtenerResumen(),
           millasApi.obtenerHistorial(),
           millasApi.obtenerNiveles(),
           millasApi.obtenerRecompensas(),
-          millasApi.obtenerConfiguracionPublica()
+          millasApi.obtenerConfiguracionPublica(),
+          millasApi.obtenerMisCupones().catch(() => [])
         ]);
         setResumen(dataResumen);
         setHistorial(dataHistorial);
         setNiveles(dataNiveles);
         setRecompensas(dataRecompensas);
         setConfigPrograma(dataConfig);
+        setMisCupones(dataCupones || []);
         setErrorCarga(null);
       } catch (error) {
         // Antes se mostraba un resumen inventado de 150 millas, lo que hacía que
@@ -128,19 +137,11 @@ export function MillasPage() {
     ? configPrograma.montosRapidos
     : [25000, 45000, 70000, 110000];
 
-  const recompensasCatalogo = recompensas.map((r) => ({
-    titulo: r.titulo,
-    millasRequeridas: r.millasRequeridas,
-    beneficio: r.descripcion ?? '',
-    icono: r.icono,
-    tag: r.destacado ? (idioma === 'es' ? 'Popular' : 'Popular') : r.categoria,
-  }));
-
-  const handleCanjear = (recompensa: { titulo: string; millasRequeridas: number; beneficio: string; icono: string }) => {
-    setRecompensaSeleccionada(recompensa);
+  const handleCanjear = (rec: RecompensaCatalogo) => {
+    setRecompensaSeleccionada(rec);
   };
 
-  const confirmarCanje = () => {
+  const confirmarCanje = async () => {
     if (!resumen || !recompensaSeleccionada) return;
     if (resumen.saldoMillas < recompensaSeleccionada.millasRequeridas) {
       alert(idioma === 'es' 
@@ -150,12 +151,31 @@ export function MillasPage() {
       return;
     }
 
-    setMensajeCanje(idioma === 'es'
-      ? `¡Felicidades! Has canjeado "${recompensaSeleccionada.titulo}". Te hemos enviado un cupón a tu correo.`
-      : `Congratulations! You redeemed "${recompensaSeleccionada.titulo}". A voucher has been sent to your email.`
-    );
-    setRecompensaSeleccionada(null);
-    setTimeout(() => setMensajeCanje(null), 5000);
+    setProcesandoCanje(true);
+    try {
+      const res = await millasApi.canjearRecompensa(recompensaSeleccionada.idRecompensa);
+      setCuponGenerado(res);
+      setResumen(prev => prev ? { ...prev, saldoMillas: res.saldoRestante } : null);
+      setRecompensaSeleccionada(null);
+      // Refrescar historial y cupones
+      const [nuevoHistorial, nuevosCupones] = await Promise.all([
+        millasApi.obtenerHistorial().catch(() => []),
+        millasApi.obtenerMisCupones().catch(() => [])
+      ]);
+      if (nuevoHistorial.length) setHistorial(nuevoHistorial);
+      if (nuevosCupones.length) setMisCupones(nuevosCupones);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Error al procesar el canje';
+      alert(msg);
+    } finally {
+      setProcesandoCanje(false);
+    }
+  };
+
+  const copiarAlPortapapeles = (codigo: string) => {
+    navigator.clipboard.writeText(codigo);
+    setCopiadoId(codigo);
+    setTimeout(() => setCopiadoId(null), 2500);
   };
 
   // Determinar estilos visuales de la tarjeta VIP con la paleta oficial de Cootranar (Rojo #c62828 y Azul #0e3a8c)
@@ -257,8 +277,8 @@ export function MillasPage() {
       {recompensaSeleccionada && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-700 shadow-2xl animate-scaleUp">
-            <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[#0e3a8c] dark:text-blue-400 flex items-center justify-center mb-5 mx-auto">
-              <span className="material-symbols-outlined text-3xl">{recompensaSeleccionada.icono}</span>
+            <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/60 text-[#c62828] dark:text-red-400 flex items-center justify-center mb-5 mx-auto">
+              <span className="material-symbols-outlined text-3xl">{recompensaSeleccionada.icono || 'redeem'}</span>
             </div>
             
             <h3 className="text-xl font-black text-center text-[#131b3e] dark:text-white mb-2">
@@ -266,13 +286,13 @@ export function MillasPage() {
             </h3>
             
             <p className="text-sm text-center text-slate-500 dark:text-slate-400 mb-6">
-              {recompensaSeleccionada.beneficio}
+              {recompensaSeleccionada.descripcion || recompensaSeleccionada.titulo}
             </p>
 
             <div className="bg-slate-50 dark:bg-slate-900/70 rounded-2xl p-4 mb-6 border border-slate-200/80 dark:border-slate-700 space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 dark:text-slate-400">{idioma === 'es' ? 'Millas requeridas:' : 'Required miles:'}</span>
-                <span className="font-extrabold text-blue-600 dark:text-blue-400 text-sm">
+                <span className="font-extrabold text-red-600 dark:text-red-400 text-sm">
                   {formatNum(recompensaSeleccionada.millasRequeridas)} pts
                 </span>
               </div>
@@ -293,17 +313,96 @@ export function MillasPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
+                disabled={procesandoCanje}
                 onClick={() => setRecompensaSeleccionada(null)}
-                className="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                className="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors disabled:opacity-50"
               >
                 {idioma === 'es' ? 'Cancelar' : 'Cancel'}
               </button>
               <button
                 type="button"
+                disabled={procesandoCanje}
                 onClick={confirmarCanje}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0e3a8c] to-blue-600 text-white font-extrabold text-xs shadow-md hover:from-blue-900 hover:to-blue-700 transition-all active:scale-98"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#c62828] to-[#b71c1c] text-white font-extrabold text-xs shadow-md hover:from-red-800 hover:to-red-900 transition-all active:scale-98 flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
-                {idioma === 'es' ? 'Confirmar Canje' : 'Confirm'}
+                {procesandoCanje ? (
+                  <>
+                    <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                    <span>{m.procesandoCanje}</span>
+                  </>
+                ) : (
+                  <span>{idioma === 'es' ? 'Confirmar Canje' : 'Confirm'}</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal de Cupón Generado Exitosamente ── */}
+      {cuponGenerado && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-700 shadow-2xl animate-scaleUp text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 mx-auto">
+              <span className="material-symbols-outlined text-4xl">celebration</span>
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1">
+              {m.cuponGenerado}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+              {cuponGenerado.titulo}
+            </p>
+
+            <div className="bg-amber-50 dark:bg-amber-950/40 rounded-2xl p-4 border border-amber-200 dark:border-amber-900/60 mb-6">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-amber-800 dark:text-amber-300 mb-1">
+                {idioma === 'es' ? 'Tu Código de Cupón' : 'Your Voucher Code'}
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-mono text-xl font-black text-slate-900 dark:text-white tracking-wider">
+                  {cuponGenerado.codigoCupon}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copiarAlPortapapeles(cuponGenerado.codigoCupon)}
+                  className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                  title={m.copiarCodigo}
+                >
+                  <span className="material-symbols-outlined text-base">
+                    {copiadoId === cuponGenerado.codigoCupon ? 'check' : 'content_copy'}
+                  </span>
+                </button>
+              </div>
+              {copiadoId === cuponGenerado.codigoCupon && (
+                <p className="text-[10px] text-emerald-600 font-bold mt-1">
+                  {m.codigoCopiado}
+                </p>
+              )}
+              {cuponGenerado.fechaVencimiento && (
+                <p className="text-[10px] text-slate-400 mt-2">
+                  {idioma === 'es' ? 'Válido hasta: ' : 'Valid until: '}
+                  {new Date(cuponGenerado.fechaVencimiento).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCuponGenerado(null);
+                  navigate(ROUTES.HOME);
+                }}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#c62828] to-[#b71c1c] text-white font-extrabold text-xs shadow-md hover:from-red-800 hover:to-red-900 transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>{m.usarEnReserva}</span>
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCuponGenerado(null)}
+                className="w-full py-2.5 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-bold transition-colors"
+              >
+                {idioma === 'es' ? 'Cerrar' : 'Close'}
               </button>
             </div>
           </div>
@@ -311,14 +410,6 @@ export function MillasPage() {
       )}
 
       <main className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-        {/* ── Banner Notificación de Éxito ── */}
-        {/* ── Banner Notificación de Éxito ── */}
-        {mensajeCanje && (
-          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-sm font-bold flex items-center gap-3 animate-fadeIn shadow-sm">
-            <span className="material-symbols-outlined text-2xl text-emerald-600">verified</span>
-            <span>{mensajeCanje}</span>
-          </div>
-        )}
 
         {/* ── Encabezado Principal con Colores Corporativos ── */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -639,7 +730,7 @@ export function MillasPage() {
             </p>
           </div>
 
-          {recompensasCatalogo.length === 0 && (
+          {recompensas.length === 0 && (
             <div className="p-8 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-center">
               <span className="material-symbols-outlined text-3xl text-slate-300 dark:text-slate-600 block mb-2">redeem</span>
               <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -651,20 +742,20 @@ export function MillasPage() {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {recompensasCatalogo.map((rec, i) => {
+            {recompensas.map((rec) => {
               const puedeCanjear = (resumen?.saldoMillas || 0) >= rec.millasRequeridas;
               return (
                 <div
-                  key={i}
+                  key={rec.idRecompensa}
                   className="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex flex-col justify-between hover:shadow-md transition-all group"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/60 text-[#c62828] dark:text-red-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <span className="material-symbols-outlined text-2xl">{rec.icono}</span>
+                        <span className="material-symbols-outlined text-2xl">{rec.icono || 'redeem'}</span>
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-50 dark:bg-red-950/80 text-[#c62828] dark:text-red-300 border border-red-200/60 dark:border-red-900/60">
-                        {rec.tag}
+                        {rec.destacado ? (idioma === 'es' ? 'Popular' : 'Popular') : (rec.categoria || 'Canje')}
                       </span>
                     </div>
 
@@ -672,7 +763,7 @@ export function MillasPage() {
                       {rec.titulo}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-                      {rec.beneficio}
+                      {rec.descripcion}
                     </p>
                   </div>
 
@@ -702,6 +793,95 @@ export function MillasPage() {
             })}
           </div>
         </div>
+
+        {/* ── SECCIÓN: MIS CUPONES ACTIVOS ── */}
+        {misCupones.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-900/60 text-[10px] font-black uppercase tracking-wider mb-1">
+                  <span className="material-symbols-outlined text-xs">confirmation_number</span>
+                  <span>{idioma === 'es' ? 'Vouchers Disponibles' : 'Available Vouchers'}</span>
+                </div>
+                <h2 className="text-xl font-black text-[#0e3a8c] dark:text-white tracking-tight">
+                  {m.misCupones}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {idioma === 'es' ? 'Cupones generados con tus millas listos para redimir en compras de viajes' : 'Vouchers generated with your points ready to redeem on trips'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {misCupones.map((cup) => {
+                const esActivo = cup.estado === 'ACTIVO';
+                return (
+                  <div
+                    key={cup.idCanje}
+                    className={`rounded-2xl p-4 border flex flex-col justify-between transition-all ${
+                      esActivo
+                        ? 'bg-gradient-to-br from-amber-50/50 to-white dark:from-slate-800 dark:to-slate-800/80 border-amber-200 dark:border-amber-800/40 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 opacity-60'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          cup.estado === 'ACTIVO'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                            : cup.estado === 'USADO'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                            : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                        }`}>
+                          {cup.estado}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {cup.fechaVencimiento ? `Vence: ${new Date(cup.fechaVencimiento).toLocaleDateString()}` : ''}
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                        {cup.titulo}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                        {`$${formatNum(cup.valorDescuentoCop)} COP`}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-2">
+                      <div className="bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-dashed border-amber-300 dark:border-amber-700 font-mono font-black text-xs text-amber-800 dark:text-amber-300 tracking-wider">
+                        {cup.codigoCupon}
+                      </div>
+
+                      {esActivo && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => copiarAlPortapapeles(cup.codigoCupon)}
+                            title={m.copiarCodigo}
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-base">
+                              {copiadoId === cup.codigoCupon ? 'check' : 'content_copy'}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => navigate(ROUTES.HOME)}
+                            className="px-3 py-1.5 rounded-xl bg-[#0e3a8c] hover:bg-blue-900 text-white font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{m.usarEnReserva}</span>
+                            <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── SECCIÓN: HISTORIAL DE MOVIMIENTOS CON ESTILO COOTRANAR ── */}
         <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">

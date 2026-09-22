@@ -12,6 +12,13 @@ import busCootranar from '../../../assets/busCootranar.png';
 import { WompiCheckout } from '../../components/pago/WompiCheckout';
 import { FormularioCompletarPerfil } from '../../components/pago/FormularioCompletarPerfil';
 import { usePreferencias } from '../../context/PreferenciasContext';
+import {
+  millasApi,
+  type MillasResumen,
+  type ConfiguracionPublicaMillas,
+  type CuponMillas,
+  type AsientoCompraMillasDTO,
+} from '../../../infrastructure/api/millasApi';
 
 const MAX_ASIENTOS = 10;
 
@@ -135,6 +142,48 @@ export function SeleccionAsientosPage() {
   const [buscando, setBuscando] = useState<Record<number, boolean>>({});
   const [usarMisDatosIdx, setUsarMisDatosIdx] = useState<number | null>(null);
   const debounceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+
+  // --- Estados de Millas y Cupones ---
+  const tm = tx.millas;
+  const token = localStorage.getItem('token');
+  const estaAutenticado = Boolean(token);
+  const [metodoPago, setMetodoPago] = useState<'WOMPI' | 'MILLAS'>('WOMPI');
+  const [resumenMillas, setResumenMillas] = useState<MillasResumen | null>(null);
+  const [configMillas, setConfigMillas] = useState<ConfiguracionPublicaMillas | null>(null);
+  const [misCupones, setMisCupones] = useState<CuponMillas[]>([]);
+  const [cargandoMillas, setCargandoMillas] = useState(false);
+  const [procesandoMillas, setProcesandoMillas] = useState(false);
+
+  // Cupón
+  const [codigoCuponInput, setCodigoCuponInput] = useState('');
+  const [cuponAplicado, setCuponAplicado] = useState<{
+    codigoCupon: string;
+    tipoDescuento: string;
+    valor: number;
+    descripcion: string;
+    valorDescuentoCop: number;
+  } | null>(null);
+  const [errorCupon, setErrorCupon] = useState<string | null>(null);
+  const [validandoCupon, setValidandoCupon] = useState(false);
+
+  useEffect(() => {
+    if (!estaAutenticado) return;
+    let cancelado = false;
+    setCargandoMillas(true);
+    Promise.all([
+      millasApi.obtenerResumen().catch(() => null),
+      millasApi.obtenerConfiguracionPublica().catch(() => null),
+      millasApi.obtenerMisCupones().catch(() => []),
+    ]).then(([resumen, config, cupones]) => {
+      if (cancelado) return;
+      if (resumen) setResumenMillas(resumen);
+      if (config) setConfigMillas(config);
+      if (cupones) setMisCupones(cupones.filter(c => c.estado === 'ACTIVO'));
+    }).finally(() => {
+      if (!cancelado) setCargandoMillas(false);
+    });
+    return () => { cancelado = true; };
+  }, [estaAutenticado]);
 
   // --- Hook de pago Wompi ---
   const { fase, datosTransaccion, error: errorPago, iniciarPago, completarPerfil, resetear } = useWompiPago();
@@ -590,6 +639,98 @@ export function SeleccionAsientosPage() {
     // para garantizar que solo se borra cuando el widget ya está activo (pago en curso).
   };
 
+  const handleAplicarCupon = async (codigoOpcional?: string) => {
+    const code = (codigoOpcional || codigoCuponInput).trim().toUpperCase();
+    if (!code) return;
+    setValidandoCupon(true);
+    setErrorCupon(null);
+    try {
+      const res = await millasApi.validarCupon(code);
+      if (res.valido && res.codigoCupon) {
+        setCuponAplicado({
+          codigoCupon: res.codigoCupon,
+          tipoDescuento: 'MONTO_FIJO',
+          valor: res.valorDescuentoCop || 0,
+          descripcion: res.titulo || 'Cupón de Millas',
+          valorDescuentoCop: res.valorDescuentoCop || 0,
+        });
+        setCodigoCuponInput('');
+      } else {
+        setErrorCupon(res.mensaje || 'Cupón no válido o ya utilizado');
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Error al validar cupón';
+      setErrorCupon(msg);
+    } finally {
+      setValidandoCupon(false);
+    }
+  };
+
+  const handleQuitarCupon = () => {
+    setCuponAplicado(null);
+    setErrorCupon(null);
+  };
+
+  const handleConfirmarConMillas = async () => {
+    setErrorMsg(null);
+    // Validar todos los formularios de pasajeros
+    const nuevosErrores: Record<number, Record<string, string>> = {};
+    let hayErrores = false;
+    pasajeros.forEach((p, idx) => {
+      const errs = validarPasajero(p);
+      if (Object.keys(errs).length > 0) { nuevosErrores[idx] = errs; hayErrores = true; }
+    });
+    setErroresPasajeros(nuevosErrores);
+    if (hayErrores) return;
+
+    if (!puntosResueltos.idPuntoOrigen || !puntosResueltos.idPuntoDestino) return;
+
+    if (!estaAutenticado) {
+      navigate(ROUTES.LOGIN, { state: { returnTo: location.pathname } });
+      return;
+    }
+
+    if (!tieneMillasSuficientes && totalAPagar > 0) {
+      setErrorMsg(tm.saldoInsuficienteMillas);
+      return;
+    }
+
+    setProcesandoMillas(true);
+    try {
+      const asientosDTO: AsientoCompraMillasDTO[] = asientosSeleccionados.map((asiento, idx) => ({
+        idAsientoViaje: asiento.idasientoviaje,
+        idPuntoOrigen: puntosResueltos.idPuntoOrigen!,
+        idPuntoDestino: puntosResueltos.idPuntoDestino!,
+        monto: asiento.precio,
+        esComprador: idx === 0,
+        nombrePasajero: pasajeros[idx].nombrePasajero,
+        apellidoPasajero: pasajeros[idx].apellidoPasajero,
+        tipoDocumento: pasajeros[idx].tipoDocumento,
+        documento: pasajeros[idx].documento,
+        telefono: pasajeros[idx].telefono || undefined,
+        correoPasajero: pasajeros[idx].correoPasajero || undefined,
+      }));
+
+      const res = await millasApi.comprarViajeConMillas({
+        idViaje: state!.idviaje,
+        asientos: asientosDTO,
+        codigoCupon: cuponAplicado?.codigoCupon,
+        usarDescuentoMillas: true,
+      });
+
+      // Limpiar refs para evitar que el cleanup libere asientos ya comprados
+      asientosReservadosRef.current.clear();
+      asientosPendientesRef.current.clear();
+
+      navigate(`/pago/resultado?status=APPROVED&reference=${res.referencia}`);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Error al procesar el canje de millas.';
+      setErrorMsg(msg);
+    } finally {
+      setProcesandoMillas(false);
+    }
+  };
+
   // Bug 2 fix (parte 1): cuando el widget ya está activo, limpiar los refs para que
   // pagehide/desmontaje no libere asientos que ya forman parte de una transacción activa.
   useEffect(() => {
@@ -636,6 +777,12 @@ export function SeleccionAsientosPage() {
 
   // --- Valores computados ---
   const precioTotal = asientosSeleccionados.reduce((sum, a) => sum + a.precio, 0);
+  const descuentoCupon = cuponAplicado ? Math.min(precioTotal, cuponAplicado.valorDescuentoCop) : 0;
+  const totalAPagar = Math.max(0, precioTotal - descuentoCupon);
+  const valorMillaCop = configMillas?.valorMillaCop || 10;
+  const millasRequeridas = Math.ceil(totalAPagar / valorMillaCop);
+  const saldoMillas = resumenMillas?.saldoMillas || 0;
+  const tieneMillasSuficientes = saldoMillas >= millasRequeridas;
   const numerosAsientos = asientosSeleccionados.map(a => a.numeroasiento).sort((a, b) => a - b);
 
   const formatCountdown = (seg: number) => {
@@ -780,7 +927,22 @@ export function SeleccionAsientosPage() {
                       </p>
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{s.asientos}: {numerosAsientos.join(', ')}</p>
                     </div>
-                    <p className="text-2xl font-extrabold text-[#0e3a8c] dark:text-blue-400">{precioTotal.toLocaleString('es-CO')} COP</p>
+                    <div className="text-right">
+                      {cuponAplicado && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold line-through">
+                          {precioTotal.toLocaleString('es-CO')} COP
+                        </p>
+                      )}
+                      <p className="text-2xl font-extrabold text-[#0e3a8c] dark:text-blue-400">
+                        {totalAPagar.toLocaleString('es-CO')} COP
+                      </p>
+                      {metodoPago === 'MILLAS' && (
+                        <p className="text-xs font-bold text-[#c62828] dark:text-red-400 flex items-center justify-end gap-1 mt-0.5">
+                          <span className="material-symbols-outlined text-sm">stars</span>
+                          {millasRequeridas.toLocaleString('es-CO')} Millas
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => document.getElementById('formularios-pasajeros')?.scrollIntoView({ behavior: 'smooth' })}
@@ -838,6 +1000,199 @@ export function SeleccionAsientosPage() {
                   })}
                 </div>
 
+                {/* ── SELECCIÓN DE MÉTODO DE PAGO ── */}
+                <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700">
+                  <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base text-[#0e3a8c] dark:text-blue-400">payments</span>
+                    {tm.metodoPago}
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    {/* Opción 1: Wompi */}
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPago('WOMPI')}
+                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                        metodoPago === 'WOMPI'
+                          ? 'border-2 border-[#0e3a8c] bg-blue-50/50 dark:bg-blue-900/20 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl shrink-0 ${
+                        metodoPago === 'WOMPI'
+                          ? 'bg-[#0e3a8c] text-white'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                      }`}>
+                        <span className="material-symbols-outlined text-xl">credit_card</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                            {tm.pagarConWompi}
+                          </p>
+                          {metodoPago === 'WOMPI' && (
+                            <span className="material-symbols-outlined text-sm text-[#0e3a8c] dark:text-blue-400">check_circle</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                          Tarjeta de crédito, PSE, Nequi, Bancolombia
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Opción 2: Millas Cootranar */}
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPago('MILLAS')}
+                      className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                        metodoPago === 'MILLAS'
+                          ? 'border-2 border-[#c62828] bg-red-50/40 dark:bg-red-950/20 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl shrink-0 ${
+                        metodoPago === 'MILLAS'
+                          ? 'bg-[#c62828] text-white'
+                          : 'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                      }`}>
+                        <span className="material-symbols-outlined text-xl">stars</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                            {tm.pagarConMillas}
+                          </p>
+                          {metodoPago === 'MILLAS' && (
+                            <span className="material-symbols-outlined text-sm text-[#c62828] dark:text-red-400">check_circle</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                          {cargandoMillas ? (
+                            'Consultando saldo...'
+                          ) : estaAutenticado ? (
+                            `${(resumenMillas?.saldoMillas || 0).toLocaleString('es-CO')} millas disponibles`
+                          ) : (
+                            'Inicia sesión para canjear tus millas'
+                          )}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Cupón de descuento */}
+                  <div className="mb-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-sm text-amber-600">confirmation_number</span>
+                        {tm.tengoCupon}
+                      </span>
+                      {cuponAplicado && (
+                        <button
+                          type="button"
+                          onClick={handleQuitarCupon}
+                          className="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-xs">close</span>
+                          {tm.quitarCupon}
+                        </button>
+                      )}
+                    </div>
+
+                    {!cuponAplicado ? (
+                      <div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={codigoCuponInput}
+                            onChange={(e) => setCodigoCuponInput(e.target.value.toUpperCase())}
+                            placeholder={tm.ingresarCupon}
+                            className="flex-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-mono uppercase text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-[#0e3a8c]/20"
+                          />
+                          <button
+                            type="button"
+                            disabled={!codigoCuponInput.trim() || validandoCupon}
+                            onClick={() => handleAplicarCupon()}
+                            className="px-4 py-2 bg-[#0e3a8c] hover:bg-blue-900 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-40 flex items-center gap-1 cursor-pointer"
+                          >
+                            {validandoCupon && <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>}
+                            <span>{tm.aplicarCupon}</span>
+                          </button>
+                        </div>
+                        {errorCupon && <p className="text-xs text-red-500 mt-1.5">{errorCupon}</p>}
+
+                        {/* Badges de cupones propios activos */}
+                        {misCupones.length > 0 && (
+                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] text-slate-400 font-medium">Tus cupones:</span>
+                            {misCupones.map((c) => (
+                              <button
+                                key={c.idCanje}
+                                type="button"
+                                onClick={() => handleAplicarCupon(c.codigoCupon)}
+                                className="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-800 dark:text-amber-300 rounded-lg text-[10px] font-mono font-bold transition-colors cursor-pointer"
+                              >
+                                {c.codigoCupon} (-${(c.valorDescuentoCop || 0).toLocaleString('es-CO')} COP)
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 p-2.5 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
+                          <div>
+                            <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 font-mono">
+                              {cuponAplicado.codigoCupon}
+                            </p>
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                              {cuponAplicado.descripcion} (-{descuentoCupon.toLocaleString('es-CO')} COP)
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
+                          -{descuentoCupon.toLocaleString('es-CO')} COP
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info detallada de pago con millas si está seleccionado */}
+                  {metodoPago === 'MILLAS' && (
+                    <div className="mb-4 bg-slate-50 dark:bg-slate-800/70 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">{tm.tienesMillas}:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100">
+                          {saldoMillas.toLocaleString('es-CO')} pts
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">{tm.millasRequeridas}:</span>
+                        <span className="font-black text-[#c62828] dark:text-red-400 text-sm">
+                          {millasRequeridas.toLocaleString('es-CO')} pts
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {tieneMillasSuficientes ? 'Saldo posterior estimado:' : 'Faltante:'}
+                        </span>
+                        <span className={`font-black ${tieneMillasSuficientes ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {tieneMillasSuficientes
+                            ? `${(saldoMillas - millasRequeridas).toLocaleString('es-CO')} pts`
+                            : `-${(millasRequeridas - saldoMillas).toLocaleString('es-CO')} pts`}
+                        </span>
+                      </div>
+
+                      {!tieneMillasSuficientes && totalAPagar > 0 && (
+                        <div className="mt-2 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start gap-2">
+                          <span className="material-symbols-outlined text-sm text-red-600 shrink-0 mt-0.5">warning</span>
+                          <span>{tm.saldoInsuficienteMillas}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Error de pago */}
                 {fase === 'error' && errorPago && (
                   <div className="mt-4 flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 text-sm">
@@ -847,31 +1202,51 @@ export function SeleccionAsientosPage() {
                 )}
 
                 {/* Widget Wompi */}
-                {fase === 'widget' && datosTransaccion && (
+                {metodoPago === 'WOMPI' && fase === 'widget' && datosTransaccion && (
                   <div className="mt-4">
                     <WompiCheckout key={datosTransaccion.referencia} datos={datosTransaccion} onCerrar={resetear} />
                   </div>
                 )}
 
-                {/* Botón confirmar y pagar */}
+                {/* Botón confirmar según método */}
                 <div className="mt-6">
-                  <button
-                    onClick={handleConfirmarYPagar}
-                    disabled={!formularioValido() || fase === 'verificando' || fase === 'preparando'}
-                    className="w-full flex items-center justify-center gap-2 bg-[#0e3a8c] text-white px-6 py-4 rounded-2xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {(fase === 'verificando' || fase === 'preparando') ? (
-                      <>
-                        <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                        {s.procesando}
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined text-base">payment</span>
-                        {s.confirmarYPagar} — {precioTotal.toLocaleString('es-CO')} COP
-                      </>
-                    )}
-                  </button>
+                  {metodoPago === 'WOMPI' ? (
+                    <button
+                      onClick={handleConfirmarYPagar}
+                      disabled={!formularioValido() || fase === 'verificando' || fase === 'preparando'}
+                      className="w-full flex items-center justify-center gap-2 bg-[#0e3a8c] text-white px-6 py-4 rounded-2xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {(fase === 'verificando' || fase === 'preparando') ? (
+                        <>
+                          <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                          {s.procesando}
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-base">payment</span>
+                          {s.confirmarYPagar} — {totalAPagar.toLocaleString('es-CO')} COP
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleConfirmarConMillas}
+                      disabled={!formularioValido() || (!tieneMillasSuficientes && totalAPagar > 0) || procesandoMillas}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#c62828] to-[#b71c1c] text-white px-6 py-4 rounded-2xl font-bold text-sm hover:from-red-800 hover:to-red-900 transition-all shadow-lg shadow-red-900/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {procesandoMillas ? (
+                        <>
+                          <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                          {tm.procesandoCanje}
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-base">stars</span>
+                          {tm.canjearYConfirmar} — {millasRequeridas.toLocaleString('es-CO')} Millas
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
