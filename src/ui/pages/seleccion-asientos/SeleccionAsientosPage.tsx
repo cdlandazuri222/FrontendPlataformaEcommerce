@@ -642,6 +642,12 @@ export function SeleccionAsientosPage() {
   const handleAplicarCupon = async (codigoOpcional?: string) => {
     const code = (codigoOpcional || codigoCuponInput).trim().toUpperCase();
     if (!code) return;
+
+    if (!estaAutenticado) {
+      setErrorCupon('Debes iniciar sesión con tu cuenta para validar o aplicar cupones.');
+      return;
+    }
+
     setValidandoCupon(true);
     setErrorCupon(null);
     try {
@@ -1079,24 +1085,63 @@ export function SeleccionAsientosPage() {
                     </button>
                   </div>
 
+                  {/* Callout para iniciar sesión si no está autenticado */}
+                  {!estaAutenticado && (
+                    <div className="mb-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-2.5">
+                        <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-2xl shrink-0 mt-0.5">account_circle</span>
+                        <div>
+                          <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                            Inicia sesión para pagar con tus Millas
+                          </p>
+                          <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                            ¡No necesitas ningún código de cupón! Al iniciar sesión con tu cuenta, tus millas acumuladas se cargan automáticamente para pagar el viaje.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate(ROUTES.LOGIN, { state: { returnTo: location.pathname } })}
+                        className="px-4 py-2 bg-[#0e3a8c] hover:bg-blue-900 text-white rounded-xl text-xs font-bold transition-colors shrink-0 flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                      >
+                        <span>Iniciar Sesión</span>
+                        <span className="material-symbols-outlined text-xs">login</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Cupón de descuento */}
                   <div className="mb-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700">
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-sm text-amber-600">confirmation_number</span>
                         {tm.tengoCupon}
                       </span>
-                      {cuponAplicado && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(ROUTES.MILLAS)}
+                        className="text-[11px] text-[#0e3a8c] dark:text-blue-400 hover:underline font-bold flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+                      >
+                        <span>¿Dónde conseguir un código? Canjear en Club Millas</span>
+                        <span className="material-symbols-outlined text-xs">open_in_new</span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2.5">
+                      (Opcional) Si canjeaste un bono o descuento en el Club Millas, ingresa aquí tu código generado (ej: CTN-...).
+                    </p>
+
+                    {cuponAplicado && (
+                      <div className="flex items-center justify-between mb-2">
                         <button
                           type="button"
                           onClick={handleQuitarCupon}
-                          className="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-0.5 cursor-pointer"
+                          className="text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-0.5 cursor-pointer ml-auto"
                         >
                           <span className="material-symbols-outlined text-xs">close</span>
                           {tm.quitarCupon}
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {!cuponAplicado ? (
                       <div>
