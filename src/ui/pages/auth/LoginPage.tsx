@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
 import gsap from 'gsap';
@@ -47,6 +47,8 @@ const INITIAL_SOCIAL_BUTTONS: SocialButton[] = [
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as any)?.returnTo || ROUTES.HOME;
   const containerRef = useRef<HTMLDivElement>(null);
   const { login, loginGoogle, loading, error, setError } = useAuth();
   const [formData, setFormData] = useState({ correo: '', password: '', remember: false });
@@ -224,7 +226,7 @@ export function LoginPage() {
     e.preventDefault();
     try {
       await login({ correo: formData.correo, password: formData.password });
-      navigate(ROUTES.HOME);
+      navigate(returnTo);
     } catch {
       // error handled by useAuth
     }
@@ -234,7 +236,7 @@ export function LoginPage() {
     if (!credentialResponse.credential) return;
     try {
       await loginGoogle(credentialResponse.credential);
-      navigate(ROUTES.HOME);
+      navigate(returnTo);
     } catch {
       // error handled by useAuth
     }

@@ -145,8 +145,8 @@ export function SeleccionAsientosPage() {
 
   // --- Estados de Millas y Cupones ---
   const tm = tx.millas;
-  const token = localStorage.getItem('token');
-  const estaAutenticado = Boolean(token);
+  const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+  const estaAutenticado = Boolean(token || localStorage.getItem('usuario'));
   const [metodoPago, setMetodoPago] = useState<'WOMPI' | 'MILLAS'>('WOMPI');
   const [resumenMillas, setResumenMillas] = useState<MillasResumen | null>(null);
   const [configMillas, setConfigMillas] = useState<ConfiguracionPublicaMillas | null>(null);
@@ -166,18 +166,24 @@ export function SeleccionAsientosPage() {
   const [errorCupon, setErrorCupon] = useState<string | null>(null);
   const [validandoCupon, setValidandoCupon] = useState(false);
 
+  // Cargar configuración pública siempre (no requiere auth)
+  useEffect(() => {
+    millasApi.obtenerConfiguracionPublica()
+      .then(cfg => { if (cfg) setConfigMillas(cfg); })
+      .catch(() => {});
+  }, []);
+
+  // Cargar saldo de millas y cupones del usuario autenticado
   useEffect(() => {
     if (!estaAutenticado) return;
     let cancelado = false;
     setCargandoMillas(true);
     Promise.all([
       millasApi.obtenerResumen().catch(() => null),
-      millasApi.obtenerConfiguracionPublica().catch(() => null),
       millasApi.obtenerMisCupones().catch(() => []),
-    ]).then(([resumen, config, cupones]) => {
+    ]).then(([resumen, cupones]) => {
       if (cancelado) return;
       if (resumen) setResumenMillas(resumen);
-      if (config) setConfigMillas(config);
       if (cupones) setMisCupones(cupones.filter(c => c.estado === 'ACTIVO'));
     }).finally(() => {
       if (!cancelado) setCargandoMillas(false);
@@ -645,6 +651,12 @@ export function SeleccionAsientosPage() {
 
     if (!estaAutenticado) {
       setErrorCupon('Debes iniciar sesión con tu cuenta para validar o aplicar cupones.');
+      return;
+    }
+
+    // Orientación si el usuario escribe su número de socio creyendo que es un código de cupón
+    if (resumenMillas?.usuario?.numeroSocio && code === resumenMillas.usuario.numeroSocio.toUpperCase()) {
+      setErrorCupon(`${code} es tu número de socio Cootranar, no un código de cupón. ¡Tus ${saldoMillas.toLocaleString('es-CO')} millas ya están cargadas en tu saldo arriba para pagar tu viaje directamente!`);
       return;
     }
 
@@ -1127,7 +1139,7 @@ export function SeleccionAsientosPage() {
                       </button>
                     </div>
                     <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2.5">
-                      (Opcional) Si canjeaste un bono o descuento en el Club Millas, ingresa aquí tu código generado (ej: CTN-...).
+                      (Opcional) Si canjeaste un bono o recompensa en el Club Millas, ingresa aquí tu cupón generado (ej: CTN-1-XYZ). Si ya tienes millas en tu cuenta, se descuentan directamente arriba sin necesidad de cupones.
                     </p>
 
                     {cuponAplicado && (
