@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#fbfdff"/>
+    </linearGradient>
+    <filter id="paperShadow" x="-30%" y="-15%" width="160%" height="135%">
+      <feDropShadow dx="-16" dy="0" stdDeviation="18" flood-color="#001238" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <!-- Panel blanco orgánico optimizado para dejar visible el bus completo en la izquierda -->
+  <path
+    d="M770 0 C705 70 735 170 695 260 C655 355 575 450 585 535 C593 595 612 648 638 700 H1200 V0 Z"
+    fill="url(#paper)"
+    filter="url(#paperShadow)"
+  />
+</svg>

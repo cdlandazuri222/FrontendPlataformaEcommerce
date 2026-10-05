@@ -19,11 +19,13 @@ export function Navbar() {
     { label: n.misViajes, path: ROUTES.MIS_VIAJES },
     { label: n.encomiendas, path: ROUTES.ENCOMIENDAS },
     { label: n.misEncomiendas, path: ROUTES.MIS_ENCOMIENDAS },
+    { label: n.millas, path: ROUTES.MILLAS, badge: 'VIP' },
   ];
 
   const enlacesBottomNav = [
     { label: n.home, path: ROUTES.HOME, icon: 'home' },
     { label: n.misViajes, path: ROUTES.MIS_VIAJES, icon: 'history' },
+    { label: n.millas, path: ROUTES.MILLAS, icon: 'stars' },
     { label: n.encomiendas, path: ROUTES.ENCOMIENDAS, icon: 'local_shipping' },
     { label: n.perfil, path: ROUTES.PERFIL, icon: 'person' },
   ];
@@ -73,16 +75,21 @@ export function Navbar() {
           </Link>
 
           {/* Nav desktop */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-7">
             {enlacesDesktop.map((enlace) => (
               <Link
                 key={enlace.path}
                 to={enlace.path}
-                className={`text-sm font-semibold transition-colors duration-200 ${
+                className={`text-sm font-semibold transition-colors duration-200 inline-flex items-center gap-1.5 ${
                   location.pathname === enlace.path ? linkActive : linkInactive
                 }`}
               >
-                {enlace.label}
+                <span>{enlace.label}</span>
+                {enlace.badge && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    {enlace.badge}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>

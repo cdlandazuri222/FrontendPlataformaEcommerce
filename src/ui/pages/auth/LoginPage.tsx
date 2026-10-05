@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import type { CredentialResponse } from '@react-oauth/google';
+import gsap from 'gsap';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../../shared/constants';
 import logo from '../../../assets/Logo.png.png';
 import busCootranar from '../../../assets/busCootranar.png';
+import loginWave from '../../../assets/login-wave.svg';
 
 type SocialButton = {
   id: string;
@@ -45,6 +47,9 @@ const INITIAL_SOCIAL_BUTTONS: SocialButton[] = [
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as any)?.returnTo || ROUTES.HOME;
+  const containerRef = useRef<HTMLDivElement>(null);
   const { login, loginGoogle, loading, error, setError } = useAuth();
   const [formData, setFormData] = useState({ correo: '', password: '', remember: false });
   const [showPassword, setShowPassword] = useState(false);
@@ -58,18 +63,141 @@ export function LoginPage() {
   const googleContainerRef = useRef<HTMLDivElement>(null);
   const [googleWidth, setGoogleWidth] = useState<string>("360");
 
+  // Si ya tiene sesión activa, no mostrar formulario de login, redirigir directamente
+  useEffect(() => {
+    const user = localStorage.getItem('usuario');
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (user && token) {
+      navigate(returnTo !== ROUTES.LOGIN ? returnTo : ROUTES.HOME, { replace: true });
+    }
+  }, [navigate, returnTo]);
+
+  /* ── GSAP ANIMATIONS ── */
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+      // 1. Bus background zoom entrance
+      tl.from('.g-bus-bg', {
+        scale: 1.12,
+        opacity: 0.3,
+        duration: 1.2,
+        ease: 'power2.out',
+      }, 0);
+
+      // 2. Social icons wrapper pop in with stagger
+      tl.from('.g-social-item', {
+        opacity: 0,
+        y: -22,
+        scale: 0.6,
+        stagger: 0.08,
+        duration: 0.65,
+        ease: 'back.out(2.2)',
+      }, 0.1);
+
+      // 3. Hero text title and accent
+      tl.from('.g-hero-title', {
+        opacity: 0,
+        y: 35,
+        duration: 0.8,
+        ease: 'power3.out',
+      }, 0.2)
+      .from('.g-hero-accent', {
+        opacity: 0,
+        y: 25,
+        scale: 0.9,
+        duration: 0.85,
+        ease: 'back.out(1.8)',
+      }, 0.35)
+      .from('.g-hero-desc', {
+        opacity: 0,
+        x: -25,
+        filter: 'blur(4px)',
+        duration: 0.75,
+      }, 0.45)
+      .from('.g-hero-badge', {
+        opacity: 0,
+        y: 20,
+        scale: 0.92,
+        stagger: 0.1,
+        duration: 0.65,
+        ease: 'back.out(1.5)',
+      }, 0.55);
+
+      // 4. White organic wave SVG slide in from right
+      tl.from('.g-wave-panel', {
+        opacity: 0,
+        x: 80,
+        duration: 0.9,
+        ease: 'power3.out',
+      }, 0.15);
+
+      // 5. Right side form components
+      tl.from('.g-form-logo', {
+        opacity: 0,
+        y: -20,
+        scale: 0.85,
+        duration: 0.7,
+        ease: 'back.out(1.6)',
+      }, 0.3)
+      .from('.g-form-header', {
+        opacity: 0,
+        y: 18,
+        duration: 0.6,
+      }, 0.42)
+      .from('.g-google-wrap', {
+        opacity: 0,
+        y: 16,
+        duration: 0.55,
+      }, 0.5)
+      .from('.g-divider-row', {
+        opacity: 0,
+        scaleX: 0.7,
+        duration: 0.5,
+      }, 0.58)
+      .from('.g-input-field', {
+        opacity: 0,
+        y: 20,
+        stagger: 0.08,
+        duration: 0.55,
+        ease: 'power2.out',
+      }, 0.65)
+      .from('.g-submit-btn', {
+        opacity: 0,
+        y: 18,
+        scale: 0.96,
+        duration: 0.6,
+        ease: 'back.out(1.5)',
+      }, 0.8)
+      .from('.g-footer-row', {
+        opacity: 0,
+        y: 10,
+        duration: 0.5,
+      }, 0.9);
+
+      // Subtle breathing pulse on accent text
+      gsap.to('.g-hero-accent', {
+        textShadow: '0 0 20px rgba(56,189,248,0.7)',
+        duration: 2,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
   useEffect(() => {
     if (!googleContainerRef.current) return;
     const updateWidth = () => {
       if (googleContainerRef.current) {
-        // Google's button limits are between 250px and 400px
         const parentWidth = googleContainerRef.current.offsetWidth;
-        const widthVal = Math.max(250, Math.min(400, parentWidth));
+        const widthVal = Math.max(260, Math.min(390, parentWidth));
         setGoogleWidth(String(widthVal));
       }
     };
     updateWidth();
-    // Add small delay to ensure rendering layout is completed
     const timer = setTimeout(updateWidth, 100);
     window.addEventListener('resize', updateWidth);
     return () => {
@@ -107,7 +235,7 @@ export function LoginPage() {
     e.preventDefault();
     try {
       await login({ correo: formData.correo, password: formData.password });
-      navigate(ROUTES.HOME);
+      navigate(returnTo);
     } catch {
       // error handled by useAuth
     }
@@ -117,215 +245,209 @@ export function LoginPage() {
     if (!credentialResponse.credential) return;
     try {
       await loginGoogle(credentialResponse.credential);
-      navigate(ROUTES.HOME);
+      navigate(returnTo);
     } catch {
       // error handled by useAuth
     }
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden flex items-stretch lg:items-center justify-center lg:p-6" style={{ backgroundColor: '#f8fafc' }}>
-      <div className="flex w-full h-[100dvh] lg:h-[95vh] overflow-hidden lg:shadow-2xl bg-brand-blue lg:bg-white max-w-[1536px] lg:rounded-3xl border-0 lg:border border-slate-100 flex-col lg:flex-row">
+    <div ref={containerRef} className="w-full h-screen h-[100dvh] flex items-stretch justify-center bg-[#06183d] select-none overflow-hidden font-sans">
+      <div className="relative w-full h-full flex flex-col lg:flex-row overflow-hidden">
 
-        {/* Panel Izquierdo */}
-        <div className="flex w-full h-[100dvh] lg:h-auto lg:w-[50%] relative overflow-hidden bg-brand-blue order-1 lg:order-1 shrink-0 lg:rounded-l-3xl rounded-none">
-          <div className="absolute inset-0 z-0">
-            <img src={busCootranar} alt="" className="w-full h-full object-cover scale-[1.03] origin-center" style={{ filter: 'brightness(0.85) contrast(1.1)', objectPosition: 'center 40%' }} />
-            <div className="absolute inset-0 bg-gradient-to-tl from-brand-blue via-brand-blue/40 to-transparent" />
-          </div>
+        {/* ─── FONDO DE BUS (Ajustado específicamente al área visible izquierda) ─── */}
+        <div className="g-bus-bg absolute top-0 bottom-0 left-0 w-full lg:w-[62%] xl:w-[65%] z-0 overflow-hidden bg-[#071739]">
+          <img
+            src={busCootranar}
+            alt="Bus Cootranar"
+            className="w-full h-full object-cover object-[center_35%]"
+            style={{ filter: 'brightness(0.96) contrast(1.08) saturate(1.06)' }}
+          />
+          {/* Sombreado elegante para legibilidad de textos inferiores */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#06183d]/90 via-[#06183d]/25 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06183d]/50 via-transparent to-transparent" />
+        </div>
 
-          {/* Redes Sociales - Esquina superior izquierda (Draggables & Touch Support) */}
-          <div className="absolute top-8 left-8 lg:top-20 lg:left-20 z-20 flex items-center gap-3">
+        {/* ─── PANEL SVG ORGÁNICO BLANCO FULL-BLEED ─── */}
+        <img
+          src={loginWave}
+          alt=""
+          className="g-wave-panel hidden lg:block absolute inset-0 w-full h-full object-fill pointer-events-none z-10 select-none"
+        />
+
+        {/* ─── PANEL IZQUIERDO: HERO CONTENT ─── */}
+        <div className="relative z-20 flex flex-col justify-between p-6 sm:p-10 lg:p-10 xl:p-14 w-full lg:w-[52%] h-[40vh] lg:h-full shrink-0 pointer-events-none">
+          {/* Redes Sociales - Esquina superior izquierda */}
+          <div className="flex items-center gap-3 pointer-events-auto">
             {socialButtons.map((btn, index) => {
               const isDragging = draggedId === btn.id;
               const isDropTarget = dragOverId === btn.id && draggedId !== btn.id;
               const isHovered = hoveredId === btn.id && !isDragging;
 
               return (
-                <a
-                  key={btn.id}
-                  data-id={btn.id}
-                  data-index={index}
-                  href={isDragging ? undefined : btn.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={btn.title}
-                  draggable
-                  onClick={e => { if (draggedId) e.preventDefault(); }}
-                  onMouseEnter={() => setHoveredId(btn.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  /* ── Desktop Drag handlers ── */
-                  onDragStart={e => {
-                    dragOriginIndex.current = index;
-                    setDraggedId(btn.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                    const ghost = document.createElement('div');
-                    ghost.style.width = '0px';
-                    ghost.style.height = '0px';
-                    document.body.appendChild(ghost);
-                    e.dataTransfer.setDragImage(ghost, 0, 0);
-                    setTimeout(() => document.body.removeChild(ghost), 0);
-                  }}
-                  onDragEnd={() => {
-                    setDraggedId(null);
-                    setDragOverId(null);
-                    dragOriginIndex.current = -1;
-                  }}
-                  onDragEnter={e => {
-                    e.preventDefault();
-                    if (draggedId && draggedId !== btn.id) {
-                      setDragOverId(btn.id);
-                      setSocialButtons(prev => {
-                        const next = [...prev];
-                        const from = next.findIndex(b => b.id === draggedId);
-                        const to = index;
-                        if (from === -1 || from === to) return prev;
-                        const [moved] = next.splice(from, 1);
-                        next.splice(to, 0, moved);
-                        return next;
-                      });
-                    }
-                  }}
-                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                  onDrop={e => { e.preventDefault(); setDragOverId(null); }}
-                  /* ── Mobile Touch handlers ── */
-                  onTouchStart={() => {
-                    dragOriginIndex.current = index;
-                    setDraggedId(btn.id);
-                  }}
-                  onTouchMove={e => {
-                    if (!draggedId) return;
-                    const touch = e.touches[0];
-                    // Encontrar elemento debajo del dedo
-                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-                    const targetEl = element?.closest('[data-id]');
-                    if (targetEl) {
-                      const targetId = targetEl.getAttribute('data-id');
-                      const targetIdxStr = targetEl.getAttribute('data-index');
-                      const targetIdx = targetIdxStr ? parseInt(targetIdxStr, 10) : -1;
-
-                      if (targetId && targetId !== draggedId && targetIdx !== -1) {
-                        setDragOverId(targetId);
+                <div key={btn.id} className="g-social-item">
+                  <a
+                    data-id={btn.id}
+                    data-index={index}
+                    href={isDragging ? undefined : btn.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={btn.title}
+                    draggable
+                    onClick={e => { if (draggedId) e.preventDefault(); }}
+                    onMouseEnter={() => setHoveredId(btn.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    onDragStart={e => {
+                      dragOriginIndex.current = index;
+                      setDraggedId(btn.id);
+                      e.dataTransfer.effectAllowed = 'move';
+                      const ghost = document.createElement('div');
+                      ghost.style.width = '0px';
+                      ghost.style.height = '0px';
+                      document.body.appendChild(ghost);
+                      e.dataTransfer.setDragImage(ghost, 0, 0);
+                      setTimeout(() => document.body.removeChild(ghost), 0);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDragOverId(null);
+                      dragOriginIndex.current = -1;
+                    }}
+                    onDragEnter={e => {
+                      e.preventDefault();
+                      if (draggedId && draggedId !== btn.id) {
+                        setDragOverId(btn.id);
                         setSocialButtons(prev => {
                           const next = [...prev];
                           const from = next.findIndex(b => b.id === draggedId);
-                          const to = targetIdx;
+                          const to = index;
                           if (from === -1 || from === to) return prev;
                           const [moved] = next.splice(from, 1);
                           next.splice(to, 0, moved);
                           return next;
                         });
                       }
-                    }
-                  }}
-                  onTouchEnd={() => {
-                    setDraggedId(null);
-                    setDragOverId(null);
-                    dragOriginIndex.current = -1;
-                  }}
-                  className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-lg select-none touch-none"
-                  style={{
-                    backdropFilter: 'blur(10px)',
-                    border: isDropTarget
-                      ? '2px dashed rgba(255,255,255,0.9)'
-                      : '1px solid rgba(255,255,255,0.3)',
-                    background: isDragging
-                      ? 'rgba(255,255,255,0.35)'
-                      : isHovered
-                        ? btn.hoverBg
-                        : 'rgba(255,255,255,0.15)',
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    transform: isDragging
-                      ? 'scale(1.18) rotate(-6deg)'
-                      : isDropTarget
-                        ? 'scale(1.08)'
-                        : isHovered
-                          ? 'scale(1.1)'
-                          : 'scale(1)',
-                    opacity: isDragging ? 0.7 : 1,
-                    boxShadow: isDragging
-                      ? '0 12px 30px rgba(0,0,0,0.35)'
-                      : isDropTarget
-                        ? '0 0 0 3px rgba(255,255,255,0.5)'
-                        : '',
-                    transition: isDragging
-                      ? 'transform 0.15s ease, opacity 0.15s ease'
-                      : 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-                    willChange: 'transform',
-                  }}
-                >
-                  {/* Grip dots hint visible on hover */}
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '2px',
-                      right: '3px',
-                      fontSize: '7px',
-                      lineHeight: 1,
-                      color: 'rgba(255,255,255,0.6)',
-                      letterSpacing: '1px',
-                      pointerEvents: 'none',
-                      opacity: isHovered || isDragging ? 1 : 0,
-                      transition: 'opacity 0.2s',
-                      userSelect: 'none',
                     }}
-                  >⠿</span>
-                  {btn.icon}
-                </a>
+                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                    onDrop={e => { e.preventDefault(); setDragOverId(null); }}
+                    onTouchStart={() => {
+                      dragOriginIndex.current = index;
+                      setDraggedId(btn.id);
+                    }}
+                    onTouchMove={e => {
+                      if (!draggedId) return;
+                      const touch = e.touches[0];
+                      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                      const targetEl = element?.closest('[data-id]');
+                      if (targetEl) {
+                        const targetId = targetEl.getAttribute('data-id');
+                        const targetIdxStr = targetEl.getAttribute('data-index');
+                        const targetIdx = targetIdxStr ? parseInt(targetIdxStr, 10) : -1;
+
+                        if (targetId && targetId !== draggedId && targetIdx !== -1) {
+                          setDragOverId(targetId);
+                          setSocialButtons(prev => {
+                            const next = [...prev];
+                            const from = next.findIndex(b => b.id === draggedId);
+                            const to = targetIdx;
+                            if (from === -1 || from === to) return prev;
+                            const [moved] = next.splice(from, 1);
+                            next.splice(to, 0, moved);
+                            return next;
+                          });
+                        }
+                      }
+                    }}
+                    onTouchEnd={() => {
+                      setDraggedId(null);
+                      setDragOverId(null);
+                      dragOriginIndex.current = -1;
+                    }}
+                    className="flex items-center justify-center w-11 h-11 rounded-2xl shadow-xl select-none touch-none transition-all duration-200 cursor-pointer"
+                    style={{
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: isDropTarget
+                        ? '2px dashed rgba(255,255,255,0.95)'
+                        : '1px solid rgba(255,255,255,0.3)',
+                      background: isDragging
+                        ? 'rgba(255,255,255,0.45)'
+                        : isHovered
+                          ? btn.hoverBg
+                          : 'rgba(7, 24, 66, 0.65)',
+                      cursor: isDragging ? 'grabbing' : 'grab',
+                      transform: isDragging
+                        ? 'scale(1.18) rotate(-6deg)'
+                        : isDropTarget
+                          ? 'scale(1.1)'
+                          : isHovered
+                            ? 'scale(1.12)'
+                            : 'scale(1)',
+                      boxShadow: isDragging
+                        ? '0 12px 30px rgba(0,0,0,0.5)'
+                        : isHovered
+                          ? '0 8px 24px rgba(0,0,0,0.35)'
+                          : '0 4px 16px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    {btn.icon}
+                  </a>
+                </div>
               );
             })}
           </div>
-          <div className="relative z-10 flex flex-col justify-end p-6 sm:p-8 pt-28 pb-8 lg:p-20 text-white w-full h-full">
-            <div className="space-y-6 sm:space-y-8 max-w-lg w-full mx-auto lg:mx-0">
-              <div className="space-y-4">
-                <h2 className="text-4xl lg:text-6xl font-extrabold leading-tight tracking-tight">
-                  Tu viaje seguro<span className="text-brand-blue-light block">empieza aquí.</span>
-                </h2>
-                <p className="text-lg lg:text-xl text-blue-50 font-medium opacity-90 leading-relaxed mt-4 lg:mt-0">
-                  Accede a tu cuenta para gestionar tus reservas, acumular kilómetros y viajar con la comodidad que mereces.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-4 lg:pt-10">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-3xl text-blue-200">security</span>
-                  <div className="text-sm"><p className="font-bold">Seguridad Total</p><p className="text-blue-200/80">Monitoreo GPS 24/7</p></div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-3xl text-blue-200">schedule</span>
-                  <div className="text-sm"><p className="font-bold">Puntualidad</p><p className="text-blue-200/80">Horarios garantizados</p></div>
+
+          {/* Hero text bottom */}
+          <div className="max-w-md pb-2">
+            <h2 className="g-hero-title text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.1] tracking-tight text-white mb-3">
+              Tu viaje seguro <span className="g-hero-accent text-[#38bdf8] block">empieza aquí.</span>
+            </h2>
+            <p className="g-hero-desc text-xs sm:text-sm text-blue-100/90 font-medium leading-relaxed mb-5">
+              Accede a tu cuenta para gestionar tus reservas, acumular kilómetros y viajar con la comodidad que mereces.
+            </p>
+            <div className="flex flex-wrap items-center gap-6 text-white">
+              <div className="g-hero-badge flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-2xl sm:text-3xl text-sky-300">security</span>
+                <div>
+                  <p className="text-xs sm:text-sm font-bold leading-tight">Seguridad Total</p>
+                  <p className="text-[10px] sm:text-xs text-blue-200/80 leading-tight">Monitoreo GPS 24/7</p>
                 </div>
               </div>
-              <div className="flex lg:hidden w-full pt-6 pb-2 justify-center items-center">
-                <a
-                  href="#form-section"
-                  className="flex items-center justify-center gap-2 bg-white text-brand-blue font-bold px-8 py-3.5 rounded-full w-full max-w-[280px] sm:max-w-xs mx-auto hover:bg-slate-50 transition-all shadow-xl shadow-black/20 text-center active:scale-95 cursor-pointer"
-                >
-                  <span>Comenzar</span>
-                  <span className="material-symbols-outlined text-xl">arrow_downward</span>
-                </a>
+              <div className="g-hero-badge flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-2xl sm:text-3xl text-sky-300">schedule</span>
+                <div>
+                  <p className="text-xs sm:text-sm font-bold leading-tight">Puntualidad</p>
+                  <p className="text-[10px] sm:text-xs text-blue-200/80 leading-tight">Horarios garantizados</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Panel Derecho - Formulario */}
-        <div id="form-section" className="w-full lg:w-[50%] flex flex-col bg-white lg:rounded-none rounded-t-[2.5rem] lg:-mt-0 lg:pt-0 relative z-20 custom-scrollbar overflow-y-auto order-2 lg:order-2 shadow-[0_-15px_30px_rgba(0,0,0,0.15)] lg:shadow-none min-h-[100dvh] lg:min-h-0">
-          <div className="max-w-[480px] w-full mx-auto px-6 py-8 lg:px-12 lg:py-16 flex-grow flex flex-col justify-center">
-            <div className="flex justify-center mb-8">
-              <img src={logo} alt="Cootranar" className="h-20 w-auto" />
+        {/* ─── PANEL DERECHO: FORMULARIO DE LOGIN ─── */}
+        <div className="relative z-20 w-full lg:w-[45%] xl:w-[42%] lg:ml-auto flex flex-col justify-between bg-white lg:bg-transparent rounded-t-[2.5rem] lg:rounded-none px-6 py-6 sm:px-10 lg:pl-12 lg:pr-10 xl:pl-16 xl:pr-14 lg:py-6 h-auto lg:h-full overflow-y-auto lg:overflow-hidden flex-grow">
+          <div className="max-w-[390px] w-full mx-auto my-auto flex flex-col justify-center">
+
+            {/* Logo */}
+            <div className="g-form-logo flex justify-center mb-2">
+              <img src={logo} alt="Cootranar" className="h-12 sm:h-14 xl:h-16 w-auto object-contain" />
             </div>
-            <header className="mb-10 text-center lg:text-left">
-              <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">Bienvenido de nuevo</h1>
-              <p className="text-slate-500 text-lg">Inicia sesión para gestionar tus viajes.</p>
+
+            {/* Header */}
+            <header className="g-form-header mb-3.5 text-center">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Bienvenido de nuevo</h1>
+              <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Inicia sesión para gestionar tus viajes.</p>
             </header>
 
+            {/* Error Message */}
             {error && (
-              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200">
-                <p className="text-sm font-medium text-red-800">{error}</p>
+              <div className="mb-3 p-2.5 rounded-xl bg-red-50 border border-red-200">
+                <p className="text-xs font-semibold text-red-700 text-center">{error}</p>
               </div>
             )}
 
-            <div ref={googleContainerRef} className="mb-8 flex justify-center google-login-wrapper w-full">
+            {/* Google Login Button */}
+            <div ref={googleContainerRef} className="g-google-wrap mb-3.5 flex justify-center google-login-wrapper w-full">
               {import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID !== 'TU_GOOGLE_CLIENT_ID_AQUI' && (
                 <GoogleLogin
                   key={googleWidth}
@@ -342,94 +464,104 @@ export function LoginPage() {
               )}
             </div>
 
-            <div className="relative flex items-center mb-10">
+            {/* Divider */}
+            <div className="g-divider-row relative flex items-center mb-3.5">
               <div className="flex-grow border-t border-slate-200" />
-              <span className="flex-shrink mx-4 text-slate-400 text-xs font-bold uppercase tracking-widest">O con tu correo electrónico</span>
+              <span className="flex-shrink mx-3 text-slate-400 text-[10.5px] font-bold uppercase tracking-wider">O con tu correo electrónico</span>
               <div className="flex-grow border-t border-slate-200" />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Correo Electrónico</label>
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {/* Correo Electrónico */}
+              <div className="g-input-field space-y-1.5">
+                <label className="text-[13px] font-bold text-slate-700 ml-1">Correo Electrónico</label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-3 text-slate-400">mail</span>
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none">mail</span>
                   <input
                     type="email"
                     name="correo"
                     value={formData.correo}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 rounded-xl h-12 transition-all placeholder:text-slate-400"
-                    style={{ border: `1px solid ${fieldErrors.correo ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
+                    className="w-full pl-12 pr-4 rounded-2xl h-12 transition-all placeholder:text-slate-400 text-[14.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                    style={{ borderColor: fieldErrors.correo ? '#f87171' : '#cbd5e1' }}
                     placeholder="usuario@ejemplo.com"
                   />
                 </div>
-                {fieldErrors.correo && <p className="text-xs ml-1 text-red-600">{fieldErrors.correo}</p>}
+                {fieldErrors.correo && <p className="text-[11.5px] ml-1 text-red-600">{fieldErrors.correo}</p>}
               </div>
 
-              <div className="space-y-2">
+              {/* Contraseña */}
+              <div className="g-input-field space-y-1.5">
                 <div className="flex justify-between items-center ml-1">
-                  <label className="text-sm font-bold text-slate-700">Contraseña</label>
-                  <Link to={ROUTES.RECUPERAR_PASSWORD} className="text-xs font-bold text-brand-blue hover:text-brand-blue-light">¿Olvidaste tu contraseña?</Link>
+                  <label className="text-[13px] font-bold text-slate-700">Contraseña</label>
+                  <Link to={ROUTES.RECUPERAR_PASSWORD} className="text-xs font-bold text-brand-blue hover:text-brand-blue-light transition-colors">¿Olvidaste tu contraseña?</Link>
                 </div>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-3 text-slate-400">lock</span>
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none">lock</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 pr-12 rounded-xl h-12 transition-all placeholder:text-slate-400"
-                    style={{ border: `1px solid ${fieldErrors.password ? '#f87171' : '#e2e8f0'}`, backgroundColor: 'rgba(248, 250, 252, 0.5)' }}
+                    className="w-full pl-12 pr-12 rounded-2xl h-12 transition-all placeholder:text-slate-400 text-[14.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                    style={{ borderColor: fieldErrors.password ? '#f87171' : '#cbd5e1' }}
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="material-symbols-outlined absolute right-4 top-3 text-slate-400 hover:text-slate-600 transition-colors"
+                    className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-xl cursor-pointer"
                   >
-                    visibility
+                    {showPassword ? 'visibility_off' : 'visibility'}
                   </button>
                 </div>
-                {fieldErrors.password && <p className="text-xs ml-1 text-red-600">{fieldErrors.password}</p>}
+                {fieldErrors.password && <p className="text-[11.5px] ml-1 text-red-600">{fieldErrors.password}</p>}
               </div>
 
-              <div className="flex items-center gap-2 ml-1">
+              {/* Mantener sesión iniciada */}
+              <div className="g-input-field flex items-center gap-2.5 ml-1 pt-0.5">
                 <input
                   type="checkbox"
                   name="remember"
                   id="remember"
                   checked={formData.remember}
                   onChange={handleChange}
-                  className="w-4 h-4 text-brand-blue border-slate-300 rounded focus:ring-brand-blue"
+                  className="w-4 h-4 text-brand-blue border-slate-300 rounded focus:ring-brand-blue cursor-pointer"
                 />
-                <label htmlFor="remember" className="text-sm text-slate-600 font-medium cursor-pointer">Mantener sesión iniciada</label>
+                <label htmlFor="remember" className="text-xs text-slate-600 font-medium cursor-pointer select-none">Mantener sesión iniciada</label>
               </div>
 
-              <div className="pt-4">
+              {/* Botón Iniciar Sesión (con altura robusta y proporciones armónicas) */}
+              <div className="g-submit-btn pt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-brand-blue hover:bg-brand-blue-light text-white font-bold h-14 rounded-xl shadow-lg shadow-brand-blue/20 transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] text-lg"
+                  className="w-full bg-[#082b71] hover:bg-[#061d4e] active:scale-[0.99] text-white font-bold h-12 rounded-full shadow-lg shadow-[#082b71]/25 transition-all duration-200 text-[15px] flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                  <span>{loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}</span>
+                  {!loading && <span className="material-symbols-outlined text-lg">arrow_forward</span>}
                 </button>
-                <p className="text-center text-slate-500 text-sm mt-5">
-                  ¿No tienes cuenta? <Link to={ROUTES.REGISTRO} className="text-brand-blue font-bold">Regístrate</Link>
+                <p className="text-center text-slate-500 text-xs mt-3">
+                  ¿No tienes cuenta? <Link to={ROUTES.REGISTRO} className="text-brand-blue font-bold hover:underline">Regístrate</Link>
                 </p>
               </div>
             </form>
+
           </div>
 
-          <footer className="mt-auto border-t border-slate-100 p-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-400">
-            <p>© 2024 Cootranar S.A. Calidad y servicio en cada viaje.</p>
-            <div className="flex gap-6">
+          {/* Footer */}
+          <footer className="g-footer-row pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-2 text-[11px] text-slate-400">
+            <p>© 2024 Cootranar S.A. Calidad y servicio.</p>
+            <div className="flex gap-4">
               <a href="#" className="hover:text-brand-blue transition-colors">Privacidad</a>
               <a href="#" className="hover:text-brand-blue transition-colors">Términos</a>
             </div>
           </footer>
         </div>
+
       </div>
     </div>
   );
