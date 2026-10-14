@@ -1,5 +1,5 @@
 import { httpClient } from '../api/httpClient';
-import { cifrarPayloadRsa, descifrarRespuesta } from '../../shared/utils/cryptoRsa';
+import { cifrarPayloadRsa, cifrarPayloadAes, descifrarRespuesta } from '../../shared/utils/cryptoRsa';
 import type {
   AuthClienteService,
   LoginCredentials,
@@ -45,7 +45,11 @@ export class ApiAuthClienteService implements AuthClienteService {
   }
 
   async registrar(data: RegistroCredentials): Promise<void> {
-    const secureData = await cifrarPayloadRsa(data);
+    // Se usa AES-256-GCM (no RSA-OAEP) porque el payload de registro tiene varios
+    // campos y supera el límite de ~190 bytes que RSA-OAEP/2048+SHA-256 puede
+    // cifrar en un solo bloque (causaba OperationError). El backend detecta el
+    // formato AES (ivHex:cipherHex) por el ':' y lo descifra correctamente.
+    const secureData = await cifrarPayloadAes(data);
     await httpClient.post('/auth/registrar/cliente', { data: secureData });
   }
 
