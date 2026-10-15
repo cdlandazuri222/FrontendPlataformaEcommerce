@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { wompiApi, type CompletarPerfilDTO, type DatosTransaccionWompi, type PrepararTransaccionDTO, type AsientoTransaccionDTO } from '../../infrastructure/api/wompiApi';
 
 export type FasePago = 'idle' | 'verificando' | 'formulario' | 'preparando' | 'widget' | 'error';
@@ -93,12 +93,12 @@ export function useWompiPago(): UseWompiPagoReturn {
     }
   };
 
-  const resetear = () => {
+  const resetear = useCallback(() => {
     setFase('idle');
     setDatosTransaccion(null);
     setError(null);
     setParamsPendientes(null);
-  };
+  }, []);
 
   return { fase, datosTransaccion, error, iniciarPago, completarPerfil, resetear };
 }

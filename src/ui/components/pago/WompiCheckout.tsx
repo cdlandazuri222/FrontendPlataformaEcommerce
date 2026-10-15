@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../infrastructure/supabase/supabaseClient';
 import { ROUTES } from '../../../shared/constants';
 import type { DatosTransaccionWompi } from '../../../infrastructure/api/wompiApi';
@@ -11,19 +10,16 @@ interface Props {
 
 /**
  * Renderiza e invoca el Widget Checkout de Wompi mediante WidgetCheckout de JavaScript.
- * - Evita window.open() y la inyección dinámica de scripts en cada clic.
- * - Permite apertura automática y botón de activación directa compatible con Safari (iOS).
- * - Escucha cambios en pagowompi vía Supabase Realtime para redirigir tras aprobación/rechazo.
+ * Compatible con Safari (iOS / iPhone) sin requerir desactivar el bloqueo de ventanas emergentes.
  */
 export function WompiCheckout({ datos, onCerrar }: Props) {
-  const navigate = useNavigate();
   const [abierto, setAbierto] = useState(false);
-  const checkoutRef = useRef<any>(null);
-  const yaIntentoAbrirRef = useRef(false);
+  const checkoutInstanciaRef = useRef<any>(null);
+  const intentoInicialRef = useRef(false);
 
-  // Función para remover overlays o iframes residuales de Wompi al finalizar
-  const cerrarModalWompi = useCallback(() => {
-    console.log('[WompiCheckout] Removiendo modales residuales de Wompi...');
+  // Función para remover overlays o modales residuales de Wompi ÚNICAMENTE al terminar o cancelar
+  const limpiarModalesWompi = useCallback(() => {
+    console.log('[WompiCheckout] Limpiando elementos residuales de Wompi...');
 
     const iframes = document.querySelectorAll('iframe[src*="wompi"], iframe[src*="checkout"]');
     iframes.forEach((iframe) => {
@@ -31,29 +27,16 @@ export function WompiCheckout({ datos, onCerrar }: Props) {
     });
 
     const selectores = [
-      '[class*="wompi"]',
-      '[class*="modal"]',
-      '[class*="overlay"]',
-      '[id*="wompi"]',
-      '[id*="checkout"]',
       '.wompi-widget',
-      '#wompi-widget'
+      '#wompi-widget',
+      '[class*="wompi-modal"]',
+      '[class*="wompi-overlay"]'
     ];
 
     selectores.forEach((selector) => {
       const elementos = document.querySelectorAll(selector);
       elementos.forEach((el) => {
-        const elemento = el as HTMLElement;
-        const style = window.getComputedStyle(elemento);
-        if (
-          style.position === 'fixed' ||
-          style.position === 'absolute' ||
-          parseInt(style.zIndex, 10) > 100
-        ) {
-          elemento.style.display = 'none';
-          elemento.style.visibility = 'hidden';
-          elemento.style.opacity = '0';
-        }
+        (el as HTMLElement).remove();
       });
     });
 
@@ -83,14 +66,14 @@ export function WompiCheckout({ datos, onCerrar }: Props) {
           const nuevoEstado = payload.new?.estado;
 
           if (nuevoEstado === 'APROBADO') {
-            console.log('[WompiCheckout] Pago aprobado, redirigiendo...');
-            cerrarModalWompi();
+            console.log('[WompiCheckout] Pago aprobado, cerrando y redirigiendo...');
+            limpiarModalesWompi();
             setTimeout(() => {
               window.location.href = `${ROUTES.PAGO_RESULTADO}?status=APPROVED&reference=${datos.referencia}`;
             }, 100);
           } else if (nuevoEstado === 'RECHAZADO') {
-            console.log('[WompiCheckout] Pago rechazado, redirigiendo...');
-            cerrarModalWompi();
+            console.log('[WompiCheckout] Pago rechazado, cerrando y redirigiendo...');
+            limpiarModalesWompi();
             setTimeout(() => {
               window.location.href = `${ROUTES.PAGO_RESULTADO}?status=DECLINED&reference=${datos.referencia}`;
             }, 100);
@@ -109,14 +92,14 @@ export function WompiCheckout({ datos, onCerrar }: Props) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [datos.referencia, navigate, cerrarModalWompi]);
+  }, [datos.referencia, limpiarModalesWompi]);
 
   // 2. Instanciar y abrir WidgetCheckout
   const abrirPasarela = useCallback(() => {
     const WompiWidget = (window as any).WidgetCheckout;
 
     if (typeof WompiWidget !== 'function') {
-      console.warn('[WompiCheckout] window.WidgetCheckout no disponible aún en el DOM');
+      console.warn('[WompiCheckout] window.WidgetCheckout no disponible en el DOM');
       return;
     }
 
@@ -126,15 +109,20 @@ export function WompiCheckout({ datos, onCerrar }: Props) {
       const usuarioRaw = localStorage.getItem('usuario');
       if (usuarioRaw) {
         const u = JSON.parse(usuarioRaw);
-        const fullName = [u.nombre, u.apellido].filter(Boolean).join(' ');
-        customerData = {
-          email: u.correo || undefined,
-          fullName: fullName || undefined,
-          phoneNumber: u.telefono ? String(u.telefono) : undefined,
-          phoneNumberPrefix: '+57',
-          legalId: u.documento ? String(u.documento) : undefined,
-          legalIdType: u.tipodocumento || 'CC',
-        };
+        const fullName = [u.nombre, u.apellido].filter(Boolean).join(' ').trim();
+        const data: any = {};
+        if (u.correo?.trim()) data.email = u.correo.trim();
+        if (fullName) data.fullName = fullName;
+        if (u.telefono?.trim()) {
+          data.phoneNumber = u.telefono.trim();
+          data.phoneNumberPrefix = '+57';
+        }
+        if (u.documento?.trim()) data.legalId = u.documento.trim();
+        if (u.tipodocumento?.trim()) data.legalIdType = u.tipodocumento.trim();
+
+        if (Object.keys(data).length > 0) {
+          customerData = data;
+        }
       }
     } catch {
       // Ignorar error al parsear usuario
@@ -147,82 +135,61 @@ export function WompiCheckout({ datos, onCerrar }: Props) {
       publicKey: datos.publicKey,
       signature: {
         integrity: datos.firma
-      },
-      redirectUrl: datos.redirectUrl
+      }
     };
+
+    if (datos.redirectUrl && datos.redirectUrl.trim()) {
+      config.redirectUrl = datos.redirectUrl.trim();
+    }
 
     if (customerData) {
       config.customerData = customerData;
     }
 
-    console.log('[WompiCheckout] Abriendo checkout con WidgetCheckout oficial');
+    console.log('[WompiCheckout] Abriendo checkout con WidgetCheckout oficial para ref:', datos.referencia);
     const checkout = new WompiWidget(config);
-    checkoutRef.current = checkout;
+    checkoutInstanciaRef.current = checkout;
     setAbierto(true);
 
     try {
       checkout.open((result: any) => {
-        console.log('[WompiCheckout] Callback WidgetCheckout ejecutado:', result);
-        const transaction = result?.transaction;
-        if (!transaction) {
-          console.log('[WompiCheckout] El usuario cerró la pasarela');
-          onCerrar?.();
-        }
+        console.log('[WompiCheckout] Callback WidgetCheckout finalizado:', result);
       });
     } catch (err) {
       console.error('[WompiCheckout] Error al llamar checkout.open():', err);
     }
-  }, [datos, onCerrar]);
+  }, [datos]);
 
-  // 3. Intento de apertura automática al montar el componente
+  // 3. Intento de apertura automática una sola vez al montar
   useEffect(() => {
-    if (yaIntentoAbrirRef.current) return;
-    yaIntentoAbrirRef.current = true;
+    if (intentoInicialRef.current) return;
+    intentoInicialRef.current = true;
 
-    // Verificar si WidgetCheckout está listo; si no, reintentar brevemente
+    let timer: NodeJS.Timeout | null = null;
+    let intentos = 0;
+
     const intentar = () => {
       if (typeof (window as any).WidgetCheckout === 'function') {
         abrirPasarela();
-      } else {
-        const timer = setTimeout(() => {
-          if (typeof (window as any).WidgetCheckout === 'function') {
-            abrirPasarela();
-          }
-        }, 300);
-        return () => clearTimeout(timer);
+      } else if (intentos < 15) {
+        intentos++;
+        timer = setTimeout(intentar, 150);
       }
     };
 
-    const cleanup = intentar();
+    intentar();
+
     return () => {
-      cleanup?.();
-      cerrarModalWompi();
+      if (timer) clearTimeout(timer);
+      // ¡IMPORTANTE: NO limpiar modales en este cleanup, ya que React StrictMode o un re-render
+      // destruirían el iframe de Wompi mientras el usuario está pagando!
     };
-  }, [abrirPasarela, cerrarModalWompi]);
+  }, [abrirPasarela]);
 
-  // 4. Escuchar postMessage de Wompi para detectar cuando se cierra
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (!event.origin.includes('wompi.co')) return;
-
-      const data = event.data;
-      const isClosed =
-        data === 'close' ||
-        data === 'closed' ||
-        data?.event === 'closed' ||
-        data?.action === 'closed' ||
-        data?.type === 'closed' ||
-        (typeof data === 'object' && data !== null && 'event' in data && data.event === 'closed');
-
-      if (isClosed) {
-        console.log('[WompiCheckout] Cierre detectado por postMessage');
-        onCerrar?.();
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [onCerrar]);
+  const handleCancelar = () => {
+    limpiarModalesWompi();
+    onCerrar?.();
+  };
 
   const montoCop = Math.round(datos.amountInCents / 100);
 
@@ -237,7 +204,7 @@ export function WompiCheckout({ datos, onCerrar }: Props) {
         Total a pagar: <strong className="font-extrabold text-slate-900 dark:text-white">{montoCop.toLocaleString('es-CO')} COP</strong>.
         {abierto
           ? ' Si la ventana de pago se cerró o tu navegador bloqueó la apertura automática, pulsa el botón a continuación:'
-          : ' Preparando el widget de pago seguro...'}
+          : ' Abriendo la pasarela de pago segura...'}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
@@ -248,16 +215,13 @@ export function WompiCheckout({ datos, onCerrar }: Props) {
           className="w-full sm:w-auto px-6 py-3.5 bg-[#0e3a8c] hover:bg-blue-900 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
         >
           <span className="material-symbols-outlined text-base">lock</span>
-          {abierto ? 'Pagar con Wompi' : 'Abrir pasarela de pago'}
+          {abierto ? 'Reabrir pasarela de pago' : 'Pagar ahora con Wompi'}
         </button>
 
         {onCerrar && (
           <button
             type="button"
-            onClick={() => {
-              cerrarModalWompi();
-              onCerrar();
-            }}
+            onClick={handleCancelar}
             className="w-full sm:w-auto px-4 py-3.5 bg-transparent hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-600 dark:text-slate-300 font-medium rounded-xl transition-all text-xs cursor-pointer"
           >
             Cancelar / Cambiar método
