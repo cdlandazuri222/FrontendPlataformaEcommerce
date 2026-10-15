@@ -8,8 +8,11 @@ import { usePreferencias } from '../../context/PreferenciasContext';
 import { abrirODescargarPdf } from '../../../shared/utils/descargarPdf';
 
 function formatFecha(fechaISO: string, idioma: 'es' | 'en'): string {
-  return new Date(fechaISO).toLocaleDateString(idioma === 'es' ? 'es-CO' : 'en-US', {
-    timeZone: 'America/Bogota',
+  // fechasalida es una fecha de calendario (YYYY-MM-DD): se construye en hora local
+  // para que ninguna conversión de zona horaria corra el día.
+  const [y, m, d] = String(fechaISO ?? '').slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return '';
+  return new Date(y, m - 1, d).toLocaleDateString(idioma === 'es' ? 'es-CO' : 'en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

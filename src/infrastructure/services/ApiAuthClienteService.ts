@@ -54,7 +54,7 @@ export class ApiAuthClienteService implements AuthClienteService {
   }
 
   async verificarEmail(token: string): Promise<{ message: string; result?: AuthClienteResult }> {
-    const response = await httpClient.get(`/auth/verificar-email?token=${token}`);
+    const response = await httpClient.post('/auth/verificar-email', { token });
     const resData = response.data;
     const payload = resData.data || resData;
 
