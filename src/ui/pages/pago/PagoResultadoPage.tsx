@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { httpClient } from '../../../infrastructure/api/httpClient';
 import { ROUTES } from '../../../shared/constants';
 import type { TiqueteReferencia } from '../../../infrastructure/api/wompiApi';
+import { abrirODescargarPdf, esDispositivoIOS } from '../../../shared/utils/descargarPdf';
 
 /**
  * Página de resultado de pago Wompi.
@@ -21,6 +22,7 @@ export function PagoResultadoPage() {
 
   const [tiquetes, setTiquetes] = useState<TiqueteReferencia[]>([]);
   const [descargandoId, setDescargandoId] = useState<number | null>(null);
+  const [descargandoTodos, setDescargandoTodos] = useState(false);
   const [errorDescarga, setErrorDescarga] = useState<string | null>(null);
   // PDF puede tardar unos segundos en generarse tras el webhook
   const [intentos, setIntentos] = useState(0);
@@ -51,18 +53,63 @@ export function PagoResultadoPage() {
     fetchTiquetes();
   }, [esAprobado, reference, intentos]);
 
-  const handleDescargar = async (idTiquete: number) => {
+  const handleDescargar = async (idTiquete: number, codigoTiquete?: string) => {
     setDescargandoId(idTiquete);
     setErrorDescarga(null);
     try {
-      const res = await httpClient.get(`/wompi/tiquetes/${idTiquete}/pdf`);
-      if (res.data.success && res.data.signedUrl) {
-        window.open(res.data.signedUrl, '_blank');
-      }
+      await abrirODescargarPdf(async () => {
+        const res = await httpClient.get<{ success: boolean; signedUrl: string }>(
+          `/wompi/tiquetes/${idTiquete}/pdf`
+        );
+        return res.data.signedUrl;
+      }, `tiquete-${codigoTiquete || idTiquete}.pdf`);
     } catch {
       setErrorDescarga('No se pudo generar el enlace de descarga. Intenta de nuevo.');
     } finally {
       setDescargandoId(null);
+    }
+  };
+
+  const handleDescargarTodos = async () => {
+    setDescargandoTodos(true);
+    setErrorDescarga(null);
+    try {
+      const urls: { url: string; codigo: string }[] = [];
+      for (const t of tiquetes) {
+        try {
+          const res = await httpClient.get<{ success: boolean; signedUrl: string }>(
+            `/wompi/tiquetes/${t.idTiquete}/pdf`
+          );
+          if (res.data.success && res.data.signedUrl) {
+            urls.push({ url: res.data.signedUrl, codigo: t.codigoTiquete });
+          }
+        } catch { /* continuar */ }
+      }
+
+      if (urls.length === 0) {
+        throw new Error('No hay URLs disponibles');
+      }
+
+      if (esDispositivoIOS()) {
+        window.location.href = urls[0].url;
+      } else {
+        urls.forEach((item, index) => {
+          setTimeout(() => {
+            const a = document.createElement('a');
+            a.href = item.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.download = `tiquete-${item.codigo}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => a.remove(), 100);
+          }, index * 400);
+        });
+      }
+    } catch {
+      setErrorDescarga('No se pudo procesar la descarga de los tiquetes. Intenta descargarlos individualmente.');
+    } finally {
+      setDescargandoTodos(false);
     }
   };
 
@@ -165,7 +212,7 @@ export function PagoResultadoPage() {
                             </div>
                           </div>
                           <button
-                            onClick={() => handleDescargar(tiquete.idTiquete)}
+                            onClick={() => handleDescargar(tiquete.idTiquete, tiquete.codigoTiquete)}
                             disabled={descargandoId === tiquete.idTiquete || !tiquete.tienePdf}
                             className="px-4 py-2 bg-[#0e3a8c] text-white rounded-lg text-sm font-bold hover:bg-blue-900 transition-all shadow-sm flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -187,20 +234,21 @@ export function PagoResultadoPage() {
                       {/* Botón descargar todos */}
                       {tiquetes.length > 1 && todosConPdf && (
                         <button
-                          onClick={async () => {
-                            for (const t of tiquetes) {
-                              try {
-                                const res = await httpClient.get(`/wompi/tiquetes/${t.idTiquete}/pdf`);
-                                if (res.data.success && res.data.signedUrl) {
-                                  window.open(res.data.signedUrl, '_blank');
-                                }
-                              } catch { /* silencioso */ }
-                            }
-                          }}
-                          className="w-full px-4 py-3 bg-[#0e3a8c] text-white rounded-xl text-sm font-bold hover:bg-blue-900 transition-all shadow-sm flex items-center justify-center gap-2"
+                          onClick={handleDescargarTodos}
+                          disabled={descargandoTodos}
+                          className="w-full px-4 py-3 bg-[#0e3a8c] text-white rounded-xl text-sm font-bold hover:bg-blue-900 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <span className="material-symbols-outlined text-sm">download</span>
-                          Descargar todos los tiquetes ({tiquetes.length})
+                          {descargandoTodos ? (
+                            <>
+                              <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                              <span>Preparando descargas...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="material-symbols-outlined text-sm">download</span>
+                              <span>Descargar todos los tiquetes ({tiquetes.length})</span>
+                            </>
+                          )}
                         </button>
                       )}
                     </div>

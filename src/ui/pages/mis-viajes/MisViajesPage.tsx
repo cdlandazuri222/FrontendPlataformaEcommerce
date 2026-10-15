@@ -5,6 +5,7 @@ import { ROUTES } from '../../../shared/constants';
 import { plataformaEcommerceApi, type MiViaje } from '../../../infrastructure/api/plataformaEcommerceApi';
 import { httpClient } from '../../../infrastructure/api/httpClient';
 import { usePreferencias } from '../../context/PreferenciasContext';
+import { abrirODescargarPdf } from '../../../shared/utils/descargarPdf';
 
 function formatFecha(fechaISO: string, idioma: 'es' | 'en'): string {
   return new Date(fechaISO).toLocaleDateString(idioma === 'es' ? 'es-CO' : 'en-US', {
@@ -72,12 +73,12 @@ export function MisViajesPage() {
     if (!viaje.tienePdf) return;
     setDescargando(viaje.idtiquete);
     try {
-      const res = await httpClient.get<{ success: boolean; signedUrl: string }>(
-        `/wompi/tiquetes/${viaje.idtiquete}/pdf`
-      );
-      if (res.data.success && res.data.signedUrl) {
-        window.open(res.data.signedUrl, '_blank');
-      }
+      await abrirODescargarPdf(async () => {
+        const res = await httpClient.get<{ success: boolean; signedUrl: string }>(
+          `/wompi/tiquetes/${viaje.idtiquete}/pdf`
+        );
+        return res.data.signedUrl;
+      }, `tiquete-${viaje.codigotiquete || viaje.idtiquete}.pdf`);
     } catch {
       alert(idioma === 'es' ? 'No se pudo generar el enlace de descarga. Intenta de nuevo.' : 'Could not generate download link. Please try again.');
     } finally {
