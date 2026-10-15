@@ -469,15 +469,15 @@ export function RegistroPage() {
               {/* Tipo y Número de Documento */}
               <div className="grid grid-cols-[120px_1fr] gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 ml-1">Tipo Doc.</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">Tipo Doc.</label>
                   <div className="relative">
                     <select
                       name="tipoDocumento"
                       value={formData.tipoDocumento}
                       onChange={handleChange}
-                      className="w-full rounded-2xl h-11 px-3 text-xs sm:text-[13.5px] font-bold text-slate-700 bg-slate-50/80 border border-slate-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 cursor-pointer transition-all"
+                      className="w-full rounded-2xl h-11 px-3 text-xs sm:text-[13.5px] font-bold text-slate-700 dark:text-slate-200 bg-slate-50/80 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 cursor-pointer transition-all"
                     >
-                      {TIPOS_DOCUMENTO.map((t) => <option key={t}>{t}</option>)}
+                      {TIPOS_DOCUMENTO.map((t) => <option key={t} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">{t}</option>)}
                     </select>
                   </div>
                 </div>
@@ -493,7 +493,7 @@ export function RegistroPage() {
               {/* Contraseñas en Grid de 2 Columnas */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 ml-1">Contraseña</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">Contraseña</label>
                   <div className="relative">
                     <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">lock</span>
                     <input
@@ -502,14 +502,13 @@ export function RegistroPage() {
                       value={formData.password}
                       onChange={handleChange}
                       required
-                      className="w-full pl-10 pr-9 rounded-2xl h-11 transition-all placeholder:text-slate-400 text-[13.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                      style={{ borderColor: fieldErrors.password ? '#f87171' : '#cbd5e1' }}
+                      className="w-full pl-10 pr-9 rounded-2xl h-11 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-[13.5px] bg-slate-50/80 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
+                      className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg cursor-pointer"
                     >
                       {showPassword ? 'visibility_off' : 'visibility'}
                     </button>
@@ -518,7 +517,7 @@ export function RegistroPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 ml-1">Confirmar</label>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">Confirmar</label>
                   <div className="relative">
                     <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">lock_reset</span>
                     <input
@@ -527,14 +526,13 @@ export function RegistroPage() {
                       value={formData.confirmarPassword}
                       onChange={handleChange}
                       required
-                      className="w-full pl-10 pr-9 rounded-2xl h-11 transition-all placeholder:text-slate-400 text-[13.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                      style={{ borderColor: fieldErrors.confirmarPassword ? '#f87171' : '#cbd5e1' }}
+                      className="w-full pl-10 pr-9 rounded-2xl h-11 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-[13.5px] bg-slate-50/80 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirm(!showConfirm)}
-                      className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
+                      className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg cursor-pointer"
                     >
                       {showConfirm ? 'visibility_off' : 'visibility'}
                     </button>
@@ -562,15 +560,15 @@ export function RegistroPage() {
           </div>
 
           {/* Footer */}
-          <footer className="g-footer-row pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-2 text-[11px] text-slate-400">
+          <footer className="g-footer-row pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-[11px] text-slate-400">
             <p>© 2024 Cootranar S.A. Calidad y servicio.</p>
             <div className="flex gap-4">
               <a href="#" className="hover:text-brand-blue transition-colors">Privacidad</a>
               <a href="#" className="hover:text-brand-blue transition-colors">Términos</a>
             </div>
           </footer>
-        </div>
 
+        </div>
       </div>
     </div>
   );
@@ -585,7 +583,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-bold text-slate-700 ml-1">{label}</label>
+      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">{label}</label>
       <div className="relative">
         <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">{icon}</span>
         <input
@@ -594,8 +592,7 @@ function Field({
           value={value}
           onChange={onChange}
           required={required}
-          className="w-full pl-10 pr-3.5 rounded-2xl h-11 transition-all placeholder:text-slate-400 text-[13.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-          style={{ borderColor: error ? '#f87171' : '#cbd5e1' }}
+          className="w-full pl-10 pr-3.5 rounded-2xl h-11 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-[13.5px] bg-slate-50/80 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
           placeholder={placeholder}
         />
       </div>

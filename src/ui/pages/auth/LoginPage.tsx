@@ -475,7 +475,7 @@ export function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Correo Electrónico */}
               <div className="g-input-field space-y-1.5">
-                <label className="text-[13px] font-bold text-slate-700 ml-1">Correo Electrónico</label>
+                <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300 ml-1">Correo Electrónico</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none">mail</span>
                   <input
@@ -484,8 +484,7 @@ export function LoginPage() {
                     value={formData.correo}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 pr-4 rounded-2xl h-12 transition-all placeholder:text-slate-400 text-[14.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                    style={{ borderColor: fieldErrors.correo ? '#f87171' : '#cbd5e1' }}
+                    className="w-full pl-12 pr-4 rounded-2xl h-12 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-[14.5px] bg-slate-50/80 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                     placeholder="usuario@ejemplo.com"
                   />
                 </div>
@@ -495,8 +494,8 @@ export function LoginPage() {
               {/* Contraseña */}
               <div className="g-input-field space-y-1.5">
                 <div className="flex justify-between items-center ml-1">
-                  <label className="text-[13px] font-bold text-slate-700">Contraseña</label>
-                  <Link to={ROUTES.RECUPERAR_PASSWORD} className="text-xs font-bold text-brand-blue hover:text-brand-blue-light transition-colors">¿Olvidaste tu contraseña?</Link>
+                  <label className="text-[13px] font-bold text-slate-700 dark:text-slate-300">Contraseña</label>
+                  <Link to={ROUTES.RECUPERAR_PASSWORD} className="text-xs font-bold text-brand-blue dark:text-blue-400 hover:text-brand-blue-light transition-colors">¿Olvidaste tu contraseña?</Link>
                 </div>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none">lock</span>
@@ -506,14 +505,13 @@ export function LoginPage() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-12 pr-12 rounded-2xl h-12 transition-all placeholder:text-slate-400 text-[14.5px] bg-slate-50/80 border focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                    style={{ borderColor: fieldErrors.password ? '#f87171' : '#cbd5e1' }}
+                    className="w-full pl-12 pr-12 rounded-2xl h-12 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-[14.5px] bg-slate-50/80 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-xl cursor-pointer"
+                    className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors text-xl cursor-pointer"
                   >
                     {showPassword ? 'visibility_off' : 'visibility'}
                   </button>
@@ -529,9 +527,9 @@ export function LoginPage() {
                   id="remember"
                   checked={formData.remember}
                   onChange={handleChange}
-                  className="w-4 h-4 text-brand-blue border-slate-300 rounded focus:ring-brand-blue cursor-pointer"
+                  className="w-4 h-4 text-brand-blue border-slate-300 dark:border-slate-600 rounded focus:ring-brand-blue cursor-pointer"
                 />
-                <label htmlFor="remember" className="text-xs text-slate-600 font-medium cursor-pointer select-none">Mantener sesión iniciada</label>
+                <label htmlFor="remember" className="text-xs text-slate-600 dark:text-slate-400 font-medium cursor-pointer select-none">Mantener sesión iniciada</label>
               </div>
 
               {/* Botón Iniciar Sesión (con altura robusta y proporciones armónicas) */}

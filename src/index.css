@@ -5,6 +5,7 @@
 @layer base {
   /* ── Modo claro (por defecto) ──────────────────────────────────────── */
   :root {
+    color-scheme: light;
     --bg-page: #f6f6f8;
     --bg-card: #ffffff;
     --bg-input: #f0f2f5;
@@ -16,6 +17,7 @@
 
   /* ── Modo oscuro ───────────────────────────────────────────────────── */
   .dark {
+    color-scheme: dark;
     --bg-page: #0f172a;
     --bg-card: #1e293b;
     --bg-input: #334155;
@@ -23,6 +25,44 @@
     --text-body: #e2e8f0;
     --text-muted: #64748b;
     --border: #334155;
+  }
+
+  /* Respaldo global para inputs en modo oscuro para evitar fondo blanco y texto invisible */
+  .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+  .dark select,
+  .dark textarea {
+    background-color: var(--bg-input, #334155);
+    color: #f8fafc;
+    border-color: var(--border, #475569);
+  }
+
+  .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]):focus,
+  .dark select:focus,
+  .dark textarea:focus {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+    border-color: #60a5fa !important;
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  .dark select option {
+    background-color: #1e293b;
+    color: #f8fafc;
+  }
+
+  /* Prevenir que el autofill del navegador vuelva blanco el fondo o claro el texto en modo oscuro */
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark textarea:-webkit-autofill,
+  .dark select:-webkit-autofill {
+    -webkit-text-fill-color: #f8fafc !important;
+    -webkit-box-shadow: 0 0 0px 1000px #334155 inset !important;
+    caret-color: #f8fafc;
   }
 
   *, *::before, *::after {

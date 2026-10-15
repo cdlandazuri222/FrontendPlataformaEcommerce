@@ -148,8 +148,8 @@ export function ComboboxCiudades({
   return (
     <div ref={containerRef} className="flex flex-col gap-2 relative w-full">
       {label && (
-        <span className="text-sm font-semibold text-[#111318] flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#0e3a8c] text-lg">{icon}</span>
+        <span className="text-sm font-semibold text-[#111318] dark:text-slate-200 flex items-center gap-2">
+          <span className="material-symbols-outlined text-[#0e3a8c] dark:text-blue-400 text-lg">{icon}</span>
           {label}
         </span>
       )}
@@ -165,7 +165,7 @@ export function ComboboxCiudades({
           placeholder={placeholder}
           disabled={disabled}
           autoComplete="off"
-          className={`w-full bg-[#f6f6f8] border-none rounded-lg h-12 px-4 pr-10 focus:ring-2 focus:ring-[#0e3a8c] outline-none transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`w-full bg-[#f6f6f8] dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 border border-transparent dark:border-slate-600 rounded-lg h-12 px-4 pr-10 focus:ring-2 focus:ring-[#0e3a8c] dark:focus:ring-blue-400 outline-none transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
             error ? 'ring-2 ring-red-400' : ''
           }`}
         />
@@ -191,12 +191,12 @@ export function ComboboxCiudades({
 
       {/* Dropdown */}
       {open && !disabled && (
-        <ul className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-56 overflow-y-auto">
+        <ul className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-56 overflow-y-auto">
           {loading && (
-            <li className="px-4 py-3 text-sm text-slate-400 text-center">Cargando...</li>
+            <li className="px-4 py-3 text-sm text-slate-400 dark:text-slate-500 text-center">Cargando...</li>
           )}
           {!loading && opcionesFiltradas.length === 0 && (
-            <li className="px-4 py-3 text-sm text-slate-400 text-center">
+            <li className="px-4 py-3 text-sm text-slate-400 dark:text-slate-500 text-center">
               No se encontraron opciones
             </li>
           )}
@@ -208,11 +208,11 @@ export function ComboboxCiudades({
                 onMouseEnter={() => setHighlighted(idx)}
                 className={`px-4 py-2.5 cursor-pointer flex items-center gap-2 text-sm transition-colors ${
                   idx === highlighted
-                    ? 'bg-[#0e3a8c]/10 text-[#0e3a8c]'
-                    : 'hover:bg-slate-50 text-slate-700'
+                    ? 'bg-[#0e3a8c]/10 dark:bg-blue-900/40 text-[#0e3a8c] dark:text-blue-400'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
                 }`}
               >
-                <span className="material-symbols-outlined text-sm text-[#0e3a8c]">
+                <span className="material-symbols-outlined text-sm text-[#0e3a8c] dark:text-blue-400">
                   {opcion.tipo === 'punto' ? 'near_me' : 'location_city'}
                 </span>
                 <span>{opcion.nombre}</span>

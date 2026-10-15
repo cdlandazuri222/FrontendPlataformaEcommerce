@@ -49,15 +49,15 @@ export function FormularioCompletarPerfil({ onCompletado, errorExterno }: Props)
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-1">Completa tus datos</h2>
-        <p className="text-sm text-gray-500 mb-5">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 border border-transparent dark:border-slate-700">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-1">Completa tus datos</h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">
           Necesitamos estos datos para generar tu tiquete correctamente.
         </p>
 
         {errorExterno && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
             {errorExterno}
           </div>
         )}
@@ -65,24 +65,24 @@ export function FormularioCompletarPerfil({ onCompletado, errorExterno }: Props)
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Nombre *</label>
               <input
                 name="nombre"
                 value={form.nombre}
                 onChange={handleChange}
                 placeholder="Juan"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.nombre ? 'border-red-400' : 'border-gray-300'}`}
+                className={`w-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.nombre ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
               />
               {errores.nombre && <p className="text-xs text-red-500 mt-1">{errores.nombre}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Apellido *</label>
               <input
                 name="apellido"
                 value={form.apellido}
                 onChange={handleChange}
                 placeholder="Pérez"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.apellido ? 'border-red-400' : 'border-gray-300'}`}
+                className={`w-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.apellido ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
               />
               {errores.apellido && <p className="text-xs text-red-500 mt-1">{errores.apellido}</p>}
             </div>
@@ -90,37 +90,37 @@ export function FormularioCompletarPerfil({ onCompletado, errorExterno }: Props)
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo doc.</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Tipo doc.</label>
               <select
                 name="tipoDocumento"
                 value={form.tipoDocumento}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {TIPOS_DOCUMENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                {TIPOS_DOCUMENTO.map(t => <option key={t} value={t} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">{t}</option>)}
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Documento *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Documento *</label>
               <input
                 name="documento"
                 value={form.documento}
                 onChange={handleChange}
                 placeholder="1234567890"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.documento ? 'border-red-400' : 'border-gray-300'}`}
+                className={`w-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.documento ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
               />
               {errores.documento && <p className="text-xs text-red-500 mt-1">{errores.documento}</p>}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Teléfono *</label>
             <input
               name="telefono"
               value={form.telefono}
               onChange={handleChange}
               placeholder="3001234567"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.telefono ? 'border-red-400' : 'border-gray-300'}`}
+              className={`w-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.telefono ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
             />
             {errores.telefono && <p className="text-xs text-red-500 mt-1">{errores.telefono}</p>}
           </div>

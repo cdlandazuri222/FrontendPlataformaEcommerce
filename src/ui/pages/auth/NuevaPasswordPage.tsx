@@ -74,17 +74,17 @@ export function NuevaPasswordPage() {
             <div className="space-y-4">
               {/* Nueva Contraseña Input */}
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block ml-1">NUEVA CONTRASEÑA</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block ml-1">NUEVA CONTRASEÑA</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-3 text-slate-500 text-[20px]">lock</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-200/60 rounded-xl h-12 pl-12 pr-12 text-sm font-bold placeholder:font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B1E4A] transition-all"
+                    className="w-full bg-slate-200/60 dark:bg-slate-700 rounded-xl h-12 pl-12 pr-12 text-sm font-bold placeholder:font-normal text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#0B1E4A] dark:focus:ring-blue-400 transition-all"
                     placeholder="••••••••"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3 text-slate-500 hover:text-slate-800 transition-colors">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
                     <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
                   </button>
                 </div>
@@ -92,17 +92,17 @@ export function NuevaPasswordPage() {
 
               {/* Confirmar Contraseña Input */}
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block ml-1">CONFIRMAR CONTRASEÑA</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block ml-1">CONFIRMAR CONTRASEÑA</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-3 text-slate-500 text-[20px]">lock_reset</span>
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-slate-200/60 rounded-xl h-12 pl-12 pr-12 text-sm font-bold placeholder:font-normal text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B1E4A] transition-all"
+                    className="w-full bg-slate-200/60 dark:bg-slate-700 rounded-xl h-12 pl-12 pr-12 text-sm font-bold placeholder:font-normal text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#0B1E4A] dark:focus:ring-blue-400 transition-all"
                     placeholder="••••••••"
                   />
-                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-3 text-slate-500 hover:text-slate-800 transition-colors">
+                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-3 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
                     <span className="material-symbols-outlined text-[20px]">{showConfirm ? 'visibility_off' : 'visibility'}</span>
                   </button>
                 </div>

@@ -107,7 +107,7 @@ export function OlvidoPasswordPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-6 text-left">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-700 ml-1">Correo Electrónico</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">Correo Electrónico</label>
                     <div className="relative">
                       <span className="material-symbols-outlined absolute left-4 top-3.5 text-slate-400 text-xl">mail</span>
                       <input
@@ -115,8 +115,7 @@ export function OlvidoPasswordPage() {
                         name="email"
                         value={email}
                         onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                        className="w-full pl-12 rounded-xl h-14 transition-all placeholder:text-slate-400 text-sm"
-                        style={{ border: `1px solid ${error ? '#f87171' : '#f1f5f9'}`, backgroundColor: '#f8fafc' }}
+                        className={`w-full pl-12 rounded-xl h-14 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm bg-slate-50/80 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border ${error ? 'border-red-400' : 'border-slate-200 dark:border-slate-600'} focus:outline-none focus:ring-2 focus:ring-brand-blue/20`}
                         placeholder="ejemplo@cootranar.com.co"
                       />
                     </div>

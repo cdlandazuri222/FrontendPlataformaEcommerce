@@ -473,15 +473,15 @@ function CampoTexto({ label, value, error, placeholder, onChange, onBlur }: {
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</label>
       <input
         type="text"
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
-        className={`w-full bg-[#f0f2f5] rounded-xl px-4 py-3 text-sm text-slate-700 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white ${
-          error ? 'ring-2 ring-red-300 bg-red-50' : ''
+        className={`w-full bg-[#f0f2f5] dark:bg-slate-700 rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-200 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white dark:focus:bg-slate-600 placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
+          error ? 'ring-2 ring-red-300 bg-red-50 dark:bg-red-900/20' : ''
         }`}
       />
       {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
@@ -499,17 +499,17 @@ function CampoSelect({ label, value, error, options, onChange, onBlur }: {
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
-        className={`w-full bg-[#f0f2f5] rounded-xl px-4 py-3 text-sm text-slate-700 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white appearance-none ${
-          error ? 'ring-2 ring-red-300 bg-red-50' : ''
+        className={`w-full bg-[#f0f2f5] dark:bg-slate-700 rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-200 font-medium outline-none transition-all focus:ring-2 focus:ring-[#0e3a8c]/20 focus:bg-white dark:focus:bg-slate-600 appearance-none ${
+          error ? 'ring-2 ring-red-300 bg-red-50 dark:bg-red-900/20' : ''
         }`}
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">{opt.label}</option>
         ))}
       </select>
       {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
