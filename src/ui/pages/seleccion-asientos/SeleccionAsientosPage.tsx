@@ -1258,33 +1258,30 @@ export function SeleccionAsientosPage() {
                   </div>
                 )}
 
-                {/* Widget Wompi */}
-                {metodoPago === 'WOMPI' && fase === 'widget' && datosTransaccion && (
-                  <div className="mt-4">
-                    <WompiCheckout key={datosTransaccion.referencia} datos={datosTransaccion} onCerrar={resetear} />
-                  </div>
-                )}
-
-                {/* Botón confirmar según método */}
+                {/* Botón confirmar según método o Widget Wompi */}
                 <div className="mt-6">
                   {metodoPago === 'WOMPI' ? (
-                    <button
-                      onClick={handleConfirmarYPagar}
-                      disabled={!formularioValido() || fase === 'verificando' || fase === 'preparando'}
-                      className="w-full flex items-center justify-center gap-2 bg-[#0e3a8c] text-white px-6 py-4 rounded-2xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      {(fase === 'verificando' || fase === 'preparando') ? (
-                        <>
-                          <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                          {s.procesando}
-                        </>
-                      ) : (
-                        <>
-                          <span className="material-symbols-outlined text-base">payment</span>
-                          {s.confirmarYPagar} — {totalAPagar.toLocaleString('es-CO')} COP
-                        </>
-                      )}
-                    </button>
+                    fase === 'widget' && datosTransaccion ? (
+                      <WompiCheckout key={datosTransaccion.referencia} datos={datosTransaccion} onCerrar={resetear} />
+                    ) : (
+                      <button
+                        onClick={handleConfirmarYPagar}
+                        disabled={!formularioValido() || fase === 'verificando' || fase === 'preparando'}
+                        className="w-full flex items-center justify-center gap-2 bg-[#0e3a8c] text-white px-6 py-4 rounded-2xl font-bold text-sm hover:bg-blue-900 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {(fase === 'verificando' || fase === 'preparando') ? (
+                          <>
+                            <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                            {s.procesando}
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-base">payment</span>
+                            {s.confirmarYPagar} — {totalAPagar.toLocaleString('es-CO')} COP
+                          </>
+                        )}
+                      </button>
+                    )
                   ) : (
                     <button
                       onClick={handleConfirmarConMillas}
